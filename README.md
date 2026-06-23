@@ -36,13 +36,19 @@ npm start
 
 ## 🔑 Clés API
 
+Le site choisit automatiquement le **fournisseur de données** selon la clé présente,
+dans cet ordre : `API_FOOTBALL_KEY` → `FOOTBALL_DATA_TOKEN` → mode démo.
+
 | Variable | Rôle | Obligatoire ? |
 |----------|------|---------------|
-| `FOOTBALL_DATA_TOKEN` | Vrais matchs/classements (offre gratuite sur football-data.org) | Non — sinon données de démo |
+| `API_FOOTBALL_KEY` | Données via **API-Football.com** (api-sports.io) | Non — prioritaire si présente |
+| `API_FOOTBALL_SEASON` | Forcer une saison API-Football (ex `2024`) | Non — calculée auto sinon |
+| `FOOTBALL_DATA_TOKEN` | Données via **football-data.org** | Non — utilisé si pas de clé API-Football |
 | `ANTHROPIC_API_KEY` | Analyse rédigée par Claude | Non — sinon analyse 100 % statistique |
 | `ANTHROPIC_MODEL` | Modèle Claude (défaut `claude-opus-4-8`) | Non |
 
-> Les clés se mettent dans `.env.local` (jamais committé). Ne partage jamais tes clés.
+> Les clés se mettent dans `.env.local` (jamais committé) ou dans les variables
+> d'environnement de l'hébergeur. **Ne partage jamais tes clés**, même par message.
 
 ---
 
