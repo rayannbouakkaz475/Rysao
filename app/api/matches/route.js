@@ -2,23 +2,18 @@
 // Renvoie les matchs à venir + la prédiction statistique de chacun.
 
 import { NextResponse } from "next/server";
-import {
-  getUpcomingMatches,
-  getStandings,
-  COMPETITIONS,
-} from "@/lib/footballData";
+import { getUpcomingMatches, getStandings } from "@/lib/footballData";
 import { predictMatch } from "@/lib/statModel";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const competition = searchParams.get("competition") || "FL1";
+  const competition = searchParams.get("competition");
 
-  const valid = COMPETITIONS.some((c) => c.code === competition);
-  if (!valid) {
+  if (!competition) {
     return NextResponse.json(
-      { error: "Championnat inconnu" },
+      { error: "Paramètre 'competition' requis" },
       { status: 400 }
     );
   }
