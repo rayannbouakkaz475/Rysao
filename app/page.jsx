@@ -247,6 +247,20 @@ function MatchDetail({ match, onBack }) {
         )}
       </div>
 
+      {!loading && result?.scorers && (
+        <div className="detail">
+          <h3 className="scorers-title">⚽ Buteurs probables</h3>
+          <div className="scorers-cols">
+            <ScorerColumn team={match.home.name} players={result.scorers.home} />
+            <ScorerColumn team={match.away.name} players={result.scorers.away} />
+          </div>
+          <p className="muted-line scorers-warn">
+            Les buteurs sont l&apos;élément le plus incertain d&apos;un
+            pronostic (compositions, blessures, hasard).
+          </p>
+        </div>
+      )}
+
       <div className="detail">
         {loading && (
           <div className="loading">🧠 L&apos;IA analyse le match…</div>
@@ -266,6 +280,26 @@ function MatchDetail({ match, onBack }) {
         )}
       </div>
     </>
+  );
+}
+
+function ScorerColumn({ team, players }) {
+  return (
+    <div className="scorer-col">
+      <div className="scorer-team">{team}</div>
+      {players && players.length > 0 ? (
+        players.map((p) => (
+          <div className="scorer-row" key={p.name}>
+            <span className="scorer-name">{p.name}</span>
+            <span className="scorer-prob">{p.prob}%</span>
+          </div>
+        ))
+      ) : (
+        <div className="scorer-row scorer-empty">
+          Pas de données buteurs
+        </div>
+      )}
+    </div>
   );
 }
 

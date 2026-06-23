@@ -336,6 +336,50 @@ a {
   margin-top: 2px;
 }
 
+.scorers-title {
+  margin: 0 0 14px;
+  font-size: 17px;
+}
+.scorers-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.scorer-col {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.scorer-team {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+.scorer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.scorer-row:first-of-type {
+  border-top: none;
+}
+.scorer-prob {
+  font-weight: 700;
+  color: var(--text);
+}
+.scorer-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+.scorers-warn {
+  margin-top: 12px;
+}
+
 .analysis {
   background: var(--panel-2);
   border: 1px solid var(--line);
