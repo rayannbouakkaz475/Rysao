@@ -98,6 +98,48 @@ a {
   font-weight: 600;
 }
 
+/* --- Bannière installation app --- */
+.install-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(46, 230, 166, 0.14), rgba(79, 140, 255, 0.14));
+  border: 1px solid rgba(46, 230, 166, 0.4);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 4px 0 18px;
+}
+.install-ico {
+  font-size: 24px;
+}
+.install-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  line-height: 1.35;
+}
+.install-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.install-btn {
+  background: var(--accent-2);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.install-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+}
+
 /* --- Sélecteur de compétitions --- */
 .selector {
   margin: 18px 0 24px;

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import MatchCard from "@/components/MatchCard";
 import NotifyButton from "@/components/NotifyButton";
+import InstallHint from "@/components/InstallHint";
 
 function isWorldCup(c) {
   return (
@@ -108,6 +109,7 @@ export default function HomePage() {
     <>
       <Header />
       <main className="container">
+        <InstallHint />
         {/* Sélecteur de compétition */}
         <div className="selector">
           <input
