@@ -89,10 +89,18 @@ en direct, pour les matchs que tu choisis de suivre (bouton « Suivre ce match �
    notifs. En production il est déclenché par **Vercel Cron** (voir `vercel.json`,
    toutes les minutes) et protégé par `CRON_SECRET`.
 
-> ⚠️ **Persistance** : les abonnements et l'état live sont stockés dans des fichiers
-> JSON (`.data/`), ce qui suffit en local. Sur Vercel (système de fichiers éphémère),
-> remplace `lib/store.js` par **Vercel KV / Redis / une base** pour que les
-> abonnements survivent entre les invocations.
+### Persistance des abonnements
+
+`lib/store.js` choisit son backend automatiquement :
+
+- **Vercel KV** si `KV_REST_API_URL` + `KV_REST_API_TOKEN` sont définis
+  (persistant — **à utiliser en production**). Sur Vercel : *Storage → KV*, lie le
+  store au projet, les variables sont injectées automatiquement.
+- **Fichiers JSON** (`.data/`) sinon — pratique en local, mais éphémère sur du
+  serverless (ne pas utiliser en prod).
+
+Aucun changement de code nécessaire pour basculer : il suffit que les variables KV
+soient présentes.
 
 ## 🎨 Icône
 

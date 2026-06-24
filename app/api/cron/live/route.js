@@ -53,11 +53,11 @@ export async function GET(request) {
   }
 
   const live = await getLiveMatches();
-  const state = getLiveState();
+  const state = await getLiveState();
   let sent = 0;
 
   for (const fixture of live) {
-    const followers = followersOf(fixture.id);
+    const followers = await followersOf(fixture.id);
     if (followers.length === 0) continue;
 
     const fs = state.fixtures[fixture.id] || { seen: [], started: false };
@@ -89,6 +89,6 @@ export async function GET(request) {
     }
   }
 
-  setLiveState(state);
+  await setLiveState(state);
   return NextResponse.json({ ok: true, liveMatches: live.length, sent });
 }

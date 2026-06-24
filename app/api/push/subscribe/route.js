@@ -21,7 +21,7 @@ export async function POST(request) {
   if (!sub?.endpoint || !sub?.keys) {
     return NextResponse.json({ error: "Abonnement invalide" }, { status: 400 });
   }
-  saveSubscription(sub);
+  await saveSubscription(sub);
   return NextResponse.json({ ok: true });
 }
 
@@ -30,6 +30,6 @@ export async function DELETE(request) {
   if (!body?.endpoint) {
     return NextResponse.json({ error: "endpoint requis" }, { status: 400 });
   }
-  removeSubscription(body.endpoint);
+  await removeSubscription(body.endpoint);
   return NextResponse.json({ ok: true });
 }

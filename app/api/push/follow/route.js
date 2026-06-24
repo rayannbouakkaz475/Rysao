@@ -14,7 +14,7 @@ export async function POST(request) {
       { status: 400 }
     );
   }
-  const ok = setFollow(endpoint, String(fixtureId), follow !== false);
+  const ok = await setFollow(endpoint, String(fixtureId), follow !== false);
   if (!ok) {
     return NextResponse.json(
       { error: "Abonnement introuvable" },
