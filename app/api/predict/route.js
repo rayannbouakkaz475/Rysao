@@ -2,7 +2,13 @@
 // Renvoie l'analyse IA détaillée (Claude + modèle stats) d'un match.
 
 import { NextResponse } from "next/server";
-import { findMatch, getStandings, getTopScorers } from "@/lib/footballData";
+import {
+  findMatch,
+  getStandings,
+  getTopScorers,
+  getOdds,
+  getLineups,
+} from "@/lib/footballData";
 import { predictMatch } from "@/lib/statModel";
 import { predictScorers } from "@/lib/scorers";
 import { analyzeMatch } from "@/lib/claude";
@@ -34,7 +40,12 @@ export async function POST(request) {
 
     const prediction = predictMatch(home, away);
 
-    const topScorers = await getTopScorers(match.competition);
+    // Données complémentaires en parallèle (buteurs, cotes, compositions)
+    const [topScorers, bookmakerOdds, lineups] = await Promise.all([
+      getTopScorers(match.competition),
+      getOdds(match.id),
+      getLineups(match.id),
+    ]);
     const scorers = predictScorers(match, prediction, topScorers);
 
     const { analysis, source } = await analyzeMatch(
@@ -44,7 +55,15 @@ export async function POST(request) {
       scorers
     );
 
-    return NextResponse.json({ match, prediction, scorers, analysis, source });
+    return NextResponse.json({
+      match,
+      prediction,
+      scorers,
+      bookmakerOdds,
+      lineups,
+      analysis,
+      source,
+    });
   } catch (e) {
     return NextResponse.json(
       { error: e.message || "Erreur serveur" },
