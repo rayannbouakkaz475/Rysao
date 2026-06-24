@@ -1,0 +1,44 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Rysao">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2ee6a6"/>
+      <stop offset="1" stop-color="#4f8cff"/>
+    </linearGradient>
+    <radialGradient id="ball" cx="0.38" cy="0.34" r="0.75">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dfe7f2"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Fond arrondi -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Arc de mouvement (dynamisme) -->
+  <path d="M96 388 C 150 300, 362 300, 416 388" fill="none"
+        stroke="#ffffff" stroke-opacity="0.35" stroke-width="22" stroke-linecap="round"/>
+
+  <!-- Ballon -->
+  <circle cx="256" cy="232" r="132" fill="url(#ball)"/>
+  <circle cx="256" cy="232" r="132" fill="none" stroke="#0b1120" stroke-opacity="0.12" stroke-width="4"/>
+
+  <!-- Motif (pentagone central + segments, stylisé) -->
+  <g fill="#0b1120">
+    <!-- pentagone central -->
+    <polygon points="256,182 297,212 281,260 231,260 215,212"/>
+  </g>
+  <g stroke="#0b1120" stroke-width="11" stroke-linecap="round" fill="none">
+    <!-- branches reliant le pentagone vers le bord du ballon -->
+    <line x1="256" y1="182" x2="256" y2="128"/>
+    <line x1="297" y1="212" x2="350" y2="190"/>
+    <line x1="281" y1="260" x2="318" y2="320"/>
+    <line x1="231" y1="260" x2="194" y2="320"/>
+    <line x1="215" y1="212" x2="162" y2="190"/>
+  </g>
+
+  <!-- Petits pentagones partiels au bord -->
+  <g fill="#0b1120">
+    <polygon points="256,108 280,124 270,150 242,150 232,124" opacity="0.9"/>
+    <polygon points="356,176 380,196 366,224 340,212 342,184" opacity="0.9"/>
+    <polygon points="324,332 348,352 330,372 304,360 308,338" opacity="0.9"/>
+  </g>
+</svg>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Header from "@/components/Header";
 import MatchCard from "@/components/MatchCard";
+import NotifyButton from "@/components/NotifyButton";
 
 function isWorldCup(c) {
   return (
@@ -288,50 +289,32 @@ function MatchDetail({ match, onBack }) {
         )}
       </div>
 
+      <div className="detail">
+        <NotifyButton fixtureId={match.id} />
+      </div>
+
       {pred?.odds && (
         <div className="detail">
-          <h3 className="scorers-title">💸 Cotes</h3>
+          <h3 className="scorers-title">💸 Cotes équitables (modèle)</h3>
           <div className="odds-table">
-            <div className="odds-head">
+            <div className="odds-head two">
               <span>Issue</span>
-              <span>Cote équitable (modèle)</span>
-              {result?.bookmakerOdds && <span>Cote bookmaker</span>}
+              <span>Cote</span>
             </div>
-            <OddsRow
-              label={`Victoire ${match.home.name}`}
-              model={pred.odds.home}
-              book={result?.bookmakerOdds?.home}
-              showBook={!!result?.bookmakerOdds}
-            />
-            <OddsRow
-              label="Match nul"
-              model={pred.odds.draw}
-              book={result?.bookmakerOdds?.draw}
-              showBook={!!result?.bookmakerOdds}
-            />
-            <OddsRow
-              label={`Victoire ${match.away.name}`}
-              model={pred.odds.away}
-              book={result?.bookmakerOdds?.away}
-              showBook={!!result?.bookmakerOdds}
-            />
-            <OddsRow label="+2,5 buts" model={pred.odds.over25} showBook={false} />
-            <OddsRow
-              label="Les 2 marquent"
-              model={pred.odds.bttsYes}
-              showBook={false}
-            />
+            <OddsRow label={`Victoire ${match.home.name}`} model={pred.odds.home} />
+            <OddsRow label="Match nul" model={pred.odds.draw} />
+            <OddsRow label={`Victoire ${match.away.name}`} model={pred.odds.away} />
+            <OddsRow label="+2,5 buts" model={pred.odds.over25} />
+            <OddsRow label="Les 2 marquent" model={pred.odds.bttsYes} />
           </div>
-          {result?.bookmakerOdds && (
-            <p className="muted-line">
-              Cotes bookmaker fournies par {result.bookmakerOdds.bookmaker}.
-            </p>
-          )}
           <p className="muted-line">
-            La cote équitable = 1 / probabilité (sans marge). Les vraies cotes
-            incluent une marge bookmaker.
+            Cote équitable = 1 / probabilité (sans marge bookmaker).
           </p>
         </div>
+      )}
+
+      {!loading && result?.bookmakerOdds?.bookmakers?.length > 0 && (
+        <Comparator match={match} odds={result.bookmakerOdds} />
       )}
 
       {!loading && result?.lineups && result.lineups.length > 0 && (
@@ -439,12 +422,55 @@ function HistoryView({ loading, history }) {
   );
 }
 
-function OddsRow({ label, model, book, showBook }) {
+function OddsRow({ label, model }) {
   return (
-    <div className="odds-row">
+    <div className="odds-row two">
       <span className="odds-label">{label}</span>
       <span className="odds-val">{model ?? "—"}</span>
-      {showBook && <span className="odds-val book">{book ?? "—"}</span>}
+    </div>
+  );
+}
+
+function Comparator({ match, odds }) {
+  const best = odds.best || {};
+  const isBest = (row, k) =>
+    best[k] && row[k] != null && row[k] === best[k].odd;
+  return (
+    <div className="detail">
+      <h3 className="scorers-title">📊 Comparateur de cotes</h3>
+      <div className="cmp-table">
+        <div className="cmp-row cmp-head">
+          <span>Bookmaker</span>
+          <span>1</span>
+          <span>N</span>
+          <span>2</span>
+        </div>
+        {odds.bookmakers.map((row) => (
+          <div className="cmp-row" key={row.name}>
+            <span className="cmp-bk">{row.name}</span>
+            <span className={isBest(row, "home") ? "cmp-best" : ""}>
+              {row.home ?? "—"}
+            </span>
+            <span className={isBest(row, "draw") ? "cmp-best" : ""}>
+              {row.draw ?? "—"}
+            </span>
+            <span className={isBest(row, "away") ? "cmp-best" : ""}>
+              {row.away ?? "—"}
+            </span>
+          </div>
+        ))}
+      </div>
+      {(best.home || best.draw || best.away) && (
+        <p className="muted-line">
+          Meilleures cotes :{" "}
+          {best.home && `1 → ${best.home.odd} (${best.home.bookmaker})`}
+          {best.draw && ` · N → ${best.draw.odd} (${best.draw.bookmaker})`}
+          {best.away && ` · 2 → ${best.away.odd} (${best.away.bookmaker})`}
+        </p>
+      )}
+      <p className="muted-line">
+        La cote la plus élevée par issue (surlignée) est la plus avantageuse.
+      </p>
     </div>
   );
 }

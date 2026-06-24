@@ -71,7 +71,35 @@ lib/
   claude.js             Analyse via Claude (+ repli statistique)
 ```
 
-### Comment marchent les prédictions
+## 🔔 Notifications en direct (PWA)
+
+Le site est une **PWA** : notifications de **coup d'envoi**, **buts** et **cartons**
+en direct, pour les matchs que tu choisis de suivre (bouton « Suivre ce match »).
+
+- **iPhone** : Apple impose d'**ajouter le site à l'écran d'accueil** (Partager →
+  Sur l'écran d'accueil) pour autoriser les notifications. Une fois fait, elles
+  arrivent **écran verrouillé**, avec son et vibration.
+- **Android / desktop** : fonctionne directement après autorisation.
+
+### Mise en place
+
+1. Générer les clés VAPID : `node scripts/generate-vapid.mjs`
+2. Copier `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` dans `.env.local` (clé privée = secret).
+3. Le **poller live** (`/api/cron/live`) interroge les matchs suivis et envoie les
+   notifs. En production il est déclenché par **Vercel Cron** (voir `vercel.json`,
+   toutes les minutes) et protégé par `CRON_SECRET`.
+
+> ⚠️ **Persistance** : les abonnements et l'état live sont stockés dans des fichiers
+> JSON (`.data/`), ce qui suffit en local. Sur Vercel (système de fichiers éphémère),
+> remplace `lib/store.js` par **Vercel KV / Redis / une base** pour que les
+> abonnements survivent entre les invocations.
+
+## 🎨 Icône
+
+Icône **originale** (ballon stylisé sur dégradé) dans `public/icon.svg`. Régénère
+les PNG avec `node scripts/generate-icons.mjs`.
+
+## Comment marchent les prédictions
 
 1. On récupère le **classement** (buts marqués/encaissés, forme récente).
 2. `statModel.js` calcule les **buts attendus** (λ) de chaque équipe puis, via la
