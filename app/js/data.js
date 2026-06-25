@@ -75,6 +75,55 @@ const TCG_DATA = [
   { game: "Topps", name: "Topps Chrome F1", code: "F1", year: 2020, cards: 0, langs: ["en"] },
   { game: "Topps", name: "Topps Now", code: "NOW", year: 2016, cards: 0, langs: ["en"] },
   { game: "Topps", name: "Hobby Box Topps Chrome (scellé)", code: "SEALED-TOPPS", year: 2024, cards: 0, langs: ["en"], sealed: true },
+
+  /* ====================== EXTENSIONS DE CATALOGUE ======================
+     Complète le seed hors-ligne. Le catalogue COMPLET (toutes les séries
+     depuis l'origine) est chargé en plus dynamiquement via providers.js. */
+
+  /* ---- Pokémon : ères supplémentaires ---- */
+  { game: "Pokémon", name: "Neo Discovery", code: "N2", year: 2001, cards: 75, langs: ["en","fr","de","ja"] },
+  { game: "Pokémon", name: "Neo Revelation", code: "N3", year: 2001, cards: 66, langs: ["en","fr","de","ja"] },
+  { game: "Pokémon", name: "Neo Destiny", code: "N4", year: 2002, cards: 113, langs: ["en","fr","de","ja"] },
+  { game: "Pokémon", name: "EX Sandstorm", code: "SS", year: 2003, cards: 100, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "EX Dragon", code: "DR", year: 2003, cards: 97, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "EX Deoxys", code: "DX", year: 2005, cards: 107, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "EX Emerald", code: "EM", year: 2005, cards: 106, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "Platinum", code: "PL", year: 2009, cards: 127, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "Call of Legends", code: "COL", year: 2011, cards: 95, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "BW Plasma Storm", code: "PLS", year: 2013, cards: 135, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "XY Roaring Skies", code: "ROS", year: 2015, cards: 110, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "SM Team Up", code: "TEU", year: 2019, cards: 196, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "SM Cosmic Eclipse", code: "CEC", year: 2019, cards: 271, langs: ["en","fr","de","it","ja"] },
+  { game: "Pokémon", name: "SWSH Évolution Fusion", code: "FST", year: 2021, cards: 284, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "Pokémon", name: "SWSH Origine Perdue", code: "LOR", year: 2022, cards: 217, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "Pokémon", name: "SV Paldea Evolved", code: "PAL", year: 2023, cards: 279, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "Pokémon", name: "SV Obsidian Flames", code: "OBF", year: 2023, cards: 230, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "Pokémon", name: "SV Paradox Rift", code: "PAR", year: 2023, cards: 266, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "Pokémon", name: "SV Étincelles Déferlantes", code: "SSP", year: 2024, cards: 252, langs: ["en","fr","de","it","ja","zh"] },
+
+  /* ---- One Piece : decks de démarrage & boosters complémentaires ---- */
+  { game: "One Piece", name: "ST-01 Straw Hat Crew", code: "ST01", year: 2022, cards: 17, langs: ["en","ja","zh"] },
+  { game: "One Piece", name: "ST-02 Worst Generation", code: "ST02", year: 2022, cards: 17, langs: ["en","ja","zh"] },
+  { game: "One Piece", name: "ST-03 The Seven Warlords", code: "ST03", year: 2022, cards: 17, langs: ["en","ja","zh"] },
+  { game: "One Piece", name: "ST-04 Animal Kingdom Pirates", code: "ST04", year: 2022, cards: 17, langs: ["en","ja","zh"] },
+  { game: "One Piece", name: "ST-10 The Three Captains", code: "ST10", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-12 Zoro & Sanji", code: "ST12", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-14 3D2Y", code: "ST14", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "EB-01 Memorial Collection", code: "EB01", year: 2024, cards: 188, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "EB-02 Anime 25th Collection", code: "EB02", year: 2025, cards: 188, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "PRB-01 Premium Booster", code: "PRB01", year: 2024, cards: 369, langs: ["en","fr","de","it","ja","zh"] },
+
+  /* ---- Lorcana : produits scellés / coffrets ---- */
+  { game: "Lorcana", name: "Coffret Illumineur (Gift Set)", code: "GIFT", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+  { game: "Lorcana", name: "Display scellé Le Retour d'Ursula", code: "SEALED-URR", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+
+  /* ---- Topps : lignes supplémentaires ---- */
+  { game: "Topps", name: "Bowman Chrome Baseball", code: "BOW", year: 1997, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Finest Baseball", code: "FIN", year: 1993, cards: 199, langs: ["en"] },
+  { game: "Topps", name: "Topps Stadium Club", code: "STC", year: 1991, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps UFC Chrome", code: "UFC", year: 2024, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Star Wars", code: "SW", year: 1977, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Premier League Merlin", code: "PLM", year: 2024, cards: 0, langs: ["en"] },
 ];
 
 const TCG_GAMES = ["Pokémon", "One Piece", "Lorcana", "Topps"];

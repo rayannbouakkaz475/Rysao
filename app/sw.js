@@ -1,8 +1,8 @@
 /* RYSAO TCG — service worker (cache app-shell, hors-ligne) */
-const CACHE = "rysao-tcg-v1";
+const CACHE = "rysao-tcg-v2";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css",
-  "./js/i18n.js", "./js/data.js", "./js/engine.js", "./js/scanner.js", "./js/app.js",
+  "./js/i18n.js", "./js/data.js", "./js/providers.js", "./js/engine.js", "./js/scanner.js", "./js/app.js",
   "./manifest.webmanifest",
 ];
 

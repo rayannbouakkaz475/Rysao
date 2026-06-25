@@ -81,26 +81,48 @@ function viewScan(root) {
 
   const ctr = el("div", "scan-ctrl");
   const btn = el("button", "btn primary", t("scan_start"));
-  ctr.appendChild(btn); root.appendChild(ctr);
+  const recBtn = el("button", "btn", "🔎 " + t("scan_recognize")); recBtn.disabled = true;
+  ctr.appendChild(btn); ctr.appendChild(recBtn); root.appendChild(ctr);
 
   const res = el("div", "scan-results");
   res.innerHTML = `
+    <div class="metric big"><span class="m-label" data-i="scan_detected"></span><span class="m-val" id="mDetect">—</span></div>
     <div class="metric"><span class="m-label" data-i="scan_centering"></span><span class="m-val" id="mCenter">—</span></div>
     <div class="metric"><span class="m-label" data-i="scan_borders"></span><span class="m-val" id="mBorders">—</span></div>
     <div class="metric"><span class="m-label" data-i="scan_quality"></span><span class="m-val" id="mQuality">—</span></div>
     <div class="metric big"><span class="m-label" data-i="scan_grade"></span><span class="m-val" id="mGrade">—</span></div>
-    <div class="metric"><span class="m-label" data-i="scan_price"></span><span class="m-val" id="mPrice">—</span></div>`;
+    <div class="metric big"><span class="m-label" data-i="scan_price"></span><span class="m-val" id="mPrice">—</span></div>`;
   root.appendChild(res);
 
   const video = $("#cam"), canvas = $("#frame");
   let active = false, lastResultTime = 0;
 
   btn.onclick = async () => {
-    if (active) { Scanner.stop(); active = false; btn.textContent = t("scan_start"); btn.classList.add("primary"); return; }
+    if (active) { Scanner.stop(); active = false; recBtn.disabled = true; btn.textContent = t("scan_start"); btn.classList.add("primary"); return; }
     btn.textContent = "…";
     const ok = await Scanner.start(video, canvas, onScan);
     if (ok === false) return;
-    active = true; btn.textContent = t("scan_stop"); btn.classList.remove("primary");
+    active = true; recBtn.disabled = false; btn.textContent = t("scan_stop"); btn.classList.remove("primary");
+  };
+
+  // Reconnaissance par OCR (à la demande) -> série détectée + prix
+  recBtn.onclick = async () => {
+    if (!active) return;
+    recBtn.disabled = true; recBtn.textContent = t("scan_recognizing");
+    try {
+      const r = await Providers.recognize(canvas);
+      if (r.error) { $("#mDetect").textContent = t("scan_ocr_off"); toast(t("scan_ocr_off")); }
+      else {
+        const setName = r.set ? `${r.set.game} · ${r.set.name}` : "—";
+        $("#mDetect").textContent = `${r.card || "?"}${r.set ? " — " + setName : ""}`;
+        // prix de la carte détectée
+        $("#mPrice").textContent = t("scan_searching");
+        const p = await getPrice(r.card, r.set && r.set.game);
+        $("#mPrice").innerHTML = `${fmtMoney(p.avg)} <span class="flag-${p.estimate?"est":"live"}">${p.estimate?t("price_estimate"):t("price_live")}</span>`;
+        State.lastRecognized = { name: r.card, value: p.avg };
+      }
+    } catch { $("#mDetect").textContent = t("scan_ocr_off"); }
+    recBtn.disabled = false; recBtn.textContent = "🔎 " + t("scan_recognize");
   };
 
   function onScan(r) {
@@ -158,6 +180,21 @@ function viewRefs(root) {
   });
   root.appendChild(chips);
 
+  // bouton : charger toutes les séries depuis les API (catalogue complet)
+  const loadBar = el("div", "filter-bar");
+  const loadBtn = el("button", "btn", "🌐 " + t("refs_load_full"));
+  const count = el("span", "set-count", "");
+  loadBar.appendChild(loadBtn); loadBar.appendChild(count); root.appendChild(loadBar);
+  loadBtn.onclick = async () => {
+    loadBtn.disabled = true; loadBtn.textContent = t("refs_loading");
+    try {
+      const r = await Providers.loadFullCatalog(true);
+      toast(`${t("refs_loaded")} (+${r.added})`);
+    } catch { toast(t("refs_offline")); }
+    loadBtn.disabled = false; loadBtn.textContent = "🌐 " + t("refs_load_full");
+    update();
+  };
+
   const list = el("div", "set-list"); root.appendChild(list);
 
   function update() {
@@ -170,6 +207,7 @@ function viewRefs(root) {
     if (q) data = data.filter((s) => (s.name + " " + s.code + " " + s.game).toLowerCase().includes(q));
     data.sort((a, b) => b.year - a.year);
 
+    count.textContent = `${data.length} ${t("refs_sets")}`;
     list.innerHTML = "";
     if (!data.length) { list.appendChild(el("p", "empty", "—")); return; }
     data.forEach((s) => {
@@ -211,11 +249,14 @@ function viewPrices(root) {
   async function run() {
     const q = search.value.trim(); if (!q) return;
     out.innerHTML = `<p class="empty">${t("scan_searching")}</p>`;
-    const p = await getPrice(q);
+    const p = await getPrice(q, THEMES[State.theme].game);
     out.innerHTML = "";
     const card = el("div", "price-card");
+    const flag = p.estimate
+      ? `<span class="flag-est">${t("price_estimate")}</span>`
+      : `<span class="flag-live">${t("price_live")} · ${esc(p.source || "")}</span>`;
     card.innerHTML = `
-      <div class="price-name">${esc(q)}</div>
+      <div class="price-name">${esc(p.matched || q)} ${flag}</div>
       <div class="price-grid">
         <div><span class="pl">Cardmarket</span><span class="pv">${fmtMoney(p.cardmarket.avg)}</span></div>
         <div><span class="pl">eBay</span><span class="pv">${fmtMoney(p.ebay.avg)}</span></div>
@@ -224,7 +265,7 @@ function viewPrices(root) {
         <div><span class="pl">${t("prices_trend")}</span><span class="pv ${p.trend>=0?"up":"down"}">${p.trend>=0?"▲":"▼"} ${Math.abs(p.trend)}%</span></div>
       </div>
       <button class="btn add">${t("prices_add_collection")}</button>
-      <p class="estimate-flag">~ ${t("prices_note")}</p>`;
+      <p class="estimate-flag">${p.estimate ? "~ " + t("prices_note") : t("price_live") + " · " + esc(p.source || "")}</p>`;
     out.appendChild(card);
     card.querySelector(".add").onclick = () => { addToCollection({ name: q, value: p.avg }); toast(t("added")); };
   }
@@ -416,6 +457,18 @@ function viewSettings(root) {
   });
   planBlk.appendChild(cards); root.appendChild(planBlk);
 
+  // clés API (optionnel)
+  const apiBlk = el("div", "set-block");
+  apiBlk.appendChild(el("label", "set-lbl", t("settings_api")));
+  const pokeKey = el("input", "search"); pokeKey.placeholder = t("settings_poke_key");
+  pokeKey.value = localStorage.getItem("rysao_pokemontcg_key") || "";
+  pokeKey.onchange = () => { localStorage.setItem("rysao_pokemontcg_key", pokeKey.value.trim()); toast("✓"); };
+  const priceKey = el("input", "search"); priceKey.placeholder = t("settings_price_key");
+  priceKey.style.marginTop = "8px";
+  priceKey.value = localStorage.getItem("rysao_price_api") || "";
+  priceKey.onchange = () => { localStorage.setItem("rysao_price_api", priceKey.value.trim()); toast("✓"); };
+  apiBlk.appendChild(pokeKey); apiBlk.appendChild(priceKey); root.appendChild(apiBlk);
+
   // pokecardex
   const pcx = el("a", "btn pcx", "🔗 " + t("pokecardex"));
   pcx.href = "https://www.pokecardex.com/"; pcx.target = "_blank"; pcx.rel = "noopener";
@@ -453,6 +506,13 @@ async function init() {
   // mise à jour des sorties
   const added = await checkForUpdates();
   if (added.length) toast(`+${added.length} ${t("refs_sets")} ✓`);
+
+  // catalogue complet : depuis le cache si présent, sinon en arrière-plan
+  if (window.Providers) {
+    Providers.loadFullCatalog(false)
+      .then((r) => { if (r && State.view === "refs") render(); })
+      .catch(() => {});
+  }
 
   render();
   applyI18n();

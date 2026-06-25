@@ -56,9 +56,15 @@ function hashStr(s) {
   return (h >>> 0);
 }
 
-async function getPrice(query) {
-  // Point d'extension : si une clé API est configurée, appeler le vrai service ici.
-  // if (PRICE_API_KEY) { return await fetchLivePrice(query); }
+async function getPrice(query, game) {
+  // 1) Prix RÉEL via fournisseurs (Cardmarket through pokemontcg.io, etc.)
+  if (window.Providers && Providers.getLivePrice) {
+    try {
+      const live = await Providers.getLivePrice(query, game);
+      if (live) return live;
+    } catch (_) { /* repli estimation */ }
+  }
+  // 2) Repli : estimation déterministe stable, étiquetée comme telle.
   const h = hashStr(query.toLowerCase().trim());
   const base = 2 + (h % 4000) / 10;            // 2 .. ~402 EUR
   const spread = 0.15 + ((h >> 5) % 40) / 100; // 15% .. 55%

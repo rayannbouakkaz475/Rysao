@@ -127,6 +127,10 @@ body[data-theme="topps"] .bg-theme{
 .pv.up{color:var(--ok)}.pv.down{color:var(--bad)}
 .price-card .add{margin-top:14px;width:100%}
 .estimate-flag{color:var(--dim);font-size:.74rem;margin:10px 0 0}
+.flag-live,.flag-est{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:6px}
+.flag-live{background:rgba(47,210,122,.18);color:var(--ok)}
+.flag-est{background:rgba(255,176,46,.18);color:var(--warn)}
+.set-count{align-self:center;color:var(--dim);font-size:.82rem;font-weight:600}
 
 /* ---------- Collection ---------- */
 .coll-head{display:flex;gap:12px;margin-bottom:14px}

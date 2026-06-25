@@ -33,23 +33,43 @@ python3 -m http.server 8099
 | 🤝 **Réseau / recherches** | ✅ réel (démo) | « je recherche cette carte → on me contacte » |
 | 🆓 / 💎 **Gratuit / Premium** | ✅ réel | gating des fonctions Premium |
 | 🔗 **PokéCardex** | ✅ lien | bouton d'accès intégré dans Réglages |
-| 💶 **Prix Cardmarket / eBay** | ⚠️ estimation | voir ci-dessous |
+| 💶 **Prix Cardmarket** | ✅ réel (Pokémon) | prix réels via `pokemontcg.io`, repli estimation |
+| 🌐 **Catalogue complet** | ✅ réel | toutes les séries chargées via API (Pokémon, Lorcana) |
+| 🔎 **Reconnaissance OCR** | ✅ réel | OCR du nom (Tesseract.js) + correspondance catalogue |
 
-## Prix marché — à brancher
+## Prix marché (`js/providers.js`)
 
-Les API **Cardmarket** et **eBay** sont **payantes / sur autorisation**, et le
-scraping viole leurs CGU. L'app fournit donc un **moteur d'estimation** stable et
-**l'emplacement prêt** pour ta vraie clé :
+- **Pokémon** : prix **Cardmarket réels** via l'API publique `pokemontcg.io`
+  (`getLivePrice`). Clé optionnelle pour un débit plus élevé →
+  Réglages ▸ *Clé pokemontcg.io*.
+- **Autres jeux / repli** : moteur d'estimation déterministe stable
+  (`engine.js` → `getPrice`), clairement étiqueté **Estimation**.
+- **eBay / fournisseur commercial** : `localStorage` `rysao_price_api` + point
+  d'extension prévu (leurs API sont payantes / sur autorisation).
 
-- `js/engine.js` → `getPrice()` : décommente le bloc `if (PRICE_API_KEY)` et
-  branche ton backend / fournisseur (ex. agrégateur de prix sous licence).
-- Stocke la clé via `localStorage.setItem("rysao_price_api", "…")`.
+## Catalogue complet — « toutes les séries depuis l'origine »
 
-## Reconnaissance auto de la carte
+`Providers.loadFullCatalog()` récupère et **fusionne** dynamiquement :
 
-La détection assistée fournit centrage + cadre. La **reconnaissance exacte de la
-série/carte par IA** demande un modèle entraîné (TensorFlow.js / API de vision) :
-point d'extension prévu dans `js/scanner.js`.
+- **Pokémon** : `https://api.pokemontcg.io/v2/sets` (tous les sets depuis 1999) ;
+- **Lorcana** : `https://api.lorcast.com/v0/sets`.
+
+Résultat mis en **cache 7 jours** (`localStorage`). Le seed statique
+(`data.js`) couvre One Piece, Topps et l'usage hors-ligne. Bouton manuel
+*« Charger toutes les séries »* dans l'onglet Références.
+
+> ⚠️ Ces appels passent par le navigateur du client. Selon l'hébergement, vérifie
+> que les API ci-dessus sont accessibles (CORS public côté `pokemontcg.io` /
+> `lorcast.com`).
+
+## Reconnaissance de carte (OCR)
+
+`Providers.recognize()` lit le **nom imprimé** (bande supérieure de la carte)
+avec **Tesseract.js** (chargé à la demande depuis un CDN), puis fait
+correspondre le texte au catalogue pour déterminer la série, et lance le prix.
+Si le CDN/OCR est indisponible, l'app le signale sans planter. Pour une
+reconnaissance visuelle complète (image → carte exacte), brancher un modèle
+TensorFlow.js / API de vision reste le point d'extension prévu.
 
 ## Structure
 
@@ -60,7 +80,8 @@ app/
 ├── js/
 │   ├── i18n.js             # 6 langues d'interface
 │   ├── data.js             # séries, scellés, sociétés de gradation, devises
-│   ├── engine.js           # prix, gradation, devises, mises à jour de sorties
+│   ├── providers.js        # API réelles : prix Cardmarket, catalogue, OCR
+│   ├── engine.js           # prix (live+repli), gradation, devises, sorties
 │   ├── scanner.js          # caméra temps réel + analyse de centrage
 │   └── app.js              # routing + vues + état
 ├── manifest.webmanifest    # PWA
