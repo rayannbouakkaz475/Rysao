@@ -1,0 +1,26 @@
+{
+  "name": "RYSAO TCG — Scan & Gradation",
+  "short_name": "RYSAO TCG",
+  "description": "Scan caméra temps réel, analyse de centrage, estimation de gradation, prix marché, collection et réseau pour Pokémon, One Piece, Lorcana et Topps.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%230b1020'/%3E%3Ctext x='96' y='128' font-family='Arial' font-weight='bold' font-size='100' fill='%2300e0c6' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230b1020'/%3E%3Ctext x='256' y='340' font-family='Arial' font-weight='bold' font-size='260' fill='%2300e0c6' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
