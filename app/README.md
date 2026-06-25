@@ -36,6 +36,7 @@ python3 -m http.server 8099
 | 🔔 **Notifications téléphone** | ✅ réel | permission navigateur + **notif d'enchère** ; push réel = backend |
 | 🖼️ **Photos multiples** | ✅ réel | jusqu'à 6 photos par publication du feed |
 | 🗺️ **Carte du monde des boutiques** | ✅ réel | Leaflet + géocodage OpenStreetMap (repli si hors-ligne) |
+| ☁️ **Backend multi-utilisateur** | ✅ réel | Supabase : comptes + feed/chat/enchères/boutiques **partagés en temps réel** (repli local) — voir `backend/` |
 | 🔗 **PokéCardex** | ✅ lien | bouton d'accès intégré dans Réglages |
 | 💶 **Prix Cardmarket** | ✅ réel (Pokémon) | prix réels via `pokemontcg.io`, repli estimation |
 | 🌐 **Catalogue complet** | ✅ réel | toutes les séries chargées via API (Pokémon, Lorcana) |
@@ -124,10 +125,15 @@ app/
 ├── js/
 │   ├── i18n.js             # 6 langues d'interface
 │   ├── data.js             # séries, scellés, sociétés de gradation, devises
-│   ├── providers.js        # API réelles : prix Cardmarket, catalogue, OCR
+│   ├── providers.js        # API réelles : prix Cardmarket, catalogue, OCR, carte
+│   ├── backend.js          # Supabase + façade DB (cloud ↔ local) + auth
+│   ├── config.example.js   # gabarit de config backend (→ config.js)
 │   ├── engine.js           # prix (live+repli), gradation, devises, sorties
 │   ├── scanner.js          # caméra temps réel + analyse de centrage
 │   └── app.js              # routing + vues + état
+├── backend/
+│   ├── schema.sql          # schéma Postgres + RLS + Realtime + Storage
+│   └── README.md           # mise en place Supabase
 ├── manifest.webmanifest    # PWA
 ├── sw.js                   # service worker (hors-ligne)
 └── README.md

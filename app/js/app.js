@@ -10,7 +10,14 @@ const State = {
   comTab: "profile",
   chatPeer: null,
   shopView: "list",
+  _subs: {},
 };
+
+/* Abonnement temps réel unique par nom (créé une seule fois) */
+function ensureSub(name, factory) {
+  if (State._subs[name]) return;
+  try { State._subs[name] = factory() || true; } catch { State._subs[name] = true; }
+}
 
 const THEMES = {
   pokemon:   { game: "Pokémon",   label: "Pokémon" },
@@ -452,13 +459,13 @@ function viewCommunity(root) {
 }
 
 /* ---- Profil : items à vendre / recherchés ---- */
-function comProfile(root) {
-  const p = getProfile();
+async function comProfile(root) {
+  const p = await DB.profile.get();
   const idRow = el("div", "filter-bar");
   idRow.innerHTML = `<input id="pName" class="search" placeholder="${t("prof_name")}" value="${esc(p.name)}">
                      <button class="btn primary" id="pSave">${t("prof_save")}</button>`;
   root.appendChild(idRow);
-  $("#pSave", root).onclick = () => { p.name = $("#pName", root).value.trim(); saveProfile(p); toast(t("added")); };
+  $("#pSave", root).onclick = async () => { p.name = $("#pName", root).value.trim(); await DB.profile.save(p); toast(t("added")); };
 
   root.appendChild(el("p", "note", t("prof_note")));
 
@@ -485,15 +492,15 @@ function comProfile(root) {
           ${it.price ? `<div class="wc-max">${fmtMoney(+it.price)}</div>` : ""}
           ${it.cond ? `<div class="wc-msg">${t("prof_cond")}: ${esc(it.cond)}</div>` : ""}
           <button class="btn contact del">${t("item_remove")}</button>`;
-        c.querySelector(".del").onclick = () => { p[kind] = p[kind].filter((x) => x.id !== it.id); saveProfile(p); render2(); };
+        c.querySelector(".del").onclick = async () => { p[kind] = p[kind].filter((x) => x.id !== it.id); await DB.profile.save(p); render2(); };
         list.appendChild(c);
       });
     };
-    form.querySelector(".f-add").onclick = () => {
+    form.querySelector(".f-add").onclick = async () => {
       const name = form.querySelector(".f-item").value.trim(); if (!name) return;
       p[kind].unshift({ id: Date.now(), name, price: form.querySelector(".f-price").value,
         cond: kind==="sell" ? form.querySelector(".f-cond").value.trim() : "" });
-      saveProfile(p); form.querySelector(".f-item").value=""; form.querySelector(".f-price").value="";
+      await DB.profile.save(p); form.querySelector(".f-item").value=""; form.querySelector(".f-price").value="";
       if (kind==="sell") form.querySelector(".f-cond").value=""; render2();
     };
     sec.appendChild(list); render2();
@@ -503,20 +510,19 @@ function comProfile(root) {
   root.appendChild(mkList("want", "prof_want", "prof_add_want", "prof_empty_want", "🔎"));
 }
 
-/* ---- Chat entre membres (démo locale) ---- */
-function comChat(root) {
-  root.appendChild(el("p", "note", t("chat_demo")));
-  const chats = getChats();
-  const peers = Object.keys(chats);
+/* ---- Chat entre membres (cloud temps réel ou démo locale) ---- */
+async function comChat(root) {
+  ensureSub("chat", () => DB.chat.subscribe(() => { if (State.view === "community" && State.comTab === "chat") render(); }));
+  if (DB.mode() === "local") root.appendChild(el("p", "note", t("chat_demo")));
+  const peers = await DB.chat.threads();
 
   const newRow = el("div", "filter-bar");
   newRow.innerHTML = `<input id="cTo" class="search" placeholder="${t("chat_to")}">
                       <button class="btn primary" id="cNew">${t("chat_new")}</button>`;
   root.appendChild(newRow);
-  $("#cNew", root).onclick = () => {
+  $("#cNew", root).onclick = async () => {
     const peer = $("#cTo", root).value.trim(); if (!peer) return;
-    if (!chats[peer]) { chats[peer] = []; saveChats(chats); }
-    State.chatPeer = peer; render();
+    await DB.chat.ensure(peer); State.chatPeer = peer; render();
   };
 
   if (!peers.length && !State.chatPeer) { root.appendChild(el("p", "empty", t("chat_empty"))); return; }
@@ -533,29 +539,27 @@ function comChat(root) {
   const thread = el("div", "chat-thread");
   if (!State.chatPeer) thread.appendChild(el("p", "empty", t("chat_none_sel")));
   else {
-    const msgs = chats[State.chatPeer] || [];
+    const msgs = await DB.chat.messages(State.chatPeer);
     const log = el("div", "chat-log");
     msgs.forEach((m) => log.appendChild(el("div", "msg " + (m.from === "me" ? "me" : "them"), esc(m.text))));
     thread.appendChild(log);
     const bar = el("div", "chat-input");
     bar.innerHTML = `<input class="search cMsg" placeholder="${t("chat_placeholder")}"><button class="btn primary cSend">${t("chat_send")}</button>`;
-    const send = () => {
+    const send = async () => {
       const inp = bar.querySelector(".cMsg"); const txt = inp.value.trim(); if (!txt) return;
-      chats[State.chatPeer].push({ from: "me", text: txt, ts: Date.now() });
-      // réponse auto de démonstration (remplacée par un vrai backend temps réel)
-      chats[State.chatPeer].push({ from: State.chatPeer, text: "👍 (" + t("chat_demo").split(".")[0] + ")", ts: Date.now() + 1 });
-      saveChats(chats); render();
+      await DB.chat.send(State.chatPeer, txt); render();
     };
     bar.querySelector(".cSend").onclick = send;
     bar.querySelector(".cMsg").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
     thread.appendChild(bar);
+    setTimeout(() => { log.scrollTop = log.scrollHeight; }, 0);
   }
   wrap.appendChild(thread);
   root.appendChild(wrap);
 }
 
-/* ---- Boutiques : adresse + feed d'événements ---- */
-function comShops(root) {
+/* ---- Boutiques : adresse + carte du monde ---- */
+async function comShops(root) {
   // inscription boutique
   const reg = el("details", "shop-reg");
   reg.innerHTML = `<summary class="btn">${t("shop_register")}</summary>
@@ -569,12 +573,10 @@ function comShops(root) {
   reg.querySelector(".s-save").onclick = async () => {
     const name = reg.querySelector(".s-name").value.trim(); if (!name) return;
     const address = reg.querySelector(".s-addr").value.trim(), city = reg.querySelector(".s-city").value.trim();
-    const shops = getShops();
-    const shop = { id: Date.now(), name, address, city };
-    saveShops([shop, ...shops]); render(); toast(t("added"));
+    const row = await DB.shops.create({ name, address, city }); render(); toast(t("added"));
     // géocodage best-effort (carte du monde)
     const geo = await Providers.geocode([name, address, city].filter(Boolean).join(", "));
-    if (geo) { const s2 = getShops(); const f = s2.find((x) => x.id === shop.id); if (f) { f.lat = geo.lat; f.lon = geo.lon; saveShops(s2); if (State.comTab === "shops") render(); } }
+    if (geo && row) { await DB.shops.setCoords(row.id, geo.lat, geo.lon); if (State.comTab === "shops") render(); }
   };
 
   // bascule Liste / Carte
@@ -586,7 +588,7 @@ function comShops(root) {
   });
   root.appendChild(toggle);
 
-  const shops = getShops();
+  const shops = await DB.shops.list();
 
   if ((State.shopView || "list") === "map") {
     root.appendChild(el("h3", "prof-h", t("shop_map_title")));
@@ -641,7 +643,8 @@ async function analyzePhoto(dataURL, game) {
   } catch { return null; }
 }
 
-function comFeed(root) {
+async function comFeed(root) {
+  ensureSub("feed", () => DB.feed.subscribe(() => { if (State.view === "community" && State.comTab === "feed") render(); }));
   // Composer
   const compose = el("div", "feed-compose");
   compose.innerHTML = `
@@ -676,22 +679,23 @@ function comFeed(root) {
       : "🤖 " + t("feed_ai_none");
   };
 
-  compose.querySelector(".fc-pub").onclick = () => {
+  compose.querySelector(".fc-pub").onclick = async () => {
     const text = compose.querySelector(".fc-text").value.trim();
     if (!text && !photos.length) return;
-    const feed = getFeed();
-    feed.unshift({
-      id: Date.now(), author: myName(), text, photos,
-      auction: isAuc.checked, ai: aiResult,
-      bid: isAuc.checked ? { current: +bidInp.value || (aiResult && aiResult.price) || 0, by: null } : null,
-      likes: 0, liked: false, comments: [], ts: Date.now(),
-    });
-    saveFeed(feed); render(); toast(t("added"));
+    const btn = compose.querySelector(".fc-pub"); btn.disabled = true;
+    try {
+      await DB.feed.create({
+        author: myName(), text, photos, auction: isAuc.checked, ai: aiResult,
+        bid: isAuc.checked ? { current: +bidInp.value || (aiResult && aiResult.price) || 0, by: null } : null,
+        likes: 0, liked: false, comments: [],
+      });
+      render(); toast(t("added"));
+    } catch (e) { btn.disabled = false; toast(t("feed_ai_none")); }
   };
 
   // Liste des publications
   const list = el("div", "feed-list"); root.appendChild(list);
-  const feed = getFeed();
+  const feed = await DB.feed.list();
   if (!feed.length) { list.appendChild(el("p", "empty", t("feed_empty"))); return; }
 
   feed.forEach((post) => {
@@ -716,24 +720,21 @@ function comFeed(root) {
       <div class="feed-addc"><input class="search cc-in" placeholder="${t("feed_comment")}"><button class="btn cc-add">${t("feed_send")}</button></div>`;
 
     // like
-    c.querySelector(".like").onclick = () => {
-      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
-      pp.liked = !pp.liked; pp.likes += pp.liked ? 1 : -1; saveFeed(f); render();
-    };
+    c.querySelector(".like").onclick = async () => { await DB.feed.like(post.id); render(); };
     // enchère
     const bidBtn = c.querySelector(".feed-bid");
-    if (bidBtn) bidBtn.onclick = () => {
+    if (bidBtn) bidBtn.onclick = async () => {
       const amt = prompt(t("feed_place_bid") + " (EUR)"); if (!amt) return;
-      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
-      const v = +amt; if (v > (pp.bid.current || 0)) { pp.bid = { current: v, by: myName() }; saveFeed(f); notify(t("notif_bid"), `${pp.text || pp.author} · ${fmtMoney(v)}`); render(); }
+      const v = +amt; if (!(v > 0)) return;
+      const ok = await DB.feed.bid(post.id, v);
+      if (ok) { notify(t("notif_bid"), `${post.text || post.author} · ${fmtMoney(v)}`); render(); }
     };
     // commentaires
     const cwrap = c.querySelector(".feed-comments");
     post.comments.forEach((cm) => cwrap.appendChild(el("div", "feed-cm", `<b>${esc(cm.author)}</b> ${esc(cm.text)}`)));
-    const addC = () => {
+    const addC = async () => {
       const inp = c.querySelector(".cc-in"); const txt = inp.value.trim(); if (!txt) return;
-      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
-      pp.comments.push({ author: myName(), text: txt, ts: Date.now() }); saveFeed(f); render();
+      await DB.feed.comment(post.id, txt); render();
     };
     c.querySelector(".cc-add").onclick = addC;
     c.querySelector(".cc-in").addEventListener("keydown", (e) => { if (e.key === "Enter") addC(); });
@@ -823,6 +824,45 @@ function viewSettings(root) {
   priceKey.onchange = () => { localStorage.setItem("rysao_price_api", priceKey.value.trim()); toast("✓"); };
   apiBlk.appendChild(pokeKey); apiBlk.appendChild(priceKey); root.appendChild(apiBlk);
 
+  // backend (Supabase) + authentification
+  const beBlk = el("div", "set-block");
+  beBlk.appendChild(el("label", "set-lbl", t("settings_backend")));
+  const modeLine = el("div", "trial-status " + (Backend.isCloud() ? "premium" : "trial"));
+  modeLine.textContent = Backend.isCloud() ? t("backend_cloud") : t("backend_local");
+  beBlk.appendChild(modeLine);
+
+  const beUrl = el("input", "search"); beUrl.placeholder = t("backend_url"); beUrl.value = (Backend.cfg().url) || "";
+  const beKey = el("input", "search"); beKey.placeholder = t("backend_key"); beKey.value = (Backend.cfg().key) || ""; beKey.style.marginTop = "8px";
+  const beSave = el("button", "btn", t("backend_save")); beSave.style.marginTop = "8px";
+  beSave.onclick = async () => {
+    localStorage.setItem("rysao_supabase_url", beUrl.value.trim());
+    localStorage.setItem("rysao_supabase_key", beKey.value.trim());
+    await Backend.init(); render(); toast("✓");
+  };
+  beBlk.appendChild(beUrl); beBlk.appendChild(beKey); beBlk.appendChild(beSave);
+
+  if (Backend.isConfigured()) {
+    const authBox = el("div", "want-form"); authBox.style.marginTop = "10px";
+    if (Backend.user()) {
+      authBox.innerHTML = `<div class="trial-status premium">${t("auth_signedin")}: ${esc(Backend.user().email || "")}</div>`;
+      const out = el("button", "btn", t("auth_signout"));
+      out.onclick = async () => { await Backend.signOut(); render(); toast("✓"); };
+      authBox.appendChild(out);
+    } else {
+      const email = el("input", "search"); email.type = "email"; email.placeholder = t("auth_email");
+      const pwd = el("input", "search"); pwd.type = "password"; pwd.placeholder = t("auth_password");
+      const inB = el("button", "btn primary", t("auth_signin"));
+      const upB = el("button", "btn", t("auth_signup"));
+      const go = async (fn) => { try { await fn(email.value.trim(), pwd.value, myName()); render(); toast("✓"); } catch { toast(t("auth_error")); } };
+      inB.onclick = () => go((e, p) => Backend.signIn(e, p));
+      upB.onclick = () => go((e, p, u) => Backend.signUp(e, p, u));
+      authBox.appendChild(email); authBox.appendChild(pwd); authBox.appendChild(inB); authBox.appendChild(upB);
+    }
+    beBlk.appendChild(authBox);
+  }
+  beBlk.appendChild(el("p", "estimate-flag", t("backend_note")));
+  root.appendChild(beBlk);
+
   // pokecardex
   const pcx = el("a", "btn pcx", "🔗 " + t("pokecardex"));
   pcx.href = "https://www.pokecardex.com/"; pcx.target = "_blank"; pcx.rel = "noopener";
@@ -856,6 +896,10 @@ async function init() {
 
   // onglets
   $$(".tab").forEach((b) => { b.onclick = () => nav(b.dataset.view); });
+
+  // backend (Supabase) : init si configuré ; re-render au changement d'auth
+  window.onBackendAuth = () => { State._subs = {}; render(); };
+  if (window.Backend && Backend.isConfigured()) { Backend.init().then(() => render()).catch(() => {}); }
 
   // mise à jour des sorties
   const added = await checkForUpdates();
