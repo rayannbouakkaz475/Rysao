@@ -190,7 +190,41 @@ const Providers = (() => {
     return { text, set: bestScore > 0 ? best : null, card: text };
   }
 
-  return { loadFullCatalog, getLivePrice, recognize, loadTesseract };
+  /* ---------------- CARTE DU MONDE (Leaflet + géocodage) ---------------- */
+  const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+  const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+  let leafletLoading = null;
+
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (leafletLoading) return leafletLoading;
+    leafletLoading = new Promise((resolve, reject) => {
+      if (!document.querySelector('link[data-leaflet]')) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet"; link.href = LEAFLET_CSS; link.dataset.leaflet = "1";
+        document.head.appendChild(link);
+      }
+      const s = document.createElement("script");
+      s.src = LEAFLET_JS;
+      s.onload = () => resolve(window.L);
+      s.onerror = () => reject(new Error("leaflet_load_failed"));
+      document.head.appendChild(s);
+    });
+    return leafletLoading;
+  }
+
+  // Géocodage best-effort via Nominatim (OpenStreetMap). Renvoie {lat,lon} ou null.
+  async function geocode(query) {
+    if (!query) return null;
+    try {
+      const d = await getJSON(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+        { headers: { "Accept-Language": CURRENT_LANG }, timeout: 8000 });
+      if (d && d[0]) return { lat: +d[0].lat, lon: +d[0].lon };
+    } catch {}
+    return null;
+  }
+
+  return { loadFullCatalog, getLivePrice, recognize, loadTesseract, loadLeaflet, geocode };
 })();
 
 window.Providers = Providers;

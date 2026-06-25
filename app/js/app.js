@@ -9,6 +9,7 @@ const State = {
   lastScan: null,
   comTab: "profile",
   chatPeer: null,
+  shopView: "list",
 };
 
 const THEMES = {
@@ -22,7 +23,33 @@ const GAME_TO_THEME = { "Pokémon":"pokemon", "One Piece":"onepiece", "Lorcana":
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-const isPremium = () => State.plan === "premium";
+/* ---------- abonnement : essai 5 jours puis Premium ---------- */
+const TRIAL_DAYS = 5;
+function trialStart() {
+  let s = localStorage.getItem("rysao_trial_start");
+  if (!s) { s = String(Date.now()); localStorage.setItem("rysao_trial_start", s); }
+  return +s;
+}
+function trialDaysLeft() {
+  const end = trialStart() + TRIAL_DAYS * 86400000;
+  return Math.max(0, Math.ceil((end - Date.now()) / 86400000));
+}
+function isSubscribed() { return State.plan === "premium"; }
+function isActive() { return isSubscribed() || trialDaysLeft() > 0; }
+function planStatus() { return isSubscribed() ? "premium" : (trialDaysLeft() > 0 ? "trial" : "expired"); }
+// rétro-compat : les fonctions Premium sont accessibles tant que l'accès est actif
+const isPremium = () => isActive();
+
+/* ---------- notifications téléphone ---------- */
+function notify(title, body) {
+  if (window.Notification && Notification.permission === "granted") {
+    try { new Notification(title, { body, icon: "./manifest.webmanifest" }); } catch {}
+  }
+}
+async function enableNotifications() {
+  if (!window.Notification) return "unsupported";
+  try { return await Notification.requestPermission(); } catch { return "denied"; }
+}
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]));
 
 /* ---------- stockage générique ---------- */
@@ -73,6 +100,12 @@ function viewScan(root) {
   root.appendChild(el("h2", "view-title", t("scan_title")));
   root.appendChild(el("p", "view-sub", t("scan_hint")));
 
+  if (!isActive()) {
+    const lock = el("div", "lock-banner", `🔒 ${t("scan_locked")} · ${t("plan_upgrade")}`);
+    lock.onclick = () => nav("settings");
+    root.appendChild(lock);
+  }
+
   const stage = el("div", "scan-stage");
   stage.innerHTML = `
     <video id="cam" playsinline muted></video>
@@ -93,8 +126,10 @@ function viewScan(root) {
     <div class="metric"><span class="m-label" data-i="scan_borders"></span><span class="m-val" id="mBorders">—</span></div>
     <div class="metric"><span class="m-label" data-i="scan_quality"></span><span class="m-val" id="mQuality">—</span></div>
     <div class="metric big"><span class="m-label" data-i="scan_grade"></span><span class="m-val" id="mGrade">—</span></div>
+    <div class="metric big"><span class="m-label" data-i="scan_auth"></span><span class="m-val" id="mAuth">—</span></div>
     <div class="metric big"><span class="m-label" data-i="scan_price"></span><span class="m-val" id="mPrice">—</span></div>`;
   root.appendChild(res);
+  root.appendChild(el("p", "estimate-flag", t("auth_note")));
 
   const video = $("#cam"), canvas = $("#frame");
   let active = false, lastResultTime = 0;
@@ -110,6 +145,7 @@ function viewScan(root) {
   // Reconnaissance par OCR (à la demande) -> série détectée + prix
   recBtn.onclick = async () => {
     if (!active) return;
+    if (!isActive()) { toast(t("scan_locked")); nav("settings"); return; }
     recBtn.disabled = true; recBtn.textContent = t("scan_recognizing");
     try {
       const r = await Providers.recognize(canvas);
@@ -148,6 +184,16 @@ function viewScan(root) {
     const gEl = $("#mGrade");
     gEl.textContent = t(v.key);
     gEl.className = "m-val verdict " + v.cls;
+
+    // Authenticité (prix + authenticité = essai/Premium)
+    const aEl = $("#mAuth");
+    if (!isActive()) { aEl.textContent = "🔒"; aEl.className = "m-val"; }
+    else {
+      const a = r.authenticity;
+      const verdict = a >= 0.7 ? { k: "auth_ok", c: "ok" } : a >= 0.45 ? { k: "auth_warn", c: "warn" } : { k: "auth_bad", c: "bad" };
+      aEl.textContent = `${Math.round(a * 100)}% · ${t(verdict.k)}`;
+      aEl.className = "m-val verdict " + verdict.c;
+    }
   }
 }
 
@@ -520,15 +566,44 @@ function comShops(root) {
       <button class="btn primary s-save">${t("shop_save")}</button>
     </div>`;
   root.appendChild(reg);
-  reg.querySelector(".s-save").onclick = () => {
+  reg.querySelector(".s-save").onclick = async () => {
     const name = reg.querySelector(".s-name").value.trim(); if (!name) return;
+    const address = reg.querySelector(".s-addr").value.trim(), city = reg.querySelector(".s-city").value.trim();
     const shops = getShops();
-    shops.unshift({ id: Date.now(), name, address: reg.querySelector(".s-addr").value.trim(), city: reg.querySelector(".s-city").value.trim() });
-    saveShops(shops); render(); toast(t("added"));
+    const shop = { id: Date.now(), name, address, city };
+    saveShops([shop, ...shops]); render(); toast(t("added"));
+    // géocodage best-effort (carte du monde)
+    const geo = await Providers.geocode([name, address, city].filter(Boolean).join(", "));
+    if (geo) { const s2 = getShops(); const f = s2.find((x) => x.id === shop.id); if (f) { f.lat = geo.lat; f.lon = geo.lon; saveShops(s2); if (State.comTab === "shops") render(); } }
   };
 
-  // liste des boutiques
+  // bascule Liste / Carte
+  const toggle = el("div", "segment small");
+  [["list","shop_view_list"],["map","shop_view_map"]].forEach(([k, lbl]) => {
+    const b = el("button", "seg-btn" + ((State.shopView||"list") === k ? " on" : ""), t(lbl));
+    b.onclick = () => { State.shopView = k; render(); };
+    toggle.appendChild(b);
+  });
+  root.appendChild(toggle);
+
   const shops = getShops();
+
+  if ((State.shopView || "list") === "map") {
+    root.appendChild(el("h3", "prof-h", t("shop_map_title")));
+    const mapDiv = el("div", "shop-map-canvas"); mapDiv.id = "shopMap";
+    root.appendChild(mapDiv);
+    Providers.loadLeaflet().then((L) => {
+      const map = L.map(mapDiv).setView([30, 10], 2);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap", maxZoom: 19 }).addTo(map);
+      const pts = shops.filter((s) => s.lat && s.lon);
+      pts.forEach((s) => L.marker([s.lat, s.lon]).addTo(map).bindPopup(`<b>${esc(s.name)}</b><br>${esc([s.address, s.city].filter(Boolean).join(", "))}`));
+      if (pts.length) map.fitBounds(pts.map((s) => [s.lat, s.lon]), { padding: [40, 40], maxZoom: 12 });
+    }).catch(() => { mapDiv.innerHTML = `<p class="empty">${t("map_unavailable")}</p>`; });
+    root.appendChild(el("p", "note", t("shop_feed_hint")));
+    return;
+  }
+
+  // liste des boutiques
   const shopList = el("div", "set-list");
   if (!shops.length) shopList.appendChild(el("p", "empty", t("shop_empty")));
   shops.forEach((s) => {
@@ -543,8 +618,7 @@ function comShops(root) {
   root.appendChild(shopList);
 
   // Les boutiques publient aussi leurs événements dans le Feed (onglet Feed).
-  const hint = el("p", "note", t("shop_feed_hint"));
-  root.appendChild(hint);
+  root.appendChild(el("p", "note", t("shop_feed_hint")));
 }
 
 /* ---- Feed social : posts/enchères, photos, likes, commentaires, analyse IA ---- */
@@ -573,7 +647,7 @@ function comFeed(root) {
   compose.innerHTML = `
     <textarea class="search fc-text" rows="2" placeholder="${t("feed_placeholder")}"></textarea>
     <div class="fc-row">
-      <label class="btn fc-photo-lbl">📷 ${t("feed_photo")}<input type="file" accept="image/*" class="fc-photo" hidden></label>
+      <label class="btn fc-photo-lbl">📷 ${t("feed_photos")}<input type="file" accept="image/*" multiple class="fc-photo" hidden></label>
       <label class="fc-auction"><input type="checkbox" class="fc-isauc"> ${t("feed_auction")}</label>
     </div>
     <input class="search fc-bid" type="number" placeholder="${t("feed_start_bid")} (EUR)" style="display:none">
@@ -582,34 +656,32 @@ function comFeed(root) {
     <button class="btn primary fc-pub">${t("feed_publish")}</button>`;
   root.appendChild(compose);
 
-  let photoData = null, aiResult = null;
+  let photos = [], aiResult = null;
   const isAuc = compose.querySelector(".fc-isauc");
   const bidInp = compose.querySelector(".fc-bid");
   isAuc.onchange = () => { bidInp.style.display = isAuc.checked ? "block" : "none"; };
 
-  compose.querySelector(".fc-photo").onchange = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const rd = new FileReader();
-    rd.onload = async () => {
-      photoData = rd.result;
-      compose.querySelector(".fc-preview").innerHTML = `<img src="${photoData}" class="fc-img">`;
-      // Analyse IA automatique
-      const ai = compose.querySelector(".fc-ai");
-      ai.textContent = "🤖 " + t("feed_analyzing");
-      aiResult = await analyzePhoto(photoData, THEMES[State.theme].game);
-      ai.innerHTML = aiResult
-        ? `🤖 ${t("feed_ai")}: <b>${esc(aiResult.card)}</b>${aiResult.set ? " — " + esc(aiResult.set) : ""}${aiResult.price ? " · ~" + fmtMoney(aiResult.price) : ""}`
-        : "🤖 " + t("feed_ai_none");
-    };
-    rd.readAsDataURL(file);
+  const readFile = (f) => new Promise((res) => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.readAsDataURL(f); });
+
+  compose.querySelector(".fc-photo").onchange = async (e) => {
+    const files = [...e.target.files].slice(0, 6); if (!files.length) return;
+    photos = await Promise.all(files.map(readFile));
+    compose.querySelector(".fc-preview").innerHTML = photos.map((p) => `<img src="${p}" class="fc-img-thumb">`).join("");
+    // Analyse IA automatique de la 1re photo
+    const ai = compose.querySelector(".fc-ai");
+    ai.textContent = "🤖 " + t("feed_analyzing");
+    aiResult = await analyzePhoto(photos[0], THEMES[State.theme].game);
+    ai.innerHTML = aiResult
+      ? `🤖 ${t("feed_ai")}: <b>${esc(aiResult.card)}</b>${aiResult.set ? " — " + esc(aiResult.set) : ""}${aiResult.price ? " · ~" + fmtMoney(aiResult.price) : ""}`
+      : "🤖 " + t("feed_ai_none");
   };
 
   compose.querySelector(".fc-pub").onclick = () => {
     const text = compose.querySelector(".fc-text").value.trim();
-    if (!text && !photoData) return;
+    if (!text && !photos.length) return;
     const feed = getFeed();
     feed.unshift({
-      id: Date.now(), author: myName(), text, photo: photoData,
+      id: Date.now(), author: myName(), text, photos,
       auction: isAuc.checked, ai: aiResult,
       bid: isAuc.checked ? { current: +bidInp.value || (aiResult && aiResult.price) || 0, by: null } : null,
       likes: 0, liked: false, comments: [], ts: Date.now(),
@@ -633,7 +705,7 @@ function comFeed(root) {
         ${post.auction ? `<span class="feed-badge-auc">🔨 ${t("feed_auction")}</span>` : ""}
       </div>
       ${post.text ? `<div class="feed-text">${esc(post.text)}</div>` : ""}
-      ${post.photo ? `<img src="${post.photo}" class="feed-photo">` : ""}
+      ${(post.photos && post.photos.length) ? `<div class="feed-photos ${post.photos.length>1?"multi":""}">${post.photos.map((p)=>`<img src="${p}" class="feed-photo">`).join("")}</div>` : (post.photo ? `<img src="${post.photo}" class="feed-photo">` : "")}
       ${post.ai ? `<div class="feed-ai-tag">🤖 ${esc(post.ai.card)}${post.ai.set ? " — " + esc(post.ai.set) : ""}${post.ai.price ? " · ~" + fmtMoney(post.ai.price) : ""}</div>` : ""}
       ${post.auction ? `<div class="feed-auc"><span>${t("feed_current_bid")}: <b>${fmtMoney(post.bid.current)}</b>${post.bid.by ? " · " + esc(post.bid.by) : ""}</span><button class="btn feed-bid">${t("feed_place_bid")}</button></div>` : ""}
       <div class="feed-actions">
@@ -653,7 +725,7 @@ function comFeed(root) {
     if (bidBtn) bidBtn.onclick = () => {
       const amt = prompt(t("feed_place_bid") + " (EUR)"); if (!amt) return;
       const f = getFeed(); const pp = f.find((x) => x.id === post.id);
-      const v = +amt; if (v > (pp.bid.current || 0)) { pp.bid = { current: v, by: myName() }; saveFeed(f); render(); }
+      const v = +amt; if (v > (pp.bid.current || 0)) { pp.bid = { current: v, by: myName() }; saveFeed(f); notify(t("notif_bid"), `${pp.text || pp.author} · ${fmtMoney(v)}`); render(); }
     };
     // commentaires
     const cwrap = c.querySelector(".feed-comments");
@@ -696,18 +768,48 @@ function viewSettings(root) {
   curSel.onchange = () => { setCurrency(curSel.value); toast("✓"); };
   curBlk.appendChild(curSel); root.appendChild(curBlk);
 
-  // abonnement
+  // abonnement (essai 5 jours puis Premium)
   const planBlk = el("div", "set-block");
   planBlk.appendChild(el("label", "set-lbl", t("settings_plan")));
+  const status = planStatus();
+  const statusLine = el("div", "trial-status " + status);
+  statusLine.innerHTML = status === "premium"
+    ? `💎 ${t("plan_premium")} · ${t("plan_premium_price")}`
+    : status === "trial"
+      ? `🆓 ${t("plan_trial")} — ${t("trial_left")}: <b>${trialDaysLeft()}</b>`
+      : `⛔ ${t("trial_expired")}`;
+  planBlk.appendChild(statusLine);
+
   const cards = el("div", "plan-cards");
-  [["free","plan_free","plan_free_desc"],["premium","plan_premium","plan_premium_desc"]].forEach(([k,nameK,descK]) => {
-    const p = el("div", "plan-card" + (State.plan===k?" current":"") + (k==="premium"?" premium":""));
+  [["trial","plan_trial","plan_trial_desc"],["premium","plan_premium","plan_premium_desc"]].forEach(([k,nameK,descK]) => {
+    const isCurrent = (k === "premium" && isSubscribed()) || (k === "trial" && status === "trial");
+    const p = el("div", "plan-card" + (isCurrent?" current":"") + (k==="premium"?" premium":""));
     p.innerHTML = `<div class="pc-name">${t(nameK)}${k==="premium"?` <span class="pc-price">${t("plan_premium_price")}</span>`:""}</div><p class="pc-desc">${t(descK)}</p>
-      <button class="btn ${k==="premium"?"primary":""}">${State.plan===k?t("plan_current"):(k==="premium"?t("plan_upgrade"):t("plan_free"))}</button>`;
-    p.querySelector("button").onclick = () => { State.plan = k; localStorage.setItem("rysao_plan", k); render(); toast("✓"); };
+      <button class="btn ${k==="premium"?"primary":""}">${k==="premium"?(isSubscribed()?t("plan_current"):t("plan_upgrade")):(status==="trial"?t("plan_current"):t("plan_trial"))}</button>`;
+    p.querySelector("button").onclick = () => {
+      if (k === "premium") { State.plan = "premium"; localStorage.setItem("rysao_plan", "premium"); }
+      else { State.plan = "free"; localStorage.setItem("rysao_plan", "free"); }
+      render(); toast("✓");
+    };
     cards.appendChild(p);
   });
-  planBlk.appendChild(cards); root.appendChild(planBlk);
+  planBlk.appendChild(cards);
+  planBlk.appendChild(el("p", "estimate-flag", t("dist_note")));
+  root.appendChild(planBlk);
+
+  // notifications
+  const notifBlk = el("div", "set-block");
+  notifBlk.appendChild(el("label", "set-lbl", t("notif_title")));
+  const notifBtn = el("button", "btn", "🔔 " + t("notif_enable"));
+  const perm = window.Notification ? Notification.permission : "unsupported";
+  if (perm === "granted") { notifBtn.textContent = t("notif_on"); notifBtn.disabled = true; }
+  notifBtn.onclick = async () => {
+    const r = await enableNotifications();
+    if (r === "granted") { notifBtn.textContent = t("notif_on"); notifBtn.disabled = true; notify("RYSAO TCG", t("notif_on")); }
+    else if (r === "unsupported") toast(t("notif_unsupported"));
+    else toast(t("notif_off"));
+  };
+  notifBlk.appendChild(notifBtn); root.appendChild(notifBlk);
 
   // clés API (optionnel)
   const apiBlk = el("div", "set-block");

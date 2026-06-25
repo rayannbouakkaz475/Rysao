@@ -31,7 +31,11 @@ python3 -m http.server 8099
 | 💱 **Multi-devises** | ✅ réel | EUR, USD, GBP, CHF, JPY, CNY, CAD |
 | 🗂️ **Collection** + valeur totale | ✅ réel | stockage local, total dans la devise choisie, export (Premium) |
 | 🤝 **Communauté** | ✅ réel (démo) | hub **Profil · Feed · Chat · Boutiques** (voir ci-dessous) |
-| 🆓 / 💎 **Gratuit / Premium** | ✅ réel | Premium **10 CHF/mois** ; gating des fonctions Premium |
+| 🆓 / 💎 **Essai / Premium** | ✅ réel | **5 jours d'essai** gratuit puis **Premium 10 CHF/mois** ; verrouillage à l'expiration |
+| 🔐 **Scan illimité (Premium)** | ✅ réel | prix **+ indice d'authenticité** « vraie ou pas » (réservé essai/Premium) |
+| 🔔 **Notifications téléphone** | ✅ réel | permission navigateur + **notif d'enchère** ; push réel = backend |
+| 🖼️ **Photos multiples** | ✅ réel | jusqu'à 6 photos par publication du feed |
+| 🗺️ **Carte du monde des boutiques** | ✅ réel | Leaflet + géocodage OpenStreetMap (repli si hors-ligne) |
 | 🔗 **PokéCardex** | ✅ lien | bouton d'accès intégré dans Réglages |
 | 💶 **Prix Cardmarket** | ✅ réel (Pokémon) | prix réels via `pokemontcg.io`, repli estimation |
 | 🌐 **Catalogue complet** | ✅ réel | toutes les séries chargées via API (Pokémon, Lorcana) |
@@ -61,6 +65,31 @@ Résultat mis en **cache 7 jours** (`localStorage`). Le seed statique
 > ⚠️ Ces appels passent par le navigateur du client. Selon l'hébergement, vérifie
 > que les API ci-dessus sont accessibles (CORS public côté `pokemontcg.io` /
 > `lorcast.com`).
+
+## Offre & accès
+
+- **Essai gratuit 5 jours** (accès complet, dont le **scan illimité**), décompté
+  depuis la 1re ouverture (`rysao_trial_start`).
+- À l'expiration : le **scan** (prix + authenticité) se **verrouille** → passage
+  **Premium 10 CHF / mois** pour continuer.
+- Modèle de distribution visé : **app gratuite (essai) sur l'App Store avec
+  notifications** · **Premium via le site**.
+- **Scan = fonction premium** : prix de la carte **et indice d'authenticité**
+  (« vraie ou pas »). L'authenticité est un **indice de cohérence visuelle**
+  (netteté/symétrie des bords) — *indicatif*, à confirmer par un contrôle
+  physique (UV, relief, poids). Hook prévu pour un vrai modèle d'authentification.
+
+## Notifications
+
+`Notification` API (permission depuis Réglags ▸ Notifications). Une **notification
+d'enchère** se déclenche quand une enchère est posée. Pour des **push réels**
+(téléphone fermé), brancher un service worker push + backend (FCM / Web Push).
+
+## Carte du monde des boutiques
+
+Onglet Communauté ▸ Boutiques ▸ **Carte** : carte **Leaflet** + tuiles
+OpenStreetMap, marqueurs des boutiques **géocodées** (Nominatim, best-effort à
+l'inscription). Repli propre « Carte indisponible » si hors-ligne.
 
 ## Communauté — vivre la passion (pas d'achat sur l'app)
 

@@ -150,12 +150,18 @@ const Scanner = (() => {
     const pctL = Math.round(centerLR * 100), pctR = 100 - pctL;
     const pctT = Math.round(centerTB * 100), pctB = 100 - pctT;
 
+    // Indice d'authenticité (cohérence visuelle) : netteté des bords + bordures
+    // symétriques + qualité de détection. INDICATIF — pas une preuve.
+    const borderSym = 1 - (Math.abs(l - r) + Math.abs(tp - bt)) / (l + r + tp + bt + 1);
+    const authenticity = Math.max(0, Math.min(1, quality * 0.55 + borderSym * 0.25 + centeringScore * 0.20));
+
     return {
       aligned: quality > 0.25,
       quality,
       borders: { t: tp, b: bt, l, r },
       centerLR, centerTB,
       centeringScore,
+      authenticity,
       ratioLR: `${Math.max(pctL,pctR)}/${Math.min(pctL,pctR)}`,
       ratioTB: `${Math.max(pctT,pctB)}/${Math.min(pctT,pctB)}`,
     };

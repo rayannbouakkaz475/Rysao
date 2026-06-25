@@ -222,6 +222,20 @@ body[data-theme="topps"] .bg-theme{
 .fc-photo-lbl{cursor:pointer}
 .fc-auction{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:.88rem;cursor:pointer}
 .fc-img,.feed-photo{width:100%;border-radius:12px;display:block}
+.fc-preview{display:flex;gap:8px;flex-wrap:wrap}
+.fc-img-thumb{width:72px;height:100px;object-fit:cover;border-radius:8px}
+.feed-photos{display:grid;gap:6px;margin-bottom:10px}
+.feed-photos.multi{grid-template-columns:1fr 1fr}
+.feed-photos.multi .feed-photo{height:160px;object-fit:cover;margin:0}
+/* essai / statut */
+.trial-status{padding:11px 14px;border-radius:12px;font-weight:600;font-size:.9rem;margin-bottom:12px;border:1px solid var(--line)}
+.trial-status.premium{background:rgba(124,92,255,.15);color:#cabaff}
+.trial-status.trial{background:rgba(0,224,198,.13);color:var(--accent)}
+.trial-status.expired{background:rgba(255,84,112,.15);color:var(--bad)}
+.segment.small{max-width:240px}
+/* carte du monde */
+.shop-map-canvas{height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--line);margin-bottom:12px;background:var(--panel)}
+.shop-map-canvas .leaflet-container{height:100%;width:100%}
 .fc-ai{color:var(--accent);font-size:.84rem;min-height:1em}
 .feed-list{display:grid;gap:14px}
 .feed-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
