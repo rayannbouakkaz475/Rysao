@@ -109,7 +109,7 @@ export default function NotifyButton({ fixtureId }) {
       {iosHint && (
         <p className="notify-ios">
           📱 Sur iPhone : appuie sur <b>Partager</b> → <b>Sur l&apos;écran
-          d&apos;accueil</b>, puis rouvre Rysao depuis l&apos;icône pour activer
+          d&apos;accueil</b>, puis rouvre OnziA depuis l&apos;icône pour activer
           les notifications (verrouillage compris).
         </p>
       )}

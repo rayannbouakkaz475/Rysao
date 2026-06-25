@@ -1,5 +1,5 @@
 {
-  "name": "rysao-pronostics",
+  "name": "onzia-pronostics",
   "version": "1.0.0",
   "private": true,
   "description": "Site de pronostics football avec analyse IA (modèle statistique + Claude)",

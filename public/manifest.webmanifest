@@ -1,6 +1,6 @@
 {
-  "name": "Rysao — Pronostics Football IA",
-  "short_name": "Rysao",
+  "name": "OnziA — Pronostics Football IA",
+  "short_name": "OnziA",
   "description": "Pronostics football analysés par IA : vainqueur, score, buteurs, cotes et notifications en direct.",
   "start_url": "/",
   "display": "standalone",

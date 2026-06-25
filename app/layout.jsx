@@ -1,14 +1,14 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Rysao — Pronostics Football IA",
+  title: "OnziA — Pronostics Football IA",
   description:
     "Pronostics football analysés par IA : vainqueur, score, buteurs, cotes et notifications en direct.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Rysao",
+    title: "OnziA",
   },
   icons: {
     icon: [

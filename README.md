@@ -1,4 +1,4 @@
-# ⚽ Rysao — Pronostics Football IA
+# ⚽ OnziA — Pronostics Football IA
 
 Site de pronostics football **gratuit**, propulsé par une IA qui combine :
 

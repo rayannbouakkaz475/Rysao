@@ -16,7 +16,7 @@ export default function InstallHint() {
       window.matchMedia?.("(display-mode: standalone)").matches;
     if (standalone) return;
 
-    if (localStorage.getItem("rysao-install-dismissed") === "1") return;
+    if (localStorage.getItem("onzia-install-dismissed") === "1") return;
 
     const isIos = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
     setIos(isIos);
@@ -38,7 +38,7 @@ export default function InstallHint() {
   function dismiss() {
     setVisible(false);
     try {
-      localStorage.setItem("rysao-install-dismissed", "1");
+      localStorage.setItem("onzia-install-dismissed", "1");
     } catch {}
   }
 
@@ -56,14 +56,14 @@ export default function InstallHint() {
     <div className="install-hint">
       <span className="install-ico">📲</span>
       <div className="install-text">
-        <b>Installer Rysao</b>
+        <b>Installer OnziA</b>
         {ios ? (
           <small>
             Appuie sur <b>Partager</b> puis <b>Sur l&apos;écran d&apos;accueil</b>{" "}
             pour l&apos;utiliser comme une app (et activer les notifications).
           </small>
         ) : (
-          <small>Ajoute Rysao à ton appareil pour un accès rapide.</small>
+          <small>Ajoute OnziA à ton appareil pour un accès rapide.</small>
         )}
       </div>
       {!ios && deferred && (

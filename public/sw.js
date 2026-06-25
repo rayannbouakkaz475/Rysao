@@ -1,4 +1,4 @@
-/* Service Worker Rysao — réception des notifications push */
+/* Service Worker OnziA — réception des notifications push */
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));
@@ -8,9 +8,9 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Rysao", body: event.data ? event.data.text() : "" };
+    data = { title: "OnziA", body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "Rysao";
+  const title = data.title || "OnziA";
   const options = {
     body: data.body || "",
     icon: "/icon-192.png",

@@ -1,6 +1,6 @@
-# 🚀 Déployer Rysao sur Vercel
+# 🚀 Déployer OnziA sur Vercel
 
-Rysao est une **app web (PWA)** : une fois en ligne, elle s'installe sur l'écran
+OnziA est une **app web (PWA)** : une fois en ligne, elle s'installe sur l'écran
 d'accueil (iPhone/Android) et fonctionne comme une application, notifications
 comprises. Pas d'App Store, pas de compte développeur Apple.
 
@@ -17,7 +17,7 @@ comprises. Pas d'App Store, pas de compte développeur Apple.
 ## 2. Importer le projet
 
 1. Sur Vercel : **Add New → Project**.
-2. Sélectionne le dépôt GitHub `Rysao`.
+2. Sélectionne le dépôt GitHub `OnziA`.
 3. Framework détecté : **Next.js** (laisse les réglages par défaut).
 4. **Ne déploie pas encore** — ajoute d'abord le stockage et les variables.
 
@@ -28,7 +28,7 @@ comprises. Pas d'App Store, pas de compte développeur Apple.
 Indispensable pour que les abonnements aux notifications survivent.
 
 1. Onglet **Storage → Create Database → KV**.
-2. Donne un nom, crée-le, puis **Connect to Project** (relie-le à Rysao).
+2. Donne un nom, crée-le, puis **Connect to Project** (relie-le à OnziA).
 3. Vercel injecte automatiquement `KV_REST_API_URL` et `KV_REST_API_TOKEN`.
    → Le code bascule tout seul sur KV (sinon il utiliserait des fichiers).
 
@@ -65,7 +65,7 @@ en local et en prod (sinon les abonnements existants cessent de fonctionner).
 
 ## 5. Déployer
 
-Clique **Deploy**. À la fin tu obtiens une URL `https://rysao-xxx.vercel.app`.
+Clique **Deploy**. À la fin tu obtiens une URL `https://onzia-xxx.vercel.app`.
 Tu peux brancher un domaine perso dans **Settings → Domains**.
 
 ---
@@ -94,7 +94,7 @@ automatiquement l'en-tête `Authorization: Bearer CRON_SECRET`.)
 ## 7. Installer l'app (côté utilisateur)
 
 - **iPhone (Safari)** : bouton **Partager** → **Sur l'écran d'accueil**. Rouvre
-  Rysao depuis l'icône → notifications actives, même écran verrouillé.
+  OnziA depuis l'icône → notifications actives, même écran verrouillé.
 - **Android (Chrome)** : bannière « Installer » ou menu → **Installer l'application**.
 - **Ordinateur** : icône d'installation dans la barre d'adresse.
 
