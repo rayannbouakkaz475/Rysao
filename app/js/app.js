@@ -7,6 +7,8 @@ const State = {
   theme: localStorage.getItem("rysao_theme") || "pokemon",
   plan: localStorage.getItem("rysao_plan") || "free",
   lastScan: null,
+  comTab: "profile",
+  chatPeer: null,
 };
 
 const THEMES = {
@@ -59,7 +61,7 @@ function render() {
   ({
     scan: viewScan, refs: viewRefs, prices: viewPrices,
     collection: viewCollection, grading: viewGrading,
-    social: viewSocial, settings: viewSettings,
+    community: viewCommunity, settings: viewSettings,
   }[State.view] || viewScan)(root);
   applyI18n();
 }
@@ -373,47 +375,297 @@ function viewGrading(root) {
 }
 
 /* =========================================================================
-   VUE — RÉSEAU / RECHERCHES
+   VUE — COMMUNAUTÉ (Profil · Chat · Boutiques)
+   Pas d'achat sur l'app : les membres s'affichent, échangent et se contactent.
    ========================================================================= */
-function getWants() { return store.get("rysao_wants", []); }
-function viewSocial(root) {
-  root.appendChild(el("h2", "view-title", t("social_title")));
-  root.appendChild(el("p", "view-sub", t("social_sub")));
+function getProfile() { return store.get("rysao_profile", { name: "", sell: [], want: [] }); }
+function saveProfile(p) { store.set("rysao_profile", p); }
+function getChats() { return store.get("rysao_chats", {}); }
+function saveChats(c) { store.set("rysao_chats", c); }
+function getShops() { return store.get("rysao_shops", []); }
+function saveShops(s) { store.set("rysao_shops", s); }
+function getEvents() { return store.get("rysao_events", []); }
+function saveEvents(e) { store.set("rysao_events", e); }
 
-  if (!isPremium()) {
-    const lock = el("div", "lock-banner", `🔒 ${t("premium_locked")}`);
-    lock.onclick = () => nav("settings");
-    root.appendChild(lock);
-  }
+function viewCommunity(root) {
+  root.appendChild(el("h2", "view-title", t("com_title")));
+  root.appendChild(el("p", "view-sub", t("com_sub")));
 
-  const form = el("div", "want-form");
-  form.innerHTML = `
-    <input id="wCard" class="search" placeholder="${t("social_card")}">
-    <input id="wMax" class="search" type="number" placeholder="${t("social_max")} (EUR)">
-    <input id="wMsg" class="search" placeholder="${t("social_msg")}">
-    <button class="btn primary" id="wPub">${t("social_publish")}</button>`;
-  root.appendChild(form);
+  // segments
+  const seg = el("div", "segment");
+  const tabs = [["profile","com_profile"],["feed","com_feed"],["chat","com_chat"],["shops","com_shops"]];
+  tabs.forEach(([k, lbl]) => {
+    const b = el("button", "seg-btn" + (State.comTab === k ? " on" : ""), t(lbl));
+    b.onclick = () => { State.comTab = k; render(); };
+    seg.appendChild(b);
+  });
+  root.appendChild(seg);
 
-  $("#wPub").onclick = () => {
-    if (!isPremium()) { toast(t("premium_locked")); return; }
-    const card = $("#wCard").value.trim(); if (!card) return;
-    const w = getWants();
-    w.unshift({ id: Date.now(), card, max: $("#wMax").value, msg: $("#wMsg").value, user: store.get("rysao_user","Moi"), date: Date.now() });
-    store.set("rysao_wants", w); render(); toast(t("added"));
+  const body = el("div", "com-body"); root.appendChild(body);
+  ({ profile: comProfile, feed: comFeed, chat: comChat, shops: comShops }[State.comTab] || comProfile)(body);
+}
+
+/* ---- Profil : items à vendre / recherchés ---- */
+function comProfile(root) {
+  const p = getProfile();
+  const idRow = el("div", "filter-bar");
+  idRow.innerHTML = `<input id="pName" class="search" placeholder="${t("prof_name")}" value="${esc(p.name)}">
+                     <button class="btn primary" id="pSave">${t("prof_save")}</button>`;
+  root.appendChild(idRow);
+  $("#pSave", root).onclick = () => { p.name = $("#pName", root).value.trim(); saveProfile(p); toast(t("added")); };
+
+  root.appendChild(el("p", "note", t("prof_note")));
+
+  const mkList = (kind, titleKey, addKey, emptyKey, badge) => {
+    const sec = el("div", "prof-sec");
+    sec.appendChild(el("h3", "prof-h", t(titleKey)));
+    const form = el("div", "want-form");
+    form.innerHTML = `
+      <input class="search f-item" placeholder="${t("prof_item")}">
+      <input class="search f-price" type="number" placeholder="${t("prof_price")} (EUR)">
+      ${kind==="sell" ? `<input class="search f-cond" placeholder="${t("prof_cond")}">` : ""}
+      <button class="btn f-add">${t(addKey)}</button>`;
+    sec.appendChild(form);
+    const list = el("div", "want-list");
+    const render2 = () => {
+      list.innerHTML = "";
+      const arr = p[kind];
+      if (!arr.length) { list.appendChild(el("p", "empty", t(emptyKey))); return; }
+      arr.forEach((it) => {
+        const c = el("div", "want-card");
+        c.innerHTML = `
+          <div class="wc-top"><span class="wc-badge ${kind}">${badge}</span></div>
+          <div class="wc-card">${esc(it.name)}</div>
+          ${it.price ? `<div class="wc-max">${fmtMoney(+it.price)}</div>` : ""}
+          ${it.cond ? `<div class="wc-msg">${t("prof_cond")}: ${esc(it.cond)}</div>` : ""}
+          <button class="btn contact del">${t("item_remove")}</button>`;
+        c.querySelector(".del").onclick = () => { p[kind] = p[kind].filter((x) => x.id !== it.id); saveProfile(p); render2(); };
+        list.appendChild(c);
+      });
+    };
+    form.querySelector(".f-add").onclick = () => {
+      const name = form.querySelector(".f-item").value.trim(); if (!name) return;
+      p[kind].unshift({ id: Date.now(), name, price: form.querySelector(".f-price").value,
+        cond: kind==="sell" ? form.querySelector(".f-cond").value.trim() : "" });
+      saveProfile(p); form.querySelector(".f-item").value=""; form.querySelector(".f-price").value="";
+      if (kind==="sell") form.querySelector(".f-cond").value=""; render2();
+    };
+    sec.appendChild(list); render2();
+    return sec;
+  };
+  root.appendChild(mkList("sell", "prof_sell", "prof_add_sell", "prof_empty_sell", "💰"));
+  root.appendChild(mkList("want", "prof_want", "prof_add_want", "prof_empty_want", "🔎"));
+}
+
+/* ---- Chat entre membres (démo locale) ---- */
+function comChat(root) {
+  root.appendChild(el("p", "note", t("chat_demo")));
+  const chats = getChats();
+  const peers = Object.keys(chats);
+
+  const newRow = el("div", "filter-bar");
+  newRow.innerHTML = `<input id="cTo" class="search" placeholder="${t("chat_to")}">
+                      <button class="btn primary" id="cNew">${t("chat_new")}</button>`;
+  root.appendChild(newRow);
+  $("#cNew", root).onclick = () => {
+    const peer = $("#cTo", root).value.trim(); if (!peer) return;
+    if (!chats[peer]) { chats[peer] = []; saveChats(chats); }
+    State.chatPeer = peer; render();
   };
 
-  const list = el("div", "want-list"); root.appendChild(list);
-  const wants = getWants();
-  if (!wants.length) { list.appendChild(el("p", "empty", t("social_empty"))); return; }
-  wants.forEach((w) => {
-    const c = el("div", "want-card");
+  if (!peers.length && !State.chatPeer) { root.appendChild(el("p", "empty", t("chat_empty"))); return; }
+
+  const wrap = el("div", "chat-wrap");
+  const side = el("div", "chat-list");
+  peers.forEach((peer) => {
+    const it = el("button", "chat-peer" + (State.chatPeer === peer ? " on" : ""), esc(peer));
+    it.onclick = () => { State.chatPeer = peer; render(); };
+    side.appendChild(it);
+  });
+  wrap.appendChild(side);
+
+  const thread = el("div", "chat-thread");
+  if (!State.chatPeer) thread.appendChild(el("p", "empty", t("chat_none_sel")));
+  else {
+    const msgs = chats[State.chatPeer] || [];
+    const log = el("div", "chat-log");
+    msgs.forEach((m) => log.appendChild(el("div", "msg " + (m.from === "me" ? "me" : "them"), esc(m.text))));
+    thread.appendChild(log);
+    const bar = el("div", "chat-input");
+    bar.innerHTML = `<input class="search cMsg" placeholder="${t("chat_placeholder")}"><button class="btn primary cSend">${t("chat_send")}</button>`;
+    const send = () => {
+      const inp = bar.querySelector(".cMsg"); const txt = inp.value.trim(); if (!txt) return;
+      chats[State.chatPeer].push({ from: "me", text: txt, ts: Date.now() });
+      // réponse auto de démonstration (remplacée par un vrai backend temps réel)
+      chats[State.chatPeer].push({ from: State.chatPeer, text: "👍 (" + t("chat_demo").split(".")[0] + ")", ts: Date.now() + 1 });
+      saveChats(chats); render();
+    };
+    bar.querySelector(".cSend").onclick = send;
+    bar.querySelector(".cMsg").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+    thread.appendChild(bar);
+  }
+  wrap.appendChild(thread);
+  root.appendChild(wrap);
+}
+
+/* ---- Boutiques : adresse + feed d'événements ---- */
+function comShops(root) {
+  // inscription boutique
+  const reg = el("details", "shop-reg");
+  reg.innerHTML = `<summary class="btn">${t("shop_register")}</summary>
+    <div class="want-form" style="margin-top:10px">
+      <input class="search s-name" placeholder="${t("shop_name")}">
+      <input class="search s-addr" placeholder="${t("shop_address")}">
+      <input class="search s-city" placeholder="${t("shop_city")}">
+      <button class="btn primary s-save">${t("shop_save")}</button>
+    </div>`;
+  root.appendChild(reg);
+  reg.querySelector(".s-save").onclick = () => {
+    const name = reg.querySelector(".s-name").value.trim(); if (!name) return;
+    const shops = getShops();
+    shops.unshift({ id: Date.now(), name, address: reg.querySelector(".s-addr").value.trim(), city: reg.querySelector(".s-city").value.trim() });
+    saveShops(shops); render(); toast(t("added"));
+  };
+
+  // liste des boutiques
+  const shops = getShops();
+  const shopList = el("div", "set-list");
+  if (!shops.length) shopList.appendChild(el("p", "empty", t("shop_empty")));
+  shops.forEach((s) => {
+    const c = el("div", "set-card");
+    const q = encodeURIComponent(`${s.name} ${s.address} ${s.city}`);
     c.innerHTML = `
-      <div class="wc-top"><span class="wc-badge">${t("social_wanted")}</span><span class="wc-date">${new Date(w.date).toLocaleDateString(CURRENT_LANG)}</span></div>
-      <div class="wc-card">${esc(w.card)}</div>
-      ${w.max ? `<div class="wc-max">${t("social_max")}: ${fmtMoney(+w.max)}</div>` : ""}
-      ${w.msg ? `<div class="wc-msg">${esc(w.msg)}</div>` : ""}
-      <button class="btn contact">${t("social_have")} · ${t("social_contact")}</button>`;
-    c.querySelector(".contact").onclick = () => toast(t("social_contact") + " ✓ (démo)");
+      <div class="set-name">🏬 ${esc(s.name)}</div>
+      <div class="set-meta"><span>${esc([s.address, s.city].filter(Boolean).join(", ") || "—")}</span></div>
+      ${ (s.address||s.city) ? `<a class="shop-map" href="https://www.openstreetmap.org/search?query=${q}" target="_blank" rel="noopener">📍 ${t("shop_map")}</a>` : "" }`;
+    shopList.appendChild(c);
+  });
+  root.appendChild(shopList);
+
+  // Les boutiques publient aussi leurs événements dans le Feed (onglet Feed).
+  const hint = el("p", "note", t("shop_feed_hint"));
+  root.appendChild(hint);
+}
+
+/* ---- Feed social : posts/enchères, photos, likes, commentaires, analyse IA ---- */
+function getFeed() { return store.get("rysao_feed", []); }
+function saveFeed(f) { store.set("rysao_feed", f); }
+function myName() { const p = getProfile(); return (p.name && p.name.trim()) || t("feed_anon"); }
+
+// Analyse IA d'une image (dataURL) -> reconnaissance carte/série + prix suggéré
+async function analyzePhoto(dataURL, game) {
+  try {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataURL; });
+    const cv = document.createElement("canvas");
+    cv.width = img.naturalWidth || 600; cv.height = img.naturalHeight || 840;
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    const r = await Providers.recognize(cv);
+    if (r.error || !r.card) return null;
+    let price = null;
+    try { const p = await getPrice(r.card, r.set && r.set.game); price = p && p.avg; } catch {}
+    return { card: r.card, set: r.set ? `${r.set.game} · ${r.set.name}` : null, price };
+  } catch { return null; }
+}
+
+function comFeed(root) {
+  // Composer
+  const compose = el("div", "feed-compose");
+  compose.innerHTML = `
+    <textarea class="search fc-text" rows="2" placeholder="${t("feed_placeholder")}"></textarea>
+    <div class="fc-row">
+      <label class="btn fc-photo-lbl">📷 ${t("feed_photo")}<input type="file" accept="image/*" class="fc-photo" hidden></label>
+      <label class="fc-auction"><input type="checkbox" class="fc-isauc"> ${t("feed_auction")}</label>
+    </div>
+    <input class="search fc-bid" type="number" placeholder="${t("feed_start_bid")} (EUR)" style="display:none">
+    <div class="fc-preview"></div>
+    <div class="fc-ai"></div>
+    <button class="btn primary fc-pub">${t("feed_publish")}</button>`;
+  root.appendChild(compose);
+
+  let photoData = null, aiResult = null;
+  const isAuc = compose.querySelector(".fc-isauc");
+  const bidInp = compose.querySelector(".fc-bid");
+  isAuc.onchange = () => { bidInp.style.display = isAuc.checked ? "block" : "none"; };
+
+  compose.querySelector(".fc-photo").onchange = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const rd = new FileReader();
+    rd.onload = async () => {
+      photoData = rd.result;
+      compose.querySelector(".fc-preview").innerHTML = `<img src="${photoData}" class="fc-img">`;
+      // Analyse IA automatique
+      const ai = compose.querySelector(".fc-ai");
+      ai.textContent = "🤖 " + t("feed_analyzing");
+      aiResult = await analyzePhoto(photoData, THEMES[State.theme].game);
+      ai.innerHTML = aiResult
+        ? `🤖 ${t("feed_ai")}: <b>${esc(aiResult.card)}</b>${aiResult.set ? " — " + esc(aiResult.set) : ""}${aiResult.price ? " · ~" + fmtMoney(aiResult.price) : ""}`
+        : "🤖 " + t("feed_ai_none");
+    };
+    rd.readAsDataURL(file);
+  };
+
+  compose.querySelector(".fc-pub").onclick = () => {
+    const text = compose.querySelector(".fc-text").value.trim();
+    if (!text && !photoData) return;
+    const feed = getFeed();
+    feed.unshift({
+      id: Date.now(), author: myName(), text, photo: photoData,
+      auction: isAuc.checked, ai: aiResult,
+      bid: isAuc.checked ? { current: +bidInp.value || (aiResult && aiResult.price) || 0, by: null } : null,
+      likes: 0, liked: false, comments: [], ts: Date.now(),
+    });
+    saveFeed(feed); render(); toast(t("added"));
+  };
+
+  // Liste des publications
+  const list = el("div", "feed-list"); root.appendChild(list);
+  const feed = getFeed();
+  if (!feed.length) { list.appendChild(el("p", "empty", t("feed_empty"))); return; }
+
+  feed.forEach((post) => {
+    const c = el("div", "feed-card");
+    const initial = (post.author || "?").charAt(0).toUpperCase();
+    c.innerHTML = `
+      <div class="feed-head">
+        <span class="feed-ava">${esc(initial)}</span>
+        <div><div class="feed-author">${esc(post.author)}</div>
+        <div class="feed-time">${new Date(post.ts).toLocaleString(CURRENT_LANG)}</div></div>
+        ${post.auction ? `<span class="feed-badge-auc">🔨 ${t("feed_auction")}</span>` : ""}
+      </div>
+      ${post.text ? `<div class="feed-text">${esc(post.text)}</div>` : ""}
+      ${post.photo ? `<img src="${post.photo}" class="feed-photo">` : ""}
+      ${post.ai ? `<div class="feed-ai-tag">🤖 ${esc(post.ai.card)}${post.ai.set ? " — " + esc(post.ai.set) : ""}${post.ai.price ? " · ~" + fmtMoney(post.ai.price) : ""}</div>` : ""}
+      ${post.auction ? `<div class="feed-auc"><span>${t("feed_current_bid")}: <b>${fmtMoney(post.bid.current)}</b>${post.bid.by ? " · " + esc(post.bid.by) : ""}</span><button class="btn feed-bid">${t("feed_place_bid")}</button></div>` : ""}
+      <div class="feed-actions">
+        <button class="feed-act like ${post.liked ? "on" : ""}">❤ <span>${post.likes}</span></button>
+        <button class="feed-act cmt">💬 <span>${post.comments.length}</span></button>
+      </div>
+      <div class="feed-comments"></div>
+      <div class="feed-addc"><input class="search cc-in" placeholder="${t("feed_comment")}"><button class="btn cc-add">${t("feed_send")}</button></div>`;
+
+    // like
+    c.querySelector(".like").onclick = () => {
+      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
+      pp.liked = !pp.liked; pp.likes += pp.liked ? 1 : -1; saveFeed(f); render();
+    };
+    // enchère
+    const bidBtn = c.querySelector(".feed-bid");
+    if (bidBtn) bidBtn.onclick = () => {
+      const amt = prompt(t("feed_place_bid") + " (EUR)"); if (!amt) return;
+      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
+      const v = +amt; if (v > (pp.bid.current || 0)) { pp.bid = { current: v, by: myName() }; saveFeed(f); render(); }
+    };
+    // commentaires
+    const cwrap = c.querySelector(".feed-comments");
+    post.comments.forEach((cm) => cwrap.appendChild(el("div", "feed-cm", `<b>${esc(cm.author)}</b> ${esc(cm.text)}`)));
+    const addC = () => {
+      const inp = c.querySelector(".cc-in"); const txt = inp.value.trim(); if (!txt) return;
+      const f = getFeed(); const pp = f.find((x) => x.id === post.id);
+      pp.comments.push({ author: myName(), text: txt, ts: Date.now() }); saveFeed(f); render();
+    };
+    c.querySelector(".cc-add").onclick = addC;
+    c.querySelector(".cc-in").addEventListener("keydown", (e) => { if (e.key === "Enter") addC(); });
+
     list.appendChild(c);
   });
 }
@@ -450,7 +702,7 @@ function viewSettings(root) {
   const cards = el("div", "plan-cards");
   [["free","plan_free","plan_free_desc"],["premium","plan_premium","plan_premium_desc"]].forEach(([k,nameK,descK]) => {
     const p = el("div", "plan-card" + (State.plan===k?" current":"") + (k==="premium"?" premium":""));
-    p.innerHTML = `<div class="pc-name">${t(nameK)}</div><p class="pc-desc">${t(descK)}</p>
+    p.innerHTML = `<div class="pc-name">${t(nameK)}${k==="premium"?` <span class="pc-price">${t("plan_premium_price")}</span>`:""}</div><p class="pc-desc">${t(descK)}</p>
       <button class="btn ${k==="premium"?"primary":""}">${State.plan===k?t("plan_current"):(k==="premium"?t("plan_upgrade"):t("plan_free"))}</button>`;
     p.querySelector("button").onclick = () => { State.plan = k; localStorage.setItem("rysao_plan", k); render(); toast("✓"); };
     cards.appendChild(p);

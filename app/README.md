@@ -30,8 +30,8 @@ python3 -m http.server 8099
 | 🌍 **Interface multilingue** | ✅ réel | FR, EN, DE, IT, JA, ZH |
 | 💱 **Multi-devises** | ✅ réel | EUR, USD, GBP, CHF, JPY, CNY, CAD |
 | 🗂️ **Collection** + valeur totale | ✅ réel | stockage local, total dans la devise choisie, export (Premium) |
-| 🤝 **Réseau / recherches** | ✅ réel (démo) | « je recherche cette carte → on me contacte » |
-| 🆓 / 💎 **Gratuit / Premium** | ✅ réel | gating des fonctions Premium |
+| 🤝 **Communauté** | ✅ réel (démo) | hub **Profil · Feed · Chat · Boutiques** (voir ci-dessous) |
+| 🆓 / 💎 **Gratuit / Premium** | ✅ réel | Premium **10 CHF/mois** ; gating des fonctions Premium |
 | 🔗 **PokéCardex** | ✅ lien | bouton d'accès intégré dans Réglages |
 | 💶 **Prix Cardmarket** | ✅ réel (Pokémon) | prix réels via `pokemontcg.io`, repli estimation |
 | 🌐 **Catalogue complet** | ✅ réel | toutes les séries chargées via API (Pokémon, Lorcana) |
@@ -61,6 +61,21 @@ Résultat mis en **cache 7 jours** (`localStorage`). Le seed statique
 > ⚠️ Ces appels passent par le navigateur du client. Selon l'hébergement, vérifie
 > que les API ci-dessus sont accessibles (CORS public côté `pokemontcg.io` /
 > `lorcast.com`).
+
+## Communauté — vivre la passion (pas d'achat sur l'app)
+
+Aucune transaction n'a lieu dans l'app : les membres se montrent, échangent et
+se contactent. Onglet **Communauté** → 4 segments :
+
+- **Profil** : pseudo + listes *« à vendre »* et *« je recherche »* (visibles des autres membres).
+- **Feed** : vrai fil social — publications **photo/texte**, **likes**, **commentaires**, et **enchères** (mise de départ, enchérir). Chaque publication porte le **pseudo de l'auteur**.
+  - 🤖 **Analyse IA automatique** : à l'ajout d'une photo, l'OCR reconnaît la carte/série et propose une valeur, affichées sur la publication.
+- **Chat** : messagerie entre membres (démo locale ; le temps réel nécessite un serveur — point d'extension).
+- **Boutiques** : une boutique inscrit son **nom + adresse** (lien carte OpenStreetMap) ; ses annonces/événements remontent dans le Feed.
+
+> Stockage local (localStorage) pour la démo. Pour du multi-utilisateur réel
+> (chat live, feed partagé, enchères), brancher un backend (Firebase / Supabase /
+> WebSocket) — l'architecture des vues est prête à recevoir une API.
 
 ## Reconnaissance de carte (OCR)
 
