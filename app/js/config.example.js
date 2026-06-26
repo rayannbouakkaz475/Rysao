@@ -5,6 +5,8 @@
 window.RYSAO_CONFIG = {
   supabaseUrl: "https://VOTRE-PROJET.supabase.co",
   supabaseKey: "VOTRE_CLE_ANON_PUBLIC",
+  // clé publique VAPID pour les push (npx web-push generate-vapid-keys)
+  vapidPublicKey: "",
   // optionnel : clé pokemontcg.io pour des prix live à plus haut débit
   pokemontcgKey: "",
 };

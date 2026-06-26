@@ -33,7 +33,7 @@ python3 -m http.server 8099
 | 🤝 **Communauté** | ✅ réel (démo) | hub **Profil · Feed · Chat · Boutiques** (voir ci-dessous) |
 | 🆓 / 💎 **Essai / Premium** | ✅ réel | **5 jours d'essai** gratuit puis **Premium 10 CHF/mois** ; verrouillage à l'expiration |
 | 🔐 **Scan illimité (Premium)** | ✅ réel | prix **+ indice d'authenticité** « vraie ou pas » (réservé essai/Premium) |
-| 🔔 **Notifications téléphone** | ✅ réel | permission navigateur + **notif d'enchère** ; push réel = backend |
+| 🔔 **Notifications téléphone** | ✅ réel | in-app + **Web Push** (app fermée) via service worker + Edge Function sur enchères/messages |
 | 🖼️ **Photos multiples** | ✅ réel | jusqu'à 6 photos par publication du feed |
 | 🗺️ **Carte du monde des boutiques** | ✅ réel | Leaflet + géocodage OpenStreetMap (repli si hors-ligne) |
 | ☁️ **Backend multi-utilisateur** | ✅ réel | Supabase : comptes + feed/chat/enchères/boutiques **partagés en temps réel** (repli local) — voir `backend/` |

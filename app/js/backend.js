@@ -248,5 +248,67 @@ const DB = (() => {
   return { profile, feed, chat, shops, mode: () => (cloud() ? "cloud" : "local") };
 })();
 
+/* ===========================================================================
+   Push — abonnement Web Push (notifications téléphone fermé)
+   Nécessite : VAPID public key (config) + backend cloud (pour stocker l'abo et
+   l'envoi par l'Edge Function). Sans cela, on retombe sur les notifs in-app.
+   =========================================================================== */
+const Push = (() => {
+  const vapidKey = () =>
+    (window.RYSAO_CONFIG && window.RYSAO_CONFIG.vapidPublicKey) || localStorage.getItem("rysao_vapid_public") || "";
+
+  const supported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+  function urlBase64ToUint8Array(base64) {
+    const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+    const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(b64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function meName() { try { const p = JSON.parse(localStorage.getItem("rysao_profile") || "{}"); return (p.name || "").trim() || "Membre"; } catch { return "Membre"; } }
+
+  async function save(sub) {
+    if (!Backend.isCloud()) return false;
+    const j = sub.toJSON();
+    const { error } = await Backend.client.from("push_subscriptions").upsert({
+      endpoint: j.endpoint, user_id: Backend.user().id, username: meName(),
+      p256dh: j.keys.p256dh, auth: j.keys.auth,
+    }, { onConflict: "endpoint" });
+    return !error;
+  }
+
+  // Renvoie : "granted" | "denied" | "unsupported" | "no_vapid" | "no_backend"
+  async function enable() {
+    if (!supported()) return "unsupported";
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return perm;
+    let reg;
+    try { reg = await navigator.serviceWorker.ready; } catch { return "unsupported"; }
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const key = vapidKey();
+      if (!key) return "no_vapid";
+      try { sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) }); }
+      catch { return "denied"; }
+    }
+    if (!Backend.isCloud()) return "no_backend"; // permission OK, mais envoi distant impossible sans backend
+    await save(sub);
+    return "granted";
+  }
+
+  async function status() {
+    if (!supported()) return "unsupported";
+    if (Notification.permission !== "granted") return Notification.permission;
+    try { const reg = await navigator.serviceWorker.ready; const s = await reg.pushManager.getSubscription(); return s ? "granted" : "default"; }
+    catch { return "default"; }
+  }
+
+  return { supported, enable, status, vapidKey };
+})();
+
 window.Backend = Backend;
 window.DB = DB;
+window.Push = Push;

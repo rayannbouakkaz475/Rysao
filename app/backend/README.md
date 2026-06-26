@@ -46,7 +46,36 @@ passe par une fonction `security definer` qui valide le montant).
 
 ## Notifications push (téléphone fermé)
 
-Le temps réel Supabase couvre l'app **ouverte**. Pour des **push** quand l'app
-est fermée (iOS/Android), ajoute Web Push / FCM via le service worker + une
-Edge Function Supabase déclenchée sur `bids`/`messages`. Hook prévu côté client
-(`notify()` dans `app.js`).
+Le temps réel Supabase couvre l'app **ouverte**. Le **push** (app fermée) est
+implémenté via **Web Push** (service worker `sw.js`) + une **Edge Function**
+`push` déclenchée sur `bids` (nouvelle enchère → propriétaire du post) et
+`messages` (nouveau message → destinataire).
+
+### Mise en place
+
+1. **Clés VAPID** :
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+2. **Table + triggers** : exécute [`push.sql`](./push.sql) dans le SQL Editor
+   (renseigne `fn_url` = URL de ta fonction et un `shared` secret).
+3. **Déploie la fonction** ([`functions/push/index.ts`](./functions/push/index.ts)) :
+   ```bash
+   supabase functions deploy push --no-verify-jwt
+   supabase secrets set VAPID_PUBLIC=... VAPID_PRIVATE=... PUSH_SHARED_SECRET=... \
+     SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=...
+   ```
+   (Alternative au trigger SQL : Dashboard ▸ Database ▸ **Webhooks** → POST vers
+   la fonction `push` sur INSERT de `bids` et `messages`.)
+4. **Côté app** : Réglages ▸ Notifications → colle la **clé publique VAPID** →
+   *Activer*. L'abonnement est enregistré dans `push_subscriptions` (membre
+   connecté requis). iOS : l'app doit être **installée sur l'écran d'accueil**
+   pour autoriser le push.
+
+### Flux
+
+```
+enchère/message inséré → trigger notify_push (pg_net) → Edge Function push
+→ lookup destinataire → web-push vers ses abonnements → notification système
+→ clic → ouvre l'app
+```

@@ -798,19 +798,30 @@ function viewSettings(root) {
   planBlk.appendChild(el("p", "estimate-flag", t("dist_note")));
   root.appendChild(planBlk);
 
-  // notifications
+  // notifications (push téléphone fermé via Web Push + Edge Function)
   const notifBlk = el("div", "set-block");
   notifBlk.appendChild(el("label", "set-lbl", t("notif_title")));
-  const notifBtn = el("button", "btn", "🔔 " + t("notif_enable"));
-  const perm = window.Notification ? Notification.permission : "unsupported";
-  if (perm === "granted") { notifBtn.textContent = t("notif_on"); notifBtn.disabled = true; }
+
+  // clé publique VAPID (requise pour le push réel)
+  const vapidInp = el("input", "search"); vapidInp.placeholder = t("settings_vapid");
+  vapidInp.value = localStorage.getItem("rysao_vapid_public") || "";
+  vapidInp.onchange = () => { localStorage.setItem("rysao_vapid_public", vapidInp.value.trim()); toast("✓"); };
+  notifBlk.appendChild(vapidInp);
+
+  const notifBtn = el("button", "btn", "🔔 " + t("notif_enable")); notifBtn.style.marginTop = "8px";
+  if (window.Notification && Notification.permission === "granted") notifBtn.textContent = t("notif_on");
   notifBtn.onclick = async () => {
-    const r = await enableNotifications();
-    if (r === "granted") { notifBtn.textContent = t("notif_on"); notifBtn.disabled = true; notify("RYSAO TCG", t("notif_on")); }
-    else if (r === "unsupported") toast(t("notif_unsupported"));
-    else toast(t("notif_off"));
+    const r = await Push.enable();
+    const msg = {
+      granted: t("push_on"), denied: t("notif_off"), default: t("notif_off"),
+      unsupported: t("notif_unsupported"), no_vapid: t("push_no_vapid"), no_backend: t("push_no_backend"),
+    }[r] || t("notif_off");
+    if (r === "granted" || r === "no_backend") { notifBtn.textContent = t("notif_on"); notify("RYSAO TCG", t("notif_on")); }
+    toast(msg);
   };
-  notifBlk.appendChild(notifBtn); root.appendChild(notifBlk);
+  notifBlk.appendChild(notifBtn);
+  notifBlk.appendChild(el("p", "estimate-flag", t("push_note")));
+  root.appendChild(notifBlk);
 
   // clés API (optionnel)
   const apiBlk = el("div", "set-block");
