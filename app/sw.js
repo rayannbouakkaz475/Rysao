@@ -1,10 +1,11 @@
 /* RYSAO TCG — service worker (cache app-shell, hors-ligne, push) */
-const CACHE = "rysao-tcg-v5";
+const CACHE = "rysao-tcg-v6";
 const ICON = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='42' fill='%230b1020'/%3E%3Ctext x='96' y='128' font-family='Arial' font-weight='bold' font-size='100' fill='%2300e0c6' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css",
   "./js/i18n.js", "./js/data.js", "./js/providers.js", "./js/backend.js", "./js/engine.js", "./js/scanner.js", "./js/app.js", "./js/native.js",
   "./manifest.webmanifest",
+  "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png",
 ];
 
 self.addEventListener("install", (e) => {

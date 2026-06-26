@@ -9,7 +9,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const APP = join(here, "..", "..", "app");
 const WWW = join(here, "..", "www");
 
-const INCLUDE = ["index.html", "manifest.webmanifest", "sw.js", "css", "js"];
+const INCLUDE = ["index.html", "manifest.webmanifest", "sw.js", "css", "js",
+  "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 const EXCLUDE_FILES = new Set(["config.example.js"]); // ne pas embarquer les exemples
 
 await rm(WWW, { recursive: true, force: true });
