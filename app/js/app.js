@@ -87,6 +87,7 @@ function toast(msg) {
    ROUTING
    ========================================================================= */
 function nav(view) { State.view = view; render(); window.scrollTo(0, 0); }
+window.RYSAO_nav = nav;
 
 function render() {
   $$(".tab").forEach((b) => b.classList.toggle("on", b.dataset.view === State.view));

@@ -19,6 +19,20 @@ create policy "push insert own" on public.push_subscriptions for insert with che
 create policy "push update own" on public.push_subscriptions for update using (auth.uid() = user_id);
 create policy "push delete own" on public.push_subscriptions for delete using (auth.uid() = user_id);
 
+-- Tokens push NATIFS (apps Capacitor iOS/Android : APNs / FCM)
+create table if not exists public.native_tokens (
+  token       text primary key,
+  user_id     uuid references auth.users(id) on delete cascade,
+  username    text,
+  platform    text,            -- 'ios' | 'android'
+  created_at  timestamptz default now()
+);
+alter table public.native_tokens enable row level security;
+create policy "native read own"   on public.native_tokens for select using (auth.uid() = user_id);
+create policy "native insert own" on public.native_tokens for insert with check (auth.uid() = user_id);
+create policy "native update own" on public.native_tokens for update using (auth.uid() = user_id);
+create policy "native delete own" on public.native_tokens for delete using (auth.uid() = user_id);
+
 -- ---------------------------------------------------------------------------
 -- Déclenchement de l'Edge Function via pg_net.
 -- Renseigne ton ref de projet et un secret partagé, puis exécute ce bloc.
