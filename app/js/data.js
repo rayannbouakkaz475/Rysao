@@ -124,6 +124,57 @@ const TCG_DATA = [
   { game: "Topps", name: "Topps UFC Chrome", code: "UFC", year: 2024, cards: 0, langs: ["en"] },
   { game: "Topps", name: "Topps Star Wars", code: "SW", year: 1977, cards: 0, langs: ["en"] },
   { game: "Topps", name: "Topps Premier League Merlin", code: "PLM", year: 2024, cards: 0, langs: ["en"] },
+
+  /* ====================== COMPLÉMENT : ONE PIECE (decks de démarrage) ====== */
+  { game: "One Piece", name: "ST-05 ONE PIECE FILM Edition", code: "ST05", year: 2023, cards: 17, langs: ["en","ja","zh"] },
+  { game: "One Piece", name: "ST-06 Absolute Justice", code: "ST06", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-07 Big Mom Pirates", code: "ST07", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-08 Monkey.D.Luffy", code: "ST08", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-09 Yamato", code: "ST09", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-11 Uta", code: "ST11", year: 2023, cards: 17, langs: ["en","fr","ja","zh"] },
+  { game: "One Piece", name: "ST-13 The Three Brothers", code: "ST13", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-15 RED Edward.Newgate", code: "ST15", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-16 GREEN Uta", code: "ST16", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-17 BLUE Donquixote Doflamingo", code: "ST17", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-18 PURPLE Monkey.D.Luffy", code: "ST18", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-19 BLACK Smoker", code: "ST19", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-20 YELLOW Charlotte Katakuri", code: "ST20", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "ST-21 EX Gear 5", code: "ST21", year: 2024, cards: 17, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "OP-10 Royal Blood", code: "OP10", year: 2025, cards: 121, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "OP-11 A Fist of Divine Speed", code: "OP11", year: 2025, cards: 121, langs: ["en","fr","de","it","ja","zh"] },
+  { game: "One Piece", name: "PRB-02 Premium Booster", code: "PRB02", year: 2025, cards: 0, langs: ["en","fr","de","it","ja","zh"] },
+
+  /* ====================== COMPLÉMENT : TOPPS ============================== */
+  { game: "Topps", name: "Topps Chrome Formula 1", code: "F1C", year: 2020, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Merlin Premier League", code: "MPL", year: 2023, cards: 0, langs: ["en","fr","de","it","es"] },
+  { game: "Topps", name: "Topps Bundesliga Match Attax", code: "BMA", year: 2023, cards: 0, langs: ["de","en"] },
+  { game: "Topps", name: "Topps Living Set", code: "LIV", year: 2018, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Pokémon (Series 1-3, vintage)", code: "TPK", year: 2000, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Topps Garbage Pail Kids", code: "GPK", year: 1985, cards: 0, langs: ["en"] },
+  { game: "Topps", name: "Bowman Baseball (flagship)", code: "BWF", year: 1989, cards: 0, langs: ["en"] },
+
+  /* ====================== SCELLÉS — TOUS LES JEUX ========================= */
+  /* Pokémon */
+  { game: "Pokémon", name: "Display / Booster Box scellé (36 boosters)", code: "SEAL-PK-BB", year: 2024, cards: 0, langs: ["en","fr","de","it","es","ja","zh"], sealed: true },
+  { game: "Pokémon", name: "Coffret Dresseur d'Élite (ETB) scellé", code: "SEAL-PK-ETB", year: 2024, cards: 0, langs: ["en","fr","de","it","es","ja"], sealed: true },
+  { game: "Pokémon", name: "Bundle 6 boosters scellé", code: "SEAL-PK-BUN", year: 2024, cards: 0, langs: ["en","fr","de","it","es"], sealed: true },
+  { game: "Pokémon", name: "Tin / Pokébox scellé", code: "SEAL-PK-TIN", year: 2024, cards: 0, langs: ["en","fr","de","it","es","ja"], sealed: true },
+  { game: "Pokémon", name: "Display japonais scellé (Box JP)", code: "SEAL-PK-JP", year: 2024, cards: 0, langs: ["ja"], sealed: true },
+  { game: "Pokémon", name: "Display chinois scellé (简体中文)", code: "SEAL-PK-ZH", year: 2024, cards: 0, langs: ["zh"], sealed: true },
+  /* One Piece */
+  { game: "One Piece", name: "Booster Box scellé (24 boosters)", code: "SEAL-OP-BB", year: 2024, cards: 0, langs: ["en","fr","de","it","ja","zh"], sealed: true },
+  { game: "One Piece", name: "Starter Deck scellé", code: "SEAL-OP-ST", year: 2024, cards: 0, langs: ["en","fr","de","it","ja","zh"], sealed: true },
+  { game: "One Piece", name: "Premium Booster scellé", code: "SEAL-OP-PRB", year: 2024, cards: 0, langs: ["en","fr","de","it","ja","zh"], sealed: true },
+  /* Lorcana */
+  { game: "Lorcana", name: "Booster Box scellé (24 boosters)", code: "SEAL-LOR-BB", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+  { game: "Lorcana", name: "Coffre de l'Illumineur (Illumineer's Trove) scellé", code: "SEAL-LOR-TROVE", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+  { game: "Lorcana", name: "Starter Deck scellé", code: "SEAL-LOR-ST", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+  { game: "Lorcana", name: "Gift Set / Coffret cadeau scellé", code: "SEAL-LOR-GIFT", year: 2024, cards: 0, langs: ["en","fr","de","it"], sealed: true },
+  /* Topps */
+  { game: "Topps", name: "Hobby Box scellé", code: "SEAL-TP-HOBBY", year: 2024, cards: 0, langs: ["en"], sealed: true },
+  { game: "Topps", name: "Blaster Box scellé", code: "SEAL-TP-BLASTER", year: 2024, cards: 0, langs: ["en"], sealed: true },
+  { game: "Topps", name: "Mega Box scellé", code: "SEAL-TP-MEGA", year: 2024, cards: 0, langs: ["en"], sealed: true },
+  { game: "Topps", name: "Match Attax Tin scellé", code: "SEAL-TP-TIN", year: 2024, cards: 0, langs: ["en","fr","de","it","es"], sealed: true },
 ];
 
 const TCG_GAMES = ["Pokémon", "One Piece", "Lorcana", "Topps"];

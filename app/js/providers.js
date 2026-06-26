@@ -3,8 +3,9 @@
    - Prix RÉELS Cardmarket via pokemontcg.io (Pokémon), repli sur estimation
    - Catalogue COMPLET chargé dynamiquement (toutes les séries depuis l'origine)
        • Pokémon : https://api.tcgdex.net (multilingue fr/en/de/it/es/ja/ko/zh,
-         sets japonais depuis 1996) ; repli https://api.pokemontcg.io/v2/sets
+         + chinois zh-cn/zh-tw, sets japonais depuis 1996) ; repli pokemontcg.io
        • Lorcana : https://api.lorcast.com/v0/sets
+       • One Piece : https://optcgapi.com/api/sets/ (libre)  · Topps : seed
    - Reconnaissance de carte par OCR (Tesseract.js, chargé à la demande)
    Tout est défensif : timeouts, try/catch, repli local, cache localStorage.
    =========================================================================== */
@@ -13,8 +14,9 @@ const Providers = (() => {
   const POKE_API = "https://api.pokemontcg.io/v2";
   const LORCAST_API = "https://api.lorcast.com/v0";
   const TCGDEX_API = "https://api.tcgdex.net/v2";
-  // langues TCGdex -> tag interne RYSAO
-  const TCGDEX_LANGS = [["en","en"],["fr","fr"],["de","de"],["it","it"],["es","es"],["ja","ja"],["ko","ko"],["zh-tw","zh"]];
+  const OPTCG_API = "https://optcgapi.com/api"; // One Piece (libre, sans clé)
+  // langues TCGdex -> tag interne RYSAO (zh-cn = simplifié/Chine, zh-tw = traditionnel)
+  const TCGDEX_LANGS = [["en","en"],["fr","fr"],["de","de"],["it","it"],["es","es"],["pt","pt"],["ja","ja"],["ko","ko"],["zh-tw","zh"],["zh-cn","zh"],["id","id"],["th","th"]];
   const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
   const CACHE_TTL = 7 * 24 * 3600 * 1000; // 7 jours
 
@@ -90,6 +92,23 @@ const Providers = (() => {
     }));
   }
 
+  // One Piece via optcgapi (libre, sans clé). Défensif : mappe des champs
+  // courants et renvoie [] en cas d'échec (le seed statique prend le relais).
+  async function loadOnePieceSets() {
+    const d = await getJSON(`${OPTCG_API}/sets/`, { timeout: 12000 });
+    const arr = Array.isArray(d) ? d : (d.data || d.sets || []);
+    return arr.map((s) => {
+      const code = s.set_id || s.id || s.code || s.setCode || "";
+      const name = s.set_name || s.name || code;
+      return {
+        game: "One Piece", name: code ? `${code} ${name}`.trim() : name,
+        code: (code || name).toString().toUpperCase(),
+        year: yearOf(s.release_date || s.releaseDate || s.date), cards: s.total || s.card_count || 0,
+        langs: ["en", "fr", "de", "it", "ja", "zh"], _src: "optcg",
+      };
+    }).filter((s) => s.name);
+  }
+
   async function loadLorcanaSets() {
     const d = await getJSON(`${LORCAST_API}/sets`);
     const arr = d.results || d.data || [];
@@ -134,8 +153,9 @@ const Providers = (() => {
       } catch {}
     }
     // Pokémon : TCGdex (multilingue + JP 1996+), repli pokemontcg.io si échec.
+    // Lorcana : lorcast. One Piece : optcgapi. (Topps : seed statique.)
     let items = [];
-    const results = await Promise.allSettled([loadPokemonTCGdex(), loadLorcanaSets()]);
+    const results = await Promise.allSettled([loadPokemonTCGdex(), loadLorcanaSets(), loadOnePieceSets()]);
     for (const r of results) if (r.status === "fulfilled") items = items.concat(r.value);
     if (!items.some((s) => s.game === "Pokémon")) {
       try { items = items.concat(await loadPokemonSets()); } catch {}
