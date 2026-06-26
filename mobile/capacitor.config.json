@@ -1,6 +1,6 @@
 {
   "appId": "app.rysao.tcg",
-  "appName": "RYSAO TCG",
+  "appName": "RYSAO Cards",
   "webDir": "www",
   "server": { "androidScheme": "https" },
   "backgroundColor": "#0b1020",

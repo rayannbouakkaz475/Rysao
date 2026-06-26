@@ -6,7 +6,7 @@
 const I18N = {
   fr: {
     _name: "Français", _flag: "🇫🇷",
-    app_name: "RYSAO TCG",
+    app_name: "RYSAO Cards",
     tagline: "Authentifie, analyse, grade.",
     nav_scan: "Scanner", nav_refs: "Références", nav_prices: "Prix",
     nav_collection: "Collection", nav_grading: "Gradation", nav_social: "Réseau",
@@ -127,7 +127,7 @@ const I18N = {
   },
   en: {
     _name: "English", _flag: "🇬🇧",
-    app_name: "RYSAO TCG", tagline: "Authenticate, analyze, grade.",
+    app_name: "RYSAO Cards", tagline: "Authenticate, analyze, grade.",
     nav_scan: "Scan", nav_refs: "References", nav_prices: "Prices",
     nav_collection: "Collection", nav_grading: "Grading", nav_social: "Network",
     nav_settings: "Settings",
@@ -246,7 +246,7 @@ const I18N = {
   },
   de: {
     _name: "Deutsch", _flag: "🇩🇪",
-    app_name: "RYSAO TCG", tagline: "Authentifizieren, analysieren, graden.",
+    app_name: "RYSAO Cards", tagline: "Authentifizieren, analysieren, graden.",
     nav_scan: "Scan", nav_refs: "Referenzen", nav_prices: "Preise",
     nav_collection: "Sammlung", nav_grading: "Grading", nav_social: "Netzwerk",
     nav_settings: "Einstellungen",
@@ -302,7 +302,7 @@ const I18N = {
   },
   it: {
     _name: "Italiano", _flag: "🇮🇹",
-    app_name: "RYSAO TCG", tagline: "Autentica, analizza, grada.",
+    app_name: "RYSAO Cards", tagline: "Autentica, analizza, grada.",
     nav_scan: "Scansione", nav_refs: "Riferimenti", nav_prices: "Prezzi",
     nav_collection: "Collezione", nav_grading: "Grading", nav_social: "Rete",
     nav_settings: "Impostazioni",
@@ -358,7 +358,7 @@ const I18N = {
   },
   ja: {
     _name: "日本語", _flag: "🇯🇵",
-    app_name: "RYSAO TCG", tagline: "鑑定・分析・グレーディング。",
+    app_name: "RYSAO Cards", tagline: "鑑定・分析・グレーディング。",
     nav_scan: "スキャン", nav_refs: "リファレンス", nav_prices: "価格",
     nav_collection: "コレクション", nav_grading: "鑑定", nav_social: "ネットワーク",
     nav_settings: "設定",
@@ -414,7 +414,7 @@ const I18N = {
   },
   zh: {
     _name: "中文", _flag: "🇨🇳",
-    app_name: "RYSAO TCG", tagline: "鉴定、分析、评级。",
+    app_name: "RYSAO Cards", tagline: "鉴定、分析、评级。",
     nav_scan: "扫描", nav_refs: "参考库", nav_prices: "价格",
     nav_collection: "收藏", nav_grading: "评级", nav_social: "社区",
     nav_settings: "设置",

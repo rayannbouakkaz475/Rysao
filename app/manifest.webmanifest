@@ -1,6 +1,6 @@
 {
-  "name": "RYSAO TCG — Scan & Gradation",
-  "short_name": "RYSAO TCG",
+  "name": "RYSAO Cards — Scan & Gradation",
+  "short_name": "RYSAO Cards",
   "description": "Scan caméra temps réel, analyse de centrage, estimation de gradation, prix marché, collection et réseau pour Pokémon, One Piece, Lorcana et Topps.",
   "start_url": "./index.html",
   "scope": "./",
