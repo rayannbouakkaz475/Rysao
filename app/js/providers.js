@@ -2,7 +2,8 @@
    RYSAO TCG — Fournisseurs externes (vraies API, exécutées côté navigateur)
    - Prix RÉELS Cardmarket via pokemontcg.io (Pokémon), repli sur estimation
    - Catalogue COMPLET chargé dynamiquement (toutes les séries depuis l'origine)
-       • Pokémon : https://api.pokemontcg.io/v2/sets
+       • Pokémon : https://api.tcgdex.net (multilingue fr/en/de/it/es/ja/ko/zh,
+         sets japonais depuis 1996) ; repli https://api.pokemontcg.io/v2/sets
        • Lorcana : https://api.lorcast.com/v0/sets
    - Reconnaissance de carte par OCR (Tesseract.js, chargé à la demande)
    Tout est défensif : timeouts, try/catch, repli local, cache localStorage.
@@ -11,6 +12,9 @@
 const Providers = (() => {
   const POKE_API = "https://api.pokemontcg.io/v2";
   const LORCAST_API = "https://api.lorcast.com/v0";
+  const TCGDEX_API = "https://api.tcgdex.net/v2";
+  // langues TCGdex -> tag interne RYSAO
+  const TCGDEX_LANGS = [["en","en"],["fr","fr"],["de","de"],["it","it"],["es","es"],["ja","ja"],["ko","ko"],["zh-tw","zh"]];
   const TESSERACT_CDN = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
   const CACHE_TTL = 7 * 24 * 3600 * 1000; // 7 jours
 
@@ -51,6 +55,41 @@ const Providers = (() => {
     }));
   }
 
+  // Pokémon COMPLET & MULTILINGUE via TCGdex (inclut les sets japonais 1996+).
+  // 1) GraphQL (en) pour id + date + nb de cartes ; 2) /{lang}/sets pour la
+  // disponibilité par langue et les sets exclusifs (ex. JP).
+  async function loadPokemonTCGdex() {
+    const byId = new Map();
+    try {
+      const d = await getJSON(`${TCGDEX_API}/graphql`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: "{ sets { id name releaseDate cardCount { total } } }" }),
+        timeout: 13000,
+      });
+      const sets = (d && d.data && d.data.sets) || [];
+      for (const s of sets) byId.set(s.id, { id: s.id, name: s.name, year: yearOf(s.releaseDate), cards: (s.cardCount && s.cardCount.total) || 0, langs: new Set() });
+    } catch (_) { /* on continue : la liste par langue suffit */ }
+
+    for (const [api, tag] of TCGDEX_LANGS) {
+      try {
+        const list = await getJSON(`${TCGDEX_API}/${api}/sets`, { timeout: 12000 });
+        for (const s of (list || [])) {
+          let e = byId.get(s.id);
+          if (!e) { e = { id: s.id, name: s.name, year: 0, cards: (s.cardCount && s.cardCount.total) || 0, langs: new Set() }; byId.set(s.id, e); }
+          if (!e.name) e.name = s.name;
+          e.langs.add(tag);
+        }
+      } catch (_) { /* langue indisponible : on ignore */ }
+    }
+    if (!byId.size) throw new Error("tcgdex_empty");
+    return [...byId.values()].map((e) => ({
+      game: "Pokémon", name: e.name, code: (e.id || e.name).toUpperCase(),
+      year: e.year || 0, cards: e.cards,
+      langs: e.langs.size ? [...e.langs] : ["en"], _src: "tcgdex",
+    }));
+  }
+
   async function loadLorcanaSets() {
     const d = await getJSON(`${LORCAST_API}/sets`);
     const arr = d.results || d.data || [];
@@ -65,15 +104,18 @@ const Providers = (() => {
     }));
   }
 
-  // Fusionne dans TCG_DATA sans doublon (clé : game+code, sinon game+name)
+  // Fusionne dans TCG_DATA sans doublon (clé : game+code OU game+nom normalisé)
+  const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
   function mergeCatalog(items) {
-    const key = (s) => (s.game + "|" + (s.code || s.name)).toLowerCase();
-    const seen = new Set(TCG_DATA.map(key));
+    const codeKey = (s) => (s.game + "|" + (s.code || s.name)).toLowerCase();
+    const nameKey = (s) => s.game + "|" + norm(s.name);
+    const codes = new Set(TCG_DATA.map(codeKey));
+    const names = new Set(TCG_DATA.map(nameKey));
     let added = 0;
     for (const it of items) {
       if (!it.name) continue;
-      if (seen.has(key(it))) continue;
-      seen.add(key(it));
+      if (codes.has(codeKey(it)) || names.has(nameKey(it))) continue;
+      codes.add(codeKey(it)); names.add(nameKey(it));
       TCG_DATA.push(it);
       added++;
     }
@@ -91,9 +133,13 @@ const Providers = (() => {
         }
       } catch {}
     }
-    const results = await Promise.allSettled([loadPokemonSets(), loadLorcanaSets()]);
+    // Pokémon : TCGdex (multilingue + JP 1996+), repli pokemontcg.io si échec.
     let items = [];
+    const results = await Promise.allSettled([loadPokemonTCGdex(), loadLorcanaSets()]);
     for (const r of results) if (r.status === "fulfilled") items = items.concat(r.value);
+    if (!items.some((s) => s.game === "Pokémon")) {
+      try { items = items.concat(await loadPokemonSets()); } catch {}
+    }
     if (!items.length) throw new Error("no_catalog");
     localStorage.setItem("rysao_catalog_cache", JSON.stringify({ ts: Date.now(), items }));
     return { added: mergeCatalog(items), cached: false, total: items.length };

@@ -274,7 +274,7 @@ function viewRefs(root) {
         <div class="set-name">${esc(s.name)}</div>
         <div class="set-meta">
           <span>${esc(s.code)}</span>
-          <span>${t("refs_year")}: ${s.year}</span>
+          <span>${t("refs_year")}: ${s.year ? s.year : "—"}</span>
           ${s.cards ? `<span>${t("refs_count")}: ${s.cards}</span>` : ""}
         </div>
         <div class="set-langs">${esc(langStr)}</div>`;
