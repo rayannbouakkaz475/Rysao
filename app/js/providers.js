@@ -165,6 +165,27 @@ const Providers = (() => {
     return { added: mergeCatalog(items), cached: false, total: items.length };
   }
 
+  /* ---------------- LIENS MULTI-PLATEFORMES ---------------- */
+  // Liens de recherche réels (ventes/annonces) pour comparer les prix.
+  // opts = { graded, company, grade }
+  function marketLinks(query, opts = {}) {
+    const base = [query, opts.graded ? opts.company : "", opts.graded ? opts.grade : ""].filter(Boolean).join(" ");
+    const q = encodeURIComponent(base);
+    return {
+      cardmarket: `https://www.cardmarket.com/en/Pokemon/Products/Search?searchString=${encodeURIComponent(query)}`,
+      ebay: `https://www.ebay.com/sch/i.html?_nkw=${q}&LH_Sold=1&LH_Complete=1`,
+      tcgplayer: `https://www.tcgplayer.com/search/all/product?q=${encodeURIComponent(query)}`,
+      pricecharting: `https://www.pricecharting.com/search-products?q=${q}&type=prices`,
+      onepoint30: `https://130point.com/sales/?query=${q}`,
+      psa: `https://www.psacard.com/auctionprices/search?q=${encodeURIComponent(query)}`,
+    };
+  }
+
+  const usdToEur = (usd) => {
+    const u = (window.CURRENCIES || []).find((c) => c.code === "USD");
+    return u && u.rate ? usd / u.rate : usd * 0.92;
+  };
+
   /* ---------------- PRIX RÉELS ---------------- */
   // Renvoie un objet prix au même format que engine.getPrice, ou null si indispo.
   async function getLivePrice(query, game) {
@@ -179,18 +200,25 @@ const Providers = (() => {
         const ql = query.toLowerCase();
         const best = cards.find((c) => ql.includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(ql.split(" ")[0])) || cards[0];
         const cm = best && best.cardmarket && best.cardmarket.prices;
+        const tp = best && best.tcgplayer && best.tcgplayer.prices;
         if (cm && (cm.averageSellPrice || cm.trendPrice)) {
           const avg = cm.averageSellPrice || cm.trendPrice;
+          // TCGplayer (USD) : on prend le 1er variant dispo (normal/holofoil…)
+          let tcg = null;
+          if (tp) { const v = Object.values(tp).find((x) => x && (x.market || x.mid)); if (v) tcg = usdToEur(v.market || v.mid); }
+          const label = `${best.name} — ${best.set.name}`;
           return {
-            query, estimate: false, source: "pokemontcg.io · Cardmarket",
+            query, estimate: false, source: "pokemontcg.io · Cardmarket + TCGplayer",
             image: best.images && best.images.small,
-            matched: `${best.name} — ${best.set.name}`,
+            matched: label,
             cardmarket: { avg: +(+avg).toFixed(2) },
-            ebay: { avg: +((cm.trendPrice || avg) * 1.05).toFixed(2) },
+            tcgplayer: tcg != null ? { avg: +tcg.toFixed(2) } : null,
+            ebay: { avg: +((cm.trendPrice || avg) * 1.05).toFixed(2), estimate: true },
             avg: +(+avg).toFixed(2),
             low: +((cm.lowPrice || avg * 0.7)).toFixed(2),
             high: +((cm.suggestedPrice || cm.avg30 || avg * 1.4)).toFixed(2),
             trend: cm.avg7 && cm.avg30 ? Math.round(((cm.avg7 - cm.avg30) / cm.avg30) * 100) : 0,
+            links: marketLinks(label),
           };
         }
       } catch (_) { /* repli */ }
@@ -213,39 +241,29 @@ const Providers = (() => {
     return tesseractLoading;
   }
 
-  // Reconnaît le nom imprimé sur un canvas (zone du titre) et le mappe au catalogue.
-  // Renvoie { text, set, card } ou { error }.
-  async function recognize(sourceCanvas) {
-    let T;
-    try { T = await withTimeout(loadTesseract(), 15000); }
-    catch { return { error: "ocr_unavailable" }; }
-
-    // On extrait la bande supérieure (≈ où figure le nom) pour fiabiliser l'OCR
+  // OCR d'une région relative (rx,ry,rw,rh ∈ 0..1) avec binarisation.
+  async function ocrCrop(sourceCanvas, rx, ry, rw, rh, thresh = 130) {
+    const T = await withTimeout(loadTesseract(), 15000);
     const w = sourceCanvas.width, h = sourceCanvas.height;
     const crop = document.createElement("canvas");
-    crop.width = Math.floor(w * 0.7); crop.height = Math.floor(h * 0.14);
+    crop.width = Math.max(8, Math.floor(w * rw)); crop.height = Math.max(8, Math.floor(h * rh));
     const cx = crop.getContext("2d");
-    cx.drawImage(sourceCanvas, Math.floor(w * 0.13), Math.floor(h * 0.08), crop.width, crop.height, 0, 0, crop.width, crop.height);
-    // contraste simple
+    cx.drawImage(sourceCanvas, Math.floor(w * rx), Math.floor(h * ry), crop.width, crop.height, 0, 0, crop.width, crop.height);
     const img = cx.getImageData(0, 0, crop.width, crop.height);
     const px = img.data;
     for (let i = 0; i < px.length; i += 4) {
       const v = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-      const b = v > 130 ? 255 : 0;
+      const b = v > thresh ? 255 : 0;
       px[i] = px[i + 1] = px[i + 2] = b;
     }
     cx.putImageData(img, 0, 0);
+    const { data } = await withTimeout(T.recognize(crop), 20000);
+    return (data.text || "").replace(/\s+/g, " ").trim();
+  }
 
-    let text = "";
-    try {
-      const { data } = await withTimeout(T.recognize(crop), 20000);
-      text = (data.text || "").replace(/\s+/g, " ").trim();
-    } catch { return { error: "ocr_failed" }; }
-
-    if (!text) return { error: "no_text" };
-
-    // mappe au catalogue : meilleur set dont le nom partage des mots
-    const words = text.toLowerCase().split(/[^a-zà-ÿ0-9]+/).filter((x) => x.length > 2);
+  // Mappe un texte OCR au meilleur set du catalogue.
+  function matchSet(text) {
+    const words = (text || "").toLowerCase().split(/[^a-zà-ÿ0-9]+/).filter((x) => x.length > 2);
     let best = null, bestScore = 0;
     for (const s of TCG_DATA) {
       const name = (s.name + " " + s.game).toLowerCase();
@@ -253,7 +271,33 @@ const Providers = (() => {
       for (const wd of words) if (name.includes(wd)) score++;
       if (score > bestScore) { bestScore = score; best = s; }
     }
-    return { text, set: bestScore > 0 ? best : null, card: text };
+    return bestScore > 0 ? best : null;
+  }
+
+  // CARTE SIMPLE : lit le nom (bande haute) et le mappe au catalogue.
+  async function recognize(sourceCanvas) {
+    let text;
+    try { text = await ocrCrop(sourceCanvas, 0.13, 0.08, 0.7, 0.14); }
+    catch { return { error: "ocr_unavailable" }; }
+    if (!text) return { error: "no_text" };
+    return { text, set: matchSet(text), card: text };
+  }
+
+  // CARTE GRADÉE (slab) : lit le label (société + note + n° de certification)
+  // puis le nom de la carte sous le label. Renvoie { graded, company, grade,
+  // cert, card, set } ou { error }.
+  async function recognizeGraded(sourceCanvas) {
+    let label, name = "";
+    try { label = await ocrCrop(sourceCanvas, 0.05, 0.02, 0.9, 0.15, 120); }
+    catch { return { error: "ocr_unavailable" }; }
+    try { name = await ocrCrop(sourceCanvas, 0.10, 0.17, 0.80, 0.16, 130); } catch {}
+    const up = (label || "").toUpperCase();
+    const company = (up.match(/PSA|BECKETT|BGS|CGC|SGC|PCA|AFG|MGC|GRADIA|GMA|TAG|ARS/) || [null])[0];
+    const gm = up.match(/\b(10(?:\.0)?|[1-9](?:\.5)?)\b/);
+    const grade = gm ? gm[1] : null;
+    const cert = (up.match(/\b\d{7,9}\b/) || [null])[0];
+    const card = name || label;
+    return { graded: true, company, grade, cert, card, set: matchSet(card), labelText: label };
   }
 
   /* ---------------- CARTE DU MONDE (Leaflet + géocodage) ---------------- */
@@ -290,7 +334,7 @@ const Providers = (() => {
     return null;
   }
 
-  return { loadFullCatalog, getLivePrice, recognize, loadTesseract, loadLeaflet, geocode };
+  return { loadFullCatalog, getLivePrice, recognize, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
 })();
 
 window.Providers = Providers;

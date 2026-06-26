@@ -10,8 +10,20 @@ const State = {
   comTab: "profile",
   chatPeer: null,
   shopView: "list",
+  scanMode: "raw",
   _subs: {},
 };
+
+/* Rangée de liens vers les ventes réelles (multi-plateformes) */
+function marketLinksRow(links) {
+  if (!links) return "";
+  const items = [
+    ["link_cardmarket", links.cardmarket], ["link_ebay", links.ebay],
+    ["link_tcgplayer", links.tcgplayer], ["link_pricecharting", links.pricecharting],
+    ["link_psa", links.psa], ["link_130", links.onepoint30],
+  ].filter(([, u]) => u);
+  return `<div class="links-row">${items.map(([k, u]) => `<a class="link-chip" href="${u}" target="_blank" rel="noopener">${t(k)} ↗</a>`).join("")}</div>`;
+}
 
 /* Abonnement temps réel unique par nom (créé une seule fois) */
 function ensureSub(name, factory) {
@@ -114,6 +126,15 @@ function viewScan(root) {
     root.appendChild(lock);
   }
 
+  // Mode : carte simple vs carte gradée (slab)
+  const modeSeg = el("div", "segment small");
+  [["raw", "scan_mode_raw"], ["graded", "scan_mode_graded"]].forEach(([k, lbl]) => {
+    const b = el("button", "seg-btn" + (State.scanMode === k ? " on" : ""), t(lbl));
+    b.onclick = () => { State.scanMode = k; render(); };
+    modeSeg.appendChild(b);
+  });
+  root.appendChild(modeSeg);
+
   const stage = el("div", "scan-stage");
   stage.innerHTML = `
     <video id="cam" playsinline muted></video>
@@ -137,6 +158,7 @@ function viewScan(root) {
     <div class="metric big"><span class="m-label" data-i="scan_auth"></span><span class="m-val" id="mAuth">—</span></div>
     <div class="metric big"><span class="m-label" data-i="scan_price"></span><span class="m-val" id="mPrice">—</span></div>`;
   root.appendChild(res);
+  const linksBox = el("div", "scan-links"); linksBox.id = "scanLinks"; root.appendChild(linksBox);
   root.appendChild(el("p", "estimate-flag", t("auth_note")));
 
   const video = $("#cam"), canvas = $("#frame");
@@ -150,22 +172,38 @@ function viewScan(root) {
     active = true; recBtn.disabled = false; btn.textContent = t("scan_stop"); btn.classList.remove("primary");
   };
 
-  // Reconnaissance par OCR (à la demande) -> série détectée + prix
+  // Reconnaissance par OCR (à la demande) -> carte simple OU gradée + prix
   recBtn.onclick = async () => {
     if (!active) return;
     if (!isActive()) { toast(t("scan_locked")); nav("settings"); return; }
     recBtn.disabled = true; recBtn.textContent = t("scan_recognizing");
+    $("#scanLinks").innerHTML = "";
     try {
-      const r = await Providers.recognize(canvas);
-      if (r.error) { $("#mDetect").textContent = t("scan_ocr_off"); toast(t("scan_ocr_off")); }
-      else {
-        const setName = r.set ? `${r.set.game} · ${r.set.name}` : "—";
-        $("#mDetect").textContent = `${r.card || "?"}${r.set ? " — " + setName : ""}`;
-        // prix de la carte détectée
-        $("#mPrice").textContent = t("scan_searching");
-        const p = await getPrice(r.card, r.set && r.set.game);
-        $("#mPrice").innerHTML = `${fmtMoney(p.avg)} <span class="flag-${p.estimate?"est":"live"}">${p.estimate?t("price_estimate"):t("price_live")}</span>`;
-        State.lastRecognized = { name: r.card, value: p.avg };
+      if (State.scanMode === "graded") {
+        const r = await Providers.recognizeGraded(canvas);
+        if (r.error) { $("#mDetect").textContent = t("scan_ocr_off"); toast(t("scan_ocr_off")); }
+        else {
+          const setName = r.set ? ` · ${r.set.game}` : "";
+          const tag = [r.company, r.grade].filter(Boolean).join(" ") || "?";
+          $("#mDetect").textContent = `${tag} — ${r.card || "?"}${setName}${r.cert ? " · " + t("scan_cert") + " " + r.cert : ""}`;
+          $("#mPrice").textContent = t("scan_searching");
+          const gp = await getGradedPrice(r.card, r.set && r.set.game, r.company, r.grade);
+          $("#mPrice").innerHTML = `${fmtMoney(gp.value)} <span class="flag-est">${t("graded_value")}</span>`;
+          $("#scanLinks").innerHTML = `<p class="estimate-flag">${t("price_links")} :</p>` + marketLinksRow(gp.links);
+        }
+      } else {
+        const r = await Providers.recognize(canvas);
+        if (r.error) { $("#mDetect").textContent = t("scan_ocr_off"); toast(t("scan_ocr_off")); }
+        else {
+          const setName = r.set ? `${r.set.game} · ${r.set.name}` : "—";
+          $("#mDetect").textContent = `${r.card || "?"}${r.set ? " — " + setName : ""}`;
+          $("#mPrice").textContent = t("scan_searching");
+          const p = await getPrice(r.card, r.set && r.set.game);
+          const tcg = p.tcgplayer ? ` · TCGplayer ${fmtMoney(p.tcgplayer.avg)}` : "";
+          $("#mPrice").innerHTML = `${fmtMoney(p.avg)} <span class="flag-${p.estimate?"est":"live"}">${p.estimate?t("price_estimate"):t("price_live")}</span>${tcg}`;
+          $("#scanLinks").innerHTML = `<p class="estimate-flag">${t("price_links")} :</p>` + marketLinksRow(p.links);
+          State.lastRecognized = { name: r.card, value: p.avg };
+        }
       }
     } catch { $("#mDetect").textContent = t("scan_ocr_off"); }
     recBtn.disabled = false; recBtn.textContent = "🔎 " + t("scan_recognize");
@@ -297,15 +335,42 @@ function viewPrices(root) {
 
   const bar = el("div", "filter-bar");
   const search = el("input", "search"); search.placeholder = t("prices_search");
+  // sélecteur de note (carte gradée) : vide = carte simple
+  const gradeSel = el("select", "select");
+  gradeSel.appendChild(new Option(t("scan_mode_raw"), ""));
+  ["PSA 10","PSA 9","BGS 9.5","BGS 9","CGC 9","SGC 9","PSA 8"].forEach((g) => gradeSel.appendChild(new Option(g, g)));
   const go = el("button", "btn primary", "🔍");
-  bar.appendChild(search); bar.appendChild(go); root.appendChild(bar);
+  bar.appendChild(search); bar.appendChild(gradeSel); bar.appendChild(go); root.appendChild(bar);
 
   const out = el("div", "price-out"); root.appendChild(out);
 
   async function run() {
     const q = search.value.trim(); if (!q) return;
+    const game = THEMES[State.theme].game;
     out.innerHTML = `<p class="empty">${t("scan_searching")}</p>`;
-    const p = await getPrice(q, THEMES[State.theme].game);
+
+    // Mode gradé si une note est choisie
+    if (gradeSel.value) {
+      const [company, grade] = gradeSel.value.split(" ");
+      const gp = await getGradedPrice(q, game, company, grade);
+      out.innerHTML = "";
+      const card = el("div", "price-card");
+      card.innerHTML = `
+        <div class="price-name">${esc(q)} <span class="flag-est">${esc(company)} ${esc(grade)}</span></div>
+        <div class="price-grid">
+          <div><span class="pl">${t("graded_value")}</span><span class="pv strong">${fmtMoney(gp.value)}</span></div>
+          <div><span class="pl">${t("prices_low")} → ${t("prices_high")}</span><span class="pv">${fmtMoney(gp.low)} → ${fmtMoney(gp.high)}</span></div>
+          <div><span class="pl">${t("scan_mode_raw")}</span><span class="pv">${fmtMoney(gp.rawAvg)}</span></div>
+        </div>
+        <p class="estimate-flag">${t("graded_note")}</p>
+        <p class="estimate-flag">${t("price_links")} :</p>${marketLinksRow(gp.links)}
+        <button class="btn add">${t("prices_add_collection")}</button>`;
+      out.appendChild(card);
+      card.querySelector(".add").onclick = () => { addToCollection({ name: `${q} (${company} ${grade})`, value: gp.value }); toast(t("added")); };
+      return;
+    }
+
+    const p = await getPrice(q, game);
     out.innerHTML = "";
     const card = el("div", "price-card");
     const flag = p.estimate
@@ -315,18 +380,21 @@ function viewPrices(root) {
       <div class="price-name">${esc(p.matched || q)} ${flag}</div>
       <div class="price-grid">
         <div><span class="pl">Cardmarket</span><span class="pv">${fmtMoney(p.cardmarket.avg)}</span></div>
-        <div><span class="pl">eBay</span><span class="pv">${fmtMoney(p.ebay.avg)}</span></div>
+        ${p.tcgplayer ? `<div><span class="pl">TCGplayer</span><span class="pv">${fmtMoney(p.tcgplayer.avg)}</span></div>` : ""}
+        <div><span class="pl">eBay <span class="flag-est">${t("price_estimate")}</span></span><span class="pv">${fmtMoney(p.ebay.avg)}</span></div>
         <div><span class="pl">${t("prices_avg")}</span><span class="pv strong">${fmtMoney(p.avg)}</span></div>
         <div><span class="pl">${t("prices_low")} → ${t("prices_high")}</span><span class="pv">${fmtMoney(p.low)} → ${fmtMoney(p.high)}</span></div>
         <div><span class="pl">${t("prices_trend")}</span><span class="pv ${p.trend>=0?"up":"down"}">${p.trend>=0?"▲":"▼"} ${Math.abs(p.trend)}%</span></div>
       </div>
+      <p class="estimate-flag">${t("price_links")} :</p>${marketLinksRow(p.links)}
       <button class="btn add">${t("prices_add_collection")}</button>
-      <p class="estimate-flag">${p.estimate ? "~ " + t("prices_note") : t("price_live") + " · " + esc(p.source || "")}</p>`;
+      <p class="estimate-flag">${p.estimate ? "~ " + t("prices_note") : esc(p.source || "")}</p>`;
     out.appendChild(card);
     card.querySelector(".add").onclick = () => { addToCollection({ name: q, value: p.avg }); toast(t("added")); };
   }
   go.onclick = run;
   search.onkeydown = (e) => { if (e.key === "Enter") run(); };
+  gradeSel.onchange = () => { if (search.value.trim()) run(); };
 }
 
 /* =========================================================================

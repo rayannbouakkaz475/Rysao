@@ -259,6 +259,13 @@ body[data-theme="topps"] .bg-theme{
 .feed-addc{display:flex;gap:6px;margin-top:8px}
 .feed-addc .search{flex:1}
 
+/* ---------- Liens plateformes (ventes réelles) ---------- */
+.links-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.link-chip{display:inline-block;text-decoration:none;font-size:.8rem;font-weight:600;
+  padding:7px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);color:var(--accent)}
+.link-chip:active{transform:scale(.97)}
+.scan-links{margin-top:10px}
+
 /* ---------- Tabbar ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;
   background:rgba(11,16,32,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);

@@ -71,16 +71,48 @@ async function getPrice(query, game) {
   const cm = base * (1 + (((h >> 3) % 20) - 10) / 100);
   const ebay = base * (1 + (((h >> 7) % 24) - 12) / 100);
   const avg = (cm + ebay) / 2;
+  const tcg = base * (1 + (((h >> 11) % 22) - 11) / 100);
   const trend = (((h >> 9) % 41) - 20);        // -20% .. +20%
   return {
     query,
     estimate: true,
     cardmarket: { avg: +cm.toFixed(2) },
-    ebay: { avg: +ebay.toFixed(2) },
+    tcgplayer: { avg: +tcg.toFixed(2) },
+    ebay: { avg: +ebay.toFixed(2), estimate: true },
     avg: +avg.toFixed(2),
     low: +(avg * (1 - spread)).toFixed(2),
     high: +(avg * (1 + spread)).toFixed(2),
     trend,
+    links: (window.Providers && Providers.marketLinks) ? Providers.marketLinks(query) : null,
+  };
+}
+
+/* ---------- Prix des cartes GRADÉES ----------
+   Pas d'API gratuite fiable pour les ventes gradées : on estime une valeur à
+   partir du prix brut × multiplicateur par société/note, ET on fournit les
+   liens vers les ventes RÉELLES (eBay vendus, PriceCharting, PSA APR, 130point).
+*/
+const GRADE_MULTIPLIERS = {
+  // note (sur 10) -> multiplicateur indicatif appliqué au prix brut
+  "10": 6.0, "9.5": 3.2, "9": 2.0, "8.5": 1.6, "8": 1.4,
+  "7": 1.1, "6": 0.9, "5": 0.8, "4": 0.7, "3": 0.6, "2": 0.5, "1": 0.45,
+};
+// Certaines sociétés ont une prime/décote de marché sur la note haute.
+const GRADER_FACTOR = { PSA: 1.0, BGS: 1.05, BECKETT: 1.05, CGC: 0.9, SGC: 0.95, PCA: 0.85, AFG: 0.8, MGC: 0.8, TAG: 0.9, ARS: 0.85, GMA: 0.6, GRADIA: 0.8 };
+
+async function getGradedPrice(query, game, company, grade) {
+  const raw = await getPrice(query, game);             // prix brut (réel ou estimé)
+  const g = String(grade || "").replace(",", ".");
+  const mult = GRADE_MULTIPLIERS[g] || 1;
+  const gf = GRADER_FACTOR[(company || "").toUpperCase()] || 1;
+  const value = +(raw.avg * mult * gf).toFixed(2);
+  return {
+    query, company: company || "—", grade: g || "—",
+    rawAvg: raw.avg, estimate: true,           // valeur gradée = estimation
+    value, low: +(value * 0.7).toFixed(2), high: +(value * 1.5).toFixed(2),
+    rawSource: raw.estimate ? "estimation" : (raw.source || "réel"),
+    links: (window.Providers && Providers.marketLinks)
+      ? Providers.marketLinks(query, { graded: true, company, grade: g }) : null,
   };
 }
 
@@ -139,4 +171,5 @@ window.fmtMoney = fmtMoney;
 window.estimateGrades = estimateGrades;
 window.gradeVerdict = gradeVerdict;
 window.getPrice = getPrice;
+window.getGradedPrice = getGradedPrice;
 window.checkForUpdates = checkForUpdates;
