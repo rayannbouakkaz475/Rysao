@@ -44,9 +44,31 @@ npm run sync           # copy:web + cap sync
 
 - `appId` : `app.rysao.tcg` — `appName` : `RYSAO TCG` (voir `capacitor.config.json`).
 - Couleur de fond / splash : `#0b1020`.
-- Icônes & splash : place tes visuels puis génère-les avec
-  [`@capacitor/assets`](https://github.com/ionic-team/capacitor-assets)
-  (`npx @capacitor/assets generate`).
+### Icônes & écran de démarrage
+
+Les visuels **source** sont déjà fournis dans [`assets/`](./assets) :
+
+| Fichier | Taille | Rôle |
+|---|---|---|
+| `icon-only.png` | 1024² | icône complète (iOS / fallback) |
+| `icon-foreground.png` | 1024² | avant-plan icône adaptive Android (fond transparent) |
+| `icon-background.png` | 1024² | fond icône adaptive Android |
+| `splash.png` / `splash-dark.png` | 2732² | écran de démarrage (clair / sombre) |
+
+Générer **toutes les tailles** iOS/Android à partir de ces sources :
+
+```bash
+npm run assets        # = capacitor-assets generate (après add:ios / add:android)
+```
+
+Pour **re-générer les sources** (après un changement de design) :
+
+```bash
+npm run assets:src    # rend assets/*.png via Chromium (voir scripts/gen-assets.cjs)
+```
+
+> Personnalise le logo/tagline dans `scripts/gen-assets.cjs`, relance
+> `npm run assets:src` puis `npm run assets`.
 
 ## Push natif (APNs / FCM)
 

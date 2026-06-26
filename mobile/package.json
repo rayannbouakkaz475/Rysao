@@ -11,7 +11,9 @@
     "open:ios": "cap open ios",
     "open:android": "cap open android",
     "run:ios": "npm run sync && cap run ios",
-    "run:android": "npm run sync && cap run android"
+    "run:android": "npm run sync && cap run android",
+    "assets:src": "node scripts/gen-assets.cjs",
+    "assets": "capacitor-assets generate --assetPath assets --iconBackgroundColor '#0b1020' --iconBackgroundColorDark '#0b1020' --splashBackgroundColor '#0b1020' --splashBackgroundColorDark '#0b1020'"
   },
   "dependencies": {
     "@capacitor/app": "^6.0.1",
@@ -23,6 +25,7 @@
     "@capacitor/status-bar": "^6.0.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.1.2"
   }
 }
