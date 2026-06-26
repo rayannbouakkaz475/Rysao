@@ -93,9 +93,10 @@ async function getPrice(query, game) {
    liens vers les ventes RÉELLES (eBay vendus, PriceCharting, PSA APR, 130point).
 */
 const GRADE_MULTIPLIERS = {
-  // note (sur 10) -> multiplicateur indicatif appliqué au prix brut
-  "10": 6.0, "9.5": 3.2, "9": 2.0, "8.5": 1.6, "8": 1.4,
-  "7": 1.1, "6": 0.9, "5": 0.8, "4": 0.7, "3": 0.6, "2": 0.5, "1": 0.45,
+  // note (sur 10) -> multiplicateur indicatif appliqué au prix brut (profil Équilibré)
+  "10": 5.0, "9.5": 2.6, "9": 1.8, "8.5": 1.4, "8": 1.2,
+  "7.5": 1.05, "7": 0.95, "6.5": 0.85, "6": 0.78, "5": 0.65,
+  "4": 0.55, "3": 0.45, "2": 0.38, "1": 0.30,
 };
 // Certaines sociétés ont une prime/décote de marché sur la note haute.
 const GRADER_FACTOR = { PSA: 1.0, BGS: 1.05, BECKETT: 1.05, CGC: 0.9, SGC: 0.95, PCA: 0.85, AFG: 0.8, MGC: 0.8, TAG: 0.9, ARS: 0.85, GMA: 0.6, GRADIA: 0.8 };
