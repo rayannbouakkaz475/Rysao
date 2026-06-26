@@ -338,7 +338,9 @@ function viewPrices(root) {
   // sélecteur de note (carte gradée) : vide = carte simple
   const gradeSel = el("select", "select");
   gradeSel.appendChild(new Option(t("scan_mode_raw"), ""));
-  ["PSA 10","PSA 9","BGS 9.5","BGS 9","CGC 9","SGC 9","PSA 8"].forEach((g) => gradeSel.appendChild(new Option(g, g)));
+  // Graders mondiaux + européens (PCA/AFG/MGC/Gradia)
+  ["PSA 10","PSA 9","BGS 9.5","BGS 9","CGC 9","SGC 9",
+   "PCA 10","PCA 9","AFG 10","MGC 10","Gradia 10"].forEach((g) => gradeSel.appendChild(new Option(g, g)));
   const go = el("button", "btn primary", "🔍");
   bar.appendChild(search); bar.appendChild(gradeSel); bar.appendChild(go); root.appendChild(bar);
 
