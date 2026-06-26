@@ -5,7 +5,7 @@
        • Pokémon : https://api.tcgdex.net (multilingue fr/en/de/it/es/ja/ko/zh,
          + chinois zh-cn/zh-tw, sets japonais depuis 1996) ; repli pokemontcg.io
        • Lorcana : https://api.lorcast.com/v0/sets
-       • One Piece : https://optcgapi.com/api/sets/ (libre)  · Topps : seed
+       • One Piece : https://optcgapi.com/api/allSets/ (libre ; set_id/set_name) · Topps : seed
    - Reconnaissance de carte par OCR (Tesseract.js, chargé à la demande)
    Tout est défensif : timeouts, try/catch, repli local, cache localStorage.
    =========================================================================== */
@@ -95,7 +95,7 @@ const Providers = (() => {
   // One Piece via optcgapi (libre, sans clé). Défensif : mappe des champs
   // courants et renvoie [] en cas d'échec (le seed statique prend le relais).
   async function loadOnePieceSets() {
-    const d = await getJSON(`${OPTCG_API}/sets/`, { timeout: 12000 });
+    const d = await getJSON(`${OPTCG_API}/allSets/`, { timeout: 12000 });
     const arr = Array.isArray(d) ? d : (d.data || d.sets || []);
     return arr.map((s) => {
       const code = s.set_id || s.id || s.code || s.setCode || "";
