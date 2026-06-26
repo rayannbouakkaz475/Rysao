@@ -37,6 +37,29 @@ function estimateGrades(centeringScore, surfaceScore) {
   }).sort((a, b) => b.proba - a.proba);
 }
 
+/* ---------- Centrage référencé à TOUTES les maisons de gradation ----------
+   À partir du ratio mesuré (centerLR/centerTB ∈ 0..1), calcule pour chaque
+   société la note MAX atteignable par le seul centrage, selon son barème.
+*/
+function worstCenterPct(centerLR, centerTB) {
+  const lr = Math.max(centerLR, 1 - centerLR) * 100;
+  const tb = Math.max(centerTB, 1 - centerTB) * 100;
+  return Math.round(Math.max(lr, tb));
+}
+function centeringMaxGradeFor(companyName, worstPct) {
+  const ladder = centeringStandardFor(companyName); // [[grade, tol], ...] note décroissante
+  for (const [g, tol] of ladder) if (worstPct <= tol) return g;
+  const last = ladder[ladder.length - 1];
+  return `<${last[0]}`;
+}
+function centeringByHouses(centerLR, centerTB) {
+  const worst = worstCenterPct(centerLR, centerTB);
+  return GRADING_COMPANIES.map((co) => ({
+    name: co.name, region: co.region, country: co.country,
+    maxGrade: centeringMaxGradeFor(co.name, worst),
+  }));
+}
+
 function gradeVerdict(centeringScore) {
   if (centeringScore >= 0.85) return { key: "grade_excellent", cls: "ok" };
   if (centeringScore >= 0.65) return { key: "grade_good", cls: "good" };
@@ -171,6 +194,8 @@ window.setCurrency = setCurrency;
 window.fmtMoney = fmtMoney;
 window.estimateGrades = estimateGrades;
 window.gradeVerdict = gradeVerdict;
+window.centeringByHouses = centeringByHouses;
+window.worstCenterPct = worstCenterPct;
 window.getPrice = getPrice;
 window.getGradedPrice = getGradedPrice;
 window.checkForUpdates = checkForUpdates;

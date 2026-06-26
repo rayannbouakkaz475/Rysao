@@ -201,6 +201,31 @@ const GRADING_COMPANIES = [
 /* ---------------- DEVISES -------------------------------------------------
    rate = valeur de 1 EUR dans la devise (taux indicatif, modifiable).
 */
+/* ---------------- STANDARDS DE CENTRAGE PAR MAISON ----------------
+   Tolérance de centrage FACE par note : [note, % du plus grand côté].
+   Ex. [10, 55] => une carte jusqu'à 55/45 peut viser la note 10 (centrage).
+   Le centrage est NÉCESSAIRE mais pas suffisant (coins/bords/surface comptent).
+   Valeurs publiées (PSA/BGS/CGC/SGC) ; approximations marquées pour les autres.
+*/
+const CENTERING_STANDARDS = {
+  PSA:      [[10,55],[9,60],[8,65],[7,70],[6,75],[5,80]],
+  BGS:      [[10,50],[9.5,55],[9,60],[8.5,65],[8,70],[7,75]],
+  CGC:      [[10,50],[9.5,55],[9,60],[8,65],[7,70]],
+  SGC:      [[10,55],[9,60],[8,65],[7,70]],
+  TAG:      [[10,54],[9,60],[8,66],[7,72]],
+  _default: [[10,55],[9,60],[8,65],[7,70],[6,75]],   // PCA, AFG, MGC, Gradia, ARS, GMA…
+};
+// Associe un nom de société (GRADING_COMPANIES) à un barème de centrage.
+function centeringStandardFor(companyName) {
+  const n = (companyName || "").toUpperCase();
+  if (n.includes("PSA")) return CENTERING_STANDARDS.PSA;
+  if (n.includes("BGS") || n.includes("BECKETT")) return CENTERING_STANDARDS.BGS;
+  if (n.includes("CGC")) return CENTERING_STANDARDS.CGC;
+  if (n.includes("SGC")) return CENTERING_STANDARDS.SGC;
+  if (n.includes("TAG")) return CENTERING_STANDARDS.TAG;
+  return CENTERING_STANDARDS._default;
+}
+
 const CURRENCIES = [
   { code: "EUR", symbol: "€", rate: 1.00 },
   { code: "USD", symbol: "$", rate: 1.08 },
@@ -215,4 +240,6 @@ window.PRODUCT_LANGS = PRODUCT_LANGS;
 window.TCG_DATA = TCG_DATA;
 window.TCG_GAMES = TCG_GAMES;
 window.GRADING_COMPANIES = GRADING_COMPANIES;
+window.CENTERING_STANDARDS = CENTERING_STANDARDS;
+window.centeringStandardFor = centeringStandardFor;
 window.CURRENCIES = CURRENCIES;

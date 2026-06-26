@@ -167,7 +167,65 @@ const Scanner = (() => {
     };
   }
 
-  return { start, stop, ROI };
+  /* ---------- Grading multi-critères (coins / bords / surface) ----------
+     Analyse approfondie à la demande sur l'image courante. Heuristique de
+     vision (canvas), INDICATIVE — pré-screen, pas une note officielle. */
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
+  const round2 = (v) => Math.round(v * 100) / 100;
+
+  function regionLuma(rx, ry, rw, rh) {
+    const x = Math.max(0, Math.floor(rx * canvas.width));
+    const y = Math.max(0, Math.floor(ry * canvas.height));
+    const w = Math.max(2, Math.floor(rw * canvas.width));
+    const h = Math.max(2, Math.floor(rh * canvas.height));
+    const d = ctx.getImageData(x, y, w, h).data;
+    const n = w * h, a = new Float32Array(n);
+    for (let i = 0; i < n; i++) a[i] = 0.299 * d[i*4] + 0.587 * d[i*4+1] + 0.114 * d[i*4+2];
+    return { a, w, h };
+  }
+  function sharpness({ a, w, h }) {
+    let s = 0, c = 0;
+    for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      s += Math.abs(4 * a[i] - a[i-1] - a[i+1] - a[i-w] - a[i+w]); c++;
+    }
+    return c ? s / c : 0;
+  }
+  function stats({ a }) {
+    let m = 0; for (let i = 0; i < a.length; i++) m += a[i]; m /= a.length;
+    let v = 0; for (let i = 0; i < a.length; i++) { const d = a[i] - m; v += d * d; }
+    return { mean: m, std: Math.sqrt(v / a.length) };
+  }
+
+  function gradeDetail() {
+    if (!ctx || !canvas.width) return null;
+    const R = ROI, cp = 0.10;
+    // Coins : netteté dans 4 patchs intérieurs (usure/arrondi => moins net)
+    const corners = [
+      [R.x + 0.02, R.y + 0.02], [R.x + R.w - 0.02 - cp * R.w, R.y + 0.02],
+      [R.x + 0.02, R.y + R.h - 0.02 - cp * R.h], [R.x + R.w - 0.02 - cp * R.w, R.y + R.h - 0.02 - cp * R.h],
+    ].map(([rx, ry]) => sharpness(regionLuma(rx, ry, cp * R.w, cp * R.h)));
+    const avgSharp = corners.reduce((a, b) => a + b, 0) / corners.length;
+    const minSharp = Math.min(...corners);
+    const cornerScore = round2(clamp01(minSharp / 14) * 0.6 + clamp01(avgSharp / 18) * 0.4);
+    // Bords : écart-type le long des 4 bords (blanchiment/chips => std élevé)
+    const edges = [
+      regionLuma(R.x + 0.06, R.y + 0.02, R.w - 0.12, 0.03),
+      regionLuma(R.x + 0.06, R.y + R.h - 0.05, R.w - 0.12, 0.03),
+      regionLuma(R.x + 0.02, R.y + 0.06, 0.03, R.h - 0.12),
+      regionLuma(R.x + R.w - 0.05, R.y + 0.06, 0.03, R.h - 0.12),
+    ].map((s) => stats(s).std);
+    const avgEdgeStd = edges.reduce((a, b) => a + b, 0) / edges.length;
+    const edgeScore = round2(clamp01(1 - (avgEdgeStd - 8) / 40));
+    // Surface : fraction de pixels aberrants au centre (rayures/taches)
+    const surf = regionLuma(R.x + 0.18, R.y + 0.30, R.w - 0.36, R.h - 0.5);
+    const { mean, std } = stats(surf);
+    let out = 0; for (let i = 0; i < surf.a.length; i++) if (Math.abs(surf.a[i] - mean) > std * 3) out++;
+    const surfaceScore = round2(clamp01(1 - (out / surf.a.length) * 40));
+    return { corners: cornerScore, edges: edgeScore, surface: surfaceScore };
+  }
+
+  return { start, stop, ROI, gradeDetail };
 })();
 
 window.Scanner = Scanner;

@@ -300,6 +300,64 @@ const Providers = (() => {
     return { graded: true, company, grade, cert, card, set: matchSet(card), labelText: label };
   }
 
+  /* ---------------- RECONNAISSANCE VISUELLE (embeddings CLIP) ----------------
+     Confirme l'OCR en comparant l'image scannée aux images officielles des
+     cartes candidates (embeddings CLIP via transformers.js, chargé à la
+     demande). Repli automatique sur l'OCR si le modèle/réseau est indispo. */
+  const CLIP_CDN = "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2";
+  let clipLoading = null;
+  async function loadCLIP() {
+    if (window.__rysaoCLIP) return window.__rysaoCLIP;
+    if (clipLoading) return clipLoading;
+    clipLoading = (async () => {
+      const mod = await import(/* @vite-ignore */ CLIP_CDN);
+      const ext = await mod.pipeline("image-feature-extraction", "Xenova/clip-vit-base-patch32", { quantized: true });
+      window.__rysaoCLIP = { mod, ext };
+      return window.__rysaoCLIP;
+    })();
+    return clipLoading;
+  }
+  const cosine = (a, b) => {
+    let d = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+    return d / (Math.sqrt(na) * Math.sqrt(nb) + 1e-9);
+  };
+  async function embedURL({ ext, mod }, url) {
+    const img = await mod.RawImage.fromURL(url);
+    const out = await ext(img, { pooling: "mean", normalize: true });
+    return out.data;
+  }
+  // Images candidates (avec visuel) pour la carte détectée — Pokémon via pokemontcg.io
+  async function candidateImages(text, game) {
+    if (game && game !== "Pokémon") return [];
+    try {
+      const headers = pokeKey() ? { "X-Api-Key": pokeKey() } : {};
+      const q = encodeURIComponent(`name:"${(text || "").split(/\s+/)[0]}*"`);
+      const d = await getJSON(`${POKE_API}/cards?q=${q}&pageSize=12`, { headers });
+      return (d.data || []).filter((c) => c.images && c.images.small)
+        .map((c) => ({ label: `${c.name} — ${c.set.name}`, img: c.images.small, set: matchSet(c.set.name) }));
+    } catch { return []; }
+  }
+  // Reconnaissance carte simple AMÉLIORÉE : OCR + confirmation visuelle.
+  async function recognizeVisual(sourceCanvas) {
+    const base = await recognize(sourceCanvas);            // baseline OCR
+    const text = base && base.card ? base.card : "";
+    const game = base && base.set && base.set.game;
+    const candidates = await candidateImages(text, game);
+    if (!candidates.length) return base.error ? base : { ...base, method: "ocr" };
+    try {
+      const clip = await withTimeout(loadCLIP(), 30000);
+      const photo = sourceCanvas.toDataURL("image/jpeg", 0.85);
+      const pv = await embedURL(clip, photo);
+      let best = null, bestSim = -1;
+      for (const c of candidates) {
+        try { const sim = cosine(pv, await embedURL(clip, c.img)); if (sim > bestSim) { bestSim = sim; best = c; } } catch {}
+      }
+      if (best && bestSim > 0.2) return { card: best.label, set: best.set, confidence: +bestSim.toFixed(2), method: "visual" };
+    } catch (_) { /* repli OCR */ }
+    return base.error ? base : { ...base, method: "ocr" };
+  }
+
   /* ---------------- CARTE DU MONDE (Leaflet + géocodage) ---------------- */
   const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
   const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
@@ -334,7 +392,7 @@ const Providers = (() => {
     return null;
   }
 
-  return { loadFullCatalog, getLivePrice, recognize, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
+  return { loadFullCatalog, getLivePrice, recognize, recognizeVisual, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
 })();
 
 window.Providers = Providers;

@@ -259,6 +259,20 @@ body[data-theme="topps"] .bg-theme{
 .feed-addc{display:flex;gap:6px;margin-top:8px}
 .feed-addc .search{flex:1}
 
+/* ---------- Panneau d'analyse d'état (grading IA) ---------- */
+.grade-panel{margin-top:12px}
+.grade-panel:empty{display:none}
+.gp-overall{font-size:1.05rem;font-weight:800;color:var(--accent);margin-bottom:10px}
+.gp-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:.85rem}
+.gp-row>span{flex:0 0 90px;color:var(--dim)}
+.gp-row>b{flex:0 0 42px;text-align:right}
+.gp-bar{flex:1;height:8px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden}
+.gp-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.gp-houses-title{margin:12px 0 6px;font-size:.82rem;color:var(--dim);font-weight:600}
+.gp-houses{display:flex;flex-wrap:wrap;gap:6px}
+.gp-house{font-size:.76rem;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:5px 9px}
+.gp-house b{color:var(--accent)}
+
 /* ---------- Liens plateformes (ventes réelles) ---------- */
 .links-row{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
 .link-chip{display:inline-block;text-decoration:none;font-size:.8rem;font-weight:600;

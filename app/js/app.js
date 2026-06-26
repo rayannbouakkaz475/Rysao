@@ -43,7 +43,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 /* ---------- abonnement : essai 5 jours puis Premium ---------- */
-const TRIAL_DAYS = 5;
+const TRIAL_DAYS = 7;
 function trialStart() {
   let s = localStorage.getItem("rysao_trial_start");
   if (!s) { s = String(Date.now()); localStorage.setItem("rysao_trial_start", s); }
@@ -146,7 +146,8 @@ function viewScan(root) {
   const ctr = el("div", "scan-ctrl");
   const btn = el("button", "btn primary", t("scan_start"));
   const recBtn = el("button", "btn", "🔎 " + t("scan_recognize")); recBtn.disabled = true;
-  ctr.appendChild(btn); ctr.appendChild(recBtn); root.appendChild(ctr);
+  const gradeBtn = el("button", "btn", "🧪 " + t("grade_analyze")); gradeBtn.disabled = true;
+  ctr.appendChild(btn); ctr.appendChild(recBtn); ctr.appendChild(gradeBtn); root.appendChild(ctr);
 
   const res = el("div", "scan-results");
   res.innerHTML = `
@@ -159,17 +160,42 @@ function viewScan(root) {
     <div class="metric big"><span class="m-label" data-i="scan_price"></span><span class="m-val" id="mPrice">—</span></div>`;
   root.appendChild(res);
   const linksBox = el("div", "scan-links"); linksBox.id = "scanLinks"; root.appendChild(linksBox);
+  const gradePanel = el("div", "grade-panel"); gradePanel.id = "gradePanel"; root.appendChild(gradePanel);
   root.appendChild(el("p", "estimate-flag", t("auth_note")));
 
   const video = $("#cam"), canvas = $("#frame");
   let active = false, lastResultTime = 0;
 
   btn.onclick = async () => {
-    if (active) { Scanner.stop(); active = false; recBtn.disabled = true; btn.textContent = t("scan_start"); btn.classList.add("primary"); return; }
+    if (active) { Scanner.stop(); active = false; recBtn.disabled = true; gradeBtn.disabled = true; btn.textContent = t("scan_start"); btn.classList.add("primary"); return; }
     btn.textContent = "…";
     const ok = await Scanner.start(video, canvas, onScan);
     if (ok === false) return;
-    active = true; recBtn.disabled = false; btn.textContent = t("scan_stop"); btn.classList.remove("primary");
+    active = true; recBtn.disabled = false; gradeBtn.disabled = false; btn.textContent = t("scan_stop"); btn.classList.remove("primary");
+  };
+
+  // Analyse d'état multi-critères (coins/bords/surface) + centrage par maison
+  gradeBtn.onclick = () => {
+    if (!active) return;
+    if (!isActive()) { toast(t("scan_locked")); nav("settings"); return; }
+    const g = Scanner.gradeDetail();
+    const s = State.lastScan;
+    const panel = $("#gradePanel");
+    if (!g || !s) { panel.innerHTML = `<p class="empty">${t("scan_align")}</p>`; return; }
+    // note estimée globale = centrage + coins + bords + surface
+    const overall = (s.centeringScore * 0.30 + g.corners * 0.25 + g.edges * 0.25 + g.surface * 0.20);
+    const note = Math.max(1, Math.min(10, Math.round((6 + overall * 4) * 2) / 2));
+    const houses = centeringByHouses(s.centerLR, s.centerTB);
+    const bar = (lbl, v) => `<div class="gp-row"><span>${lbl}</span><div class="gp-bar"><div class="gp-fill" style="width:${Math.round(v*100)}%"></div></div><b>${Math.round(v*100)}%</b></div>`;
+    panel.innerHTML = `
+      <div class="gp-overall">${t("grade_overall")}: <b>${note}/10</b></div>
+      ${bar(t("scan_centering"), s.centeringScore)}
+      ${bar(t("grade_corners"), g.corners)}
+      ${bar(t("grade_edges"), g.edges)}
+      ${bar(t("grade_surface"), g.surface)}
+      <div class="gp-houses-title">${t("grade_centering_houses")} · ${t("grade_worst")}: ${worstCenterPct(s.centerLR, s.centerTB)}/${100-worstCenterPct(s.centerLR, s.centerTB)}</div>
+      <div class="gp-houses">${houses.map((h) => `<span class="gp-house"><b>${esc(h.name.split(" (")[0])}</b> ≤ ${h.maxGrade}</span>`).join("")}</div>
+      <p class="estimate-flag">${t("auth_note")}</p>`;
   };
 
   // Reconnaissance par OCR (à la demande) -> carte simple OU gradée + prix
@@ -192,11 +218,12 @@ function viewScan(root) {
           $("#scanLinks").innerHTML = `<p class="estimate-flag">${t("price_links")} :</p>` + marketLinksRow(gp.links);
         }
       } else {
-        const r = await Providers.recognize(canvas);
+        const r = await Providers.recognizeVisual(canvas);
         if (r.error) { $("#mDetect").textContent = t("scan_ocr_off"); toast(t("scan_ocr_off")); }
         else {
           const setName = r.set ? `${r.set.game} · ${r.set.name}` : "—";
-          $("#mDetect").textContent = `${r.card || "?"}${r.set ? " — " + setName : ""}`;
+          const method = r.method === "visual" ? ` <span class="flag-live">${t("scan_method_visual")} ${r.confidence ? Math.round(r.confidence*100)+"%" : ""}</span>` : "";
+          $("#mDetect").innerHTML = `${esc(r.card || "?")}${r.set ? " — " + esc(setName) : ""}${method}`;
           $("#mPrice").textContent = t("scan_searching");
           const p = await getPrice(r.card, r.set && r.set.game);
           const tcg = p.tcgplayer ? ` · TCGplayer ${fmtMoney(p.tcgplayer.avg)}` : "";
