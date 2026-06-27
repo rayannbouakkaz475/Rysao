@@ -22,6 +22,8 @@ const Providers = (() => {
 
   // clé optionnelle pokemontcg.io (limite de débit plus haute)
   const pokeKey = () => localStorage.getItem("rysao_pokemontcg_key") || null;
+  // URL de la Edge Function "prices" (clés payantes côté serveur) — pas la clé !
+  const pricesFnUrl = () => (window.RYSAO_CONFIG && window.RYSAO_CONFIG.pricesFnUrl) || localStorage.getItem("rysao_prices_fn") || null;
 
   function withTimeout(promise, ms = 9000) {
     return Promise.race([
@@ -186,9 +188,49 @@ const Providers = (() => {
     return u && u.rate ? usd / u.rate : usd * 0.92;
   };
 
+  /* ---------------- PRIX PAYANTS (via Edge Function, EUR) ---------------- */
+  // Prix brut depuis la fonction serveur (PriceCharting + Cardmarket). Mêmes
+  // champs que getLivePrice. Renvoie null si non configuré / indispo.
+  async function getPaidPrice(query, game) {
+    const url = pricesFnUrl(); if (!url) return null;
+    try {
+      const d = await getJSON(`${url}?type=raw&q=${encodeURIComponent(query)}&game=${encodeURIComponent(game || "")}`, { timeout: 13000 });
+      if (!d || !d.ok || !d.raw || d.raw.avg == null) return null;
+      const R = d.raw, label = d.matched || query;
+      return {
+        query, estimate: false, source: `${d.source || "Prix"} · serveur`, matched: label,
+        cardmarket: { avg: R.cardmarket != null ? R.cardmarket : R.avg },
+        tcgplayer: R.tcgplayer != null ? { avg: R.tcgplayer } : null,
+        pricecharting: R.pricecharting != null ? { avg: R.pricecharting } : null,
+        ebay: { avg: +(R.avg * 1.05).toFixed(2), estimate: true },
+        avg: R.avg, low: R.low, high: R.high, trend: 0, links: marketLinks(label),
+      };
+    } catch { return null; }
+  }
+
+  // Prix GRADÉ réel depuis la fonction serveur. Renvoie null si indispo.
+  async function getPaidGraded(query, game, company, grade) {
+    const url = pricesFnUrl(); if (!url) return null;
+    try {
+      const g = encodeURIComponent(`${company || ""} ${grade || ""}`.trim());
+      const d = await getJSON(`${url}?type=graded&grade=${g}&q=${encodeURIComponent(query)}&game=${encodeURIComponent(game || "")}`, { timeout: 13000 });
+      if (!d || !d.ok || !d.graded || d.graded.value == null) return null;
+      const v = d.graded.value;
+      return {
+        query, company: company || "—", grade: String(grade || "—"), estimate: false,
+        value: v, low: +(v * 0.85).toFixed(2), high: +(v * 1.2).toFixed(2),
+        source: `${d.source || "PriceCharting"} · serveur`, matched: d.matched,
+        links: marketLinks(query, { graded: true, company, grade }),
+      };
+    } catch { return null; }
+  }
+
   /* ---------------- PRIX RÉELS ---------------- */
   // Renvoie un objet prix au même format que engine.getPrice, ou null si indispo.
   async function getLivePrice(query, game) {
+    // 1) Source payante (Edge Function) si configurée
+    const paid = await getPaidPrice(query, game);
+    if (paid) return paid;
     // Pokémon : prix Cardmarket réels via pokemontcg.io
     if (!game || game === "Pokémon") {
       try {
@@ -392,7 +434,7 @@ const Providers = (() => {
     return null;
   }
 
-  return { loadFullCatalog, getLivePrice, recognize, recognizeVisual, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
+  return { loadFullCatalog, getLivePrice, getPaidPrice, getPaidGraded, recognize, recognizeVisual, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
 })();
 
 window.Providers = Providers;

@@ -44,6 +44,33 @@ La clé **anon** est conçue pour le client : la sécurité est assurée par les
 **policies RLS** du `schema.sql` (chacun n'écrit que ses données ; l'enchère
 passe par une fonction `security definer` qui valide le montant).
 
+## Prix payants (PriceCharting + Cardmarket) — Edge Function `prices`
+
+Les clés payantes **ne doivent pas** être dans l'app (lisibles par tous) et ces
+API n'autorisent pas le navigateur (CORS / OAuth1). On passe donc par une
+**Edge Function** qui garde les secrets et renvoie un format **unifié en EUR**.
+
+### Déploiement
+```bash
+supabase functions deploy prices --no-verify-jwt
+supabase secrets set PRICECHARTING_TOKEN=... FX_USD_EUR=0.92
+# Cardmarket (optionnel) :
+supabase secrets set CM_APP_TOKEN=... CM_APP_SECRET=... CM_ACCESS_TOKEN=... CM_ACCESS_SECRET=...
+```
+Puis dans l'app : Réglages ▸ *URL fonction prix* → colle l'URL de la fonction
+(ex. `https://VOTRE-PROJET.functions.supabase.co/prices`).
+
+### Contrat
+`GET ?q=<nom>&game=<jeu>&type=raw|graded|sealed&grade=<ex: "PSA 10">`
+→ `{ ok, query, matched, source, raw:{cardmarket,pricecharting,avg,low,high}, graded:{value,grade}, sealed }`
+(tous les montants en **EUR**). L'app appelle la fonction en priorité, sinon
+elle retombe sur pokemontcg.io / l'estimation.
+
+> ⚠️ Le mapping **PriceCharting** (champs `loose-price`, `manual-only-price`=PSA10,
+> `graded-price`=PSA9, etc.) est basé sur leur doc ; ajuste-le dans
+> `functions/prices/index.ts` quand tu vois ta vraie réponse. **Cardmarket**
+> nécessite l'app validée pour usage commercial.
+
 ## Notifications push (téléphone fermé)
 
 Le temps réel Supabase couvre l'app **ouverte**. Le **push** (app fermée) est

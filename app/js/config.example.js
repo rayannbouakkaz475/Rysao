@@ -7,6 +7,8 @@ window.RYSAO_CONFIG = {
   supabaseKey: "VOTRE_CLE_ANON_PUBLIC",
   // clé publique VAPID pour les push (npx web-push generate-vapid-keys)
   vapidPublicKey: "",
+  // URL de la Edge Function "prices" (clés payantes côté serveur)
+  pricesFnUrl: "",
   // optionnel : clé pokemontcg.io pour des prix live à plus haut débit
   pokemontcgKey: "",
 };

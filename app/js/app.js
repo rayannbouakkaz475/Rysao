@@ -384,14 +384,17 @@ function viewPrices(root) {
       const gp = await getGradedPrice(q, game, company, grade);
       out.innerHTML = "";
       const card = el("div", "price-card");
+      const gFlag = gp.estimate === false
+        ? `<span class="flag-live">${t("price_live")} · ${esc(gp.source || "")}</span>`
+        : `<span class="flag-est">${t("price_estimate")}</span>`;
       card.innerHTML = `
-        <div class="price-name">${esc(q)} <span class="flag-est">${esc(company)} ${esc(grade)}</span></div>
+        <div class="price-name">${esc(q)} <span class="flag-est">${esc(company)} ${esc(grade)}</span> ${gFlag}</div>
         <div class="price-grid">
           <div><span class="pl">${t("graded_value")}</span><span class="pv strong">${fmtMoney(gp.value)}</span></div>
           <div><span class="pl">${t("prices_low")} → ${t("prices_high")}</span><span class="pv">${fmtMoney(gp.low)} → ${fmtMoney(gp.high)}</span></div>
-          <div><span class="pl">${t("scan_mode_raw")}</span><span class="pv">${fmtMoney(gp.rawAvg)}</span></div>
+          ${gp.rawAvg != null ? `<div><span class="pl">${t("scan_mode_raw")}</span><span class="pv">${fmtMoney(gp.rawAvg)}</span></div>` : ""}
         </div>
-        <p class="estimate-flag">${t("graded_note")}</p>
+        ${gp.estimate === false ? "" : `<p class="estimate-flag">${t("graded_note")}</p>`}
         <p class="estimate-flag">${t("price_links")} :</p>${marketLinksRow(gp.links)}
         <button class="btn add">${t("prices_add_collection")}</button>`;
       out.appendChild(card);
@@ -410,6 +413,7 @@ function viewPrices(root) {
       <div class="price-grid">
         <div><span class="pl">Cardmarket</span><span class="pv">${fmtMoney(p.cardmarket.avg)}</span></div>
         ${p.tcgplayer ? `<div><span class="pl">TCGplayer</span><span class="pv">${fmtMoney(p.tcgplayer.avg)}</span></div>` : ""}
+        ${p.pricecharting ? `<div><span class="pl">PriceCharting</span><span class="pv">${fmtMoney(p.pricecharting.avg)}</span></div>` : ""}
         <div><span class="pl">eBay <span class="flag-est">${t("price_estimate")}</span></span><span class="pv">${fmtMoney(p.ebay.avg)}</span></div>
         <div><span class="pl">${t("prices_avg")}</span><span class="pv strong">${fmtMoney(p.avg)}</span></div>
         <div><span class="pl">${t("prices_low")} → ${t("prices_high")}</span><span class="pv">${fmtMoney(p.low)} → ${fmtMoney(p.high)}</span></div>
@@ -931,7 +935,10 @@ function viewSettings(root) {
   priceKey.style.marginTop = "8px";
   priceKey.value = localStorage.getItem("rysao_price_api") || "";
   priceKey.onchange = () => { localStorage.setItem("rysao_price_api", priceKey.value.trim()); toast("✓"); };
-  apiBlk.appendChild(pokeKey); apiBlk.appendChild(priceKey); root.appendChild(apiBlk);
+  const pricesFn = el("input", "search"); pricesFn.placeholder = t("settings_prices_fn");
+  pricesFn.style.marginTop = "8px"; pricesFn.value = localStorage.getItem("rysao_prices_fn") || "";
+  pricesFn.onchange = () => { localStorage.setItem("rysao_prices_fn", pricesFn.value.trim()); toast("✓"); };
+  apiBlk.appendChild(pokeKey); apiBlk.appendChild(priceKey); apiBlk.appendChild(pricesFn); root.appendChild(apiBlk);
 
   // backend (Supabase) + authentification
   const beBlk = el("div", "set-block");

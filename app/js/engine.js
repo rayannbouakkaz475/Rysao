@@ -125,6 +125,12 @@ const GRADE_MULTIPLIERS = {
 const GRADER_FACTOR = { PSA: 1.0, BGS: 1.05, BECKETT: 1.05, CGC: 0.9, SGC: 0.95, PCA: 0.85, AFG: 0.8, MGC: 0.8, TAG: 0.9, ARS: 0.85, GMA: 0.6, GRADIA: 0.8 };
 
 async function getGradedPrice(query, game, company, grade) {
+  // 1) Prix gradé RÉEL via Edge Function (PriceCharting) si configurée
+  if (window.Providers && Providers.getPaidGraded) {
+    try { const paid = await Providers.getPaidGraded(query, game, company, grade); if (paid) return paid; }
+    catch (_) { /* repli estimation */ }
+  }
+  // 2) Repli : estimation prix brut × note × société
   const raw = await getPrice(query, game);             // prix brut (réel ou estimé)
   const g = String(grade || "").replace(",", ".");
   const mult = GRADE_MULTIPLIERS[g] || 1;
