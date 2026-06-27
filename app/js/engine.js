@@ -110,6 +110,24 @@ async function getPrice(query, game) {
   };
 }
 
+/* ---------- Prix des produits SCELLÉS ----------
+   Serveur (PriceCharting) en priorité ; sinon estimation déterministe propre
+   aux scellés (boxes/ETB plus chers qu'une carte), clairement étiquetée.
+*/
+async function getSealedPrice(query, game) {
+  if (window.Providers && Providers.getPaidSealed) {
+    try { const paid = await Providers.getPaidSealed(query, game); if (paid) return paid; }
+    catch (_) { /* repli estimation */ }
+  }
+  const h = hashStr((query || "").toLowerCase().trim());
+  const value = +(50 + (h % 30000) / 100).toFixed(2);   // ~50 .. ~350 EUR
+  return {
+    query, value, estimate: true, source: "estimation",
+    low: +(value * 0.8).toFixed(2), high: +(value * 1.3).toFixed(2),
+    links: (window.Providers && Providers.marketLinks) ? Providers.marketLinks(query) : null,
+  };
+}
+
 /* ---------- Prix des cartes GRADÉES ----------
    Pas d'API gratuite fiable pour les ventes gradées : on estime une valeur à
    partir du prix brut × multiplicateur par société/note, ET on fournit les
@@ -204,4 +222,5 @@ window.centeringByHouses = centeringByHouses;
 window.worstCenterPct = worstCenterPct;
 window.getPrice = getPrice;
 window.getGradedPrice = getGradedPrice;
+window.getSealedPrice = getSealedPrice;
 window.checkForUpdates = checkForUpdates;

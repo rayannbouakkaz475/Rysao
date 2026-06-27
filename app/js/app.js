@@ -342,7 +342,20 @@ function viewRefs(root) {
           <span>${t("refs_year")}: ${s.year ? s.year : "—"}</span>
           ${s.cards ? `<span>${t("refs_count")}: ${s.cards}</span>` : ""}
         </div>
-        <div class="set-langs">${esc(langStr)}</div>`;
+        <div class="set-langs">${esc(langStr)}</div>
+        ${s.sealed ? `<div class="sealed-price"><button class="btn sp-btn">${t("refs_sealed_price")}</button><span class="sp-out"></span></div>` : ""}`;
+      if (s.sealed) {
+        const btn = card.querySelector(".sp-btn"), o = card.querySelector(".sp-out");
+        btn.onclick = async () => {
+          btn.disabled = true; o.textContent = " " + t("scan_searching");
+          const sp = await getSealedPrice(s.name, s.game);
+          o.innerHTML = ` <b>${fmtMoney(sp.value)}</b> <span class="flag-${sp.estimate?"est":"live"}">${sp.estimate?t("price_estimate"):t("price_live")}</span>`;
+          btn.disabled = false;
+          const c2 = el("button", "btn add-sealed", t("refs_add"));
+          c2.onclick = () => { addToCollection({ name: s.name, value: sp.value }); toast(t("added")); };
+          if (!card.querySelector(".add-sealed")) card.querySelector(".sealed-price").appendChild(c2);
+        };
+      }
       list.appendChild(card);
     });
   }

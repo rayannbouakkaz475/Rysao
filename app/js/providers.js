@@ -225,6 +225,16 @@ const Providers = (() => {
     } catch { return null; }
   }
 
+  // Prix SCELLÉ réel depuis la fonction serveur (PriceCharting). Null si indispo.
+  async function getPaidSealed(query, game) {
+    const url = pricesFnUrl(); if (!url) return null;
+    try {
+      const d = await getJSON(`${url}?type=sealed&q=${encodeURIComponent(query)}&game=${encodeURIComponent(game || "")}`, { timeout: 13000 });
+      if (!d || !d.ok || d.sealed == null) return null;
+      return { query, value: d.sealed, estimate: false, source: `${d.source || "PriceCharting"} · serveur`, matched: d.matched, links: marketLinks(query) };
+    } catch { return null; }
+  }
+
   /* ---------------- PRIX RÉELS ---------------- */
   // Renvoie un objet prix au même format que engine.getPrice, ou null si indispo.
   async function getLivePrice(query, game) {
@@ -434,7 +444,7 @@ const Providers = (() => {
     return null;
   }
 
-  return { loadFullCatalog, getLivePrice, getPaidPrice, getPaidGraded, recognize, recognizeVisual, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
+  return { loadFullCatalog, getLivePrice, getPaidPrice, getPaidGraded, getPaidSealed, recognize, recognizeVisual, recognizeGraded, marketLinks, loadTesseract, loadLeaflet, geocode };
 })();
 
 window.Providers = Providers;
