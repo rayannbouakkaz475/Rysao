@@ -19,6 +19,7 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
 - ✍️ **Prompt libre** : décris en toutes lettres ce que tu veux voir (ta scène, ton univers) — ton idée guide chaque plan, **avec ou sans piste audio / paroles**
 - 🎨 **7 styles de clip** : concert, cinématique, anime, néon/cyberpunk, nature, abstrait, rétro
 - 🧑‍🎤 **Personnage personnalisable** : description, type, tenue + **image de référence**
+- 🍓 **Personnages tendance TikTok** : galerie de **fruits & légumes à visage** (anthropomorphes, qui chantent) — un clic remplit une description optimisée pour ce rendu viral
 - 🪄 **Cohérence du personnage** entre tous les plans, 3 modes :
   - **Ancre** : une image de référence (uploadée *ou générée* depuis la description via Flux) sert d'image de départ commune + **seed fixe** → même visage partout
   - **Enchaînement** : la dernière image d'un plan amorce le suivant (continuité fluide, extraction FFmpeg)

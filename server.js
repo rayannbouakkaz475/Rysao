@@ -11,7 +11,7 @@ import { createRequire } from "node:module";
 import { getModel, getImageModel, UPSCALE_MODEL, publicModelList } from "./models.js";
 import {
   buildPrompts, buildPromptsFromLyrics, buildAnchorPrompt,
-  publicStyleList, publicMoodList,
+  publicStyleList, publicMoodList, publicCharacterPresets,
 } from "./promptBuilder.js";
 import {
   assembleClip, extractLastFrame, upscaleTo4K, ffmpegWorks,
@@ -80,6 +80,7 @@ app.get("/api/config", (req, res) => {
     models: publicModelList(),
     styles: publicStyleList(),
     moods: publicMoodList(),
+    characterPresets: publicCharacterPresets(),
     canAssemble: Boolean(FFMPEG_PATH),
   });
 });

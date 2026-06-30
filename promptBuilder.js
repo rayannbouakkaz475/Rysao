@@ -57,6 +57,50 @@ export const MOODS = {
 const QUALITY = "ultra realistic, 4K, highly detailed, sharp focus, professional color grading, cinematic lighting";
 const NEGATIVE = "blurry, low quality, distorted, deformed, watermark, text, extra limbs, glitch, low resolution";
 
+// ------------------------------------------------------------
+//  Personnages préréglés : les fruits & légumes à visage
+//  devenus viraux sur TikTok (anthropomorphes, qui chantent).
+// ------------------------------------------------------------
+// Traitement commun pour garder le rendu "trend TikTok" cohérent.
+const TIKTOK_FACE =
+  "anthropomorphic character with a cute expressive human-like face, big shiny" +
+  " eyes, eyebrows and a singing open mouth, glossy hyper-realistic 3D render," +
+  " soft studio lighting, adorable and funny, viral TikTok aesthetic";
+
+const FRUIT_VEGGIE_PRESETS = [
+  { key: "strawberry", emoji: "🍓", label: "Fraise", base: "a giant red strawberry" },
+  { key: "banana", emoji: "🍌", label: "Banane", base: "a smiling banana" },
+  { key: "tomato", emoji: "🍅", label: "Tomate", base: "a shiny round tomato" },
+  { key: "avocado", emoji: "🥑", label: "Avocat", base: "a ripe avocado with its pit" },
+  { key: "eggplant", emoji: "🍆", label: "Aubergine", base: "a glossy purple eggplant" },
+  { key: "carrot", emoji: "🥕", label: "Carotte", base: "an orange carrot with green leaves" },
+  { key: "orange", emoji: "🍊", label: "Orange", base: "a juicy orange" },
+  { key: "broccoli", emoji: "🥦", label: "Brocoli", base: "a green broccoli" },
+  { key: "grapes", emoji: "🍇", label: "Raisin", base: "a bunch of purple grapes" },
+  { key: "corn", emoji: "🌽", label: "Maïs", base: "a corn cob with golden kernels" },
+  { key: "watermelon", emoji: "🍉", label: "Pastèque", base: "a slice of watermelon" },
+  { key: "potato", emoji: "🥔", label: "Patate", base: "a chubby brown potato" },
+  { key: "pineapple", emoji: "🍍", label: "Ananas", base: "a spiky pineapple" },
+  { key: "lemon", emoji: "🍋", label: "Citron", base: "a bright yellow lemon" },
+  { key: "pepper", emoji: "🫑", label: "Poivron", base: "a shiny green bell pepper" },
+  { key: "mushroom", emoji: "🍄", label: "Champignon", base: "a red-capped mushroom" },
+];
+
+// Description complète (prompt) d'un préréglage.
+function presetDescription(p) {
+  return `${p.base}, ${TIKTOK_FACE}`;
+}
+
+// Liste exposée au frontend (avec la description prête à l'emploi).
+export function publicCharacterPresets() {
+  return FRUIT_VEGGIE_PRESETS.map((p) => ({
+    key: p.key,
+    emoji: p.emoji,
+    label: p.label,
+    description: presetDescription(p),
+  }));
+}
+
 // Décrit un personnage à partir des choix de l'utilisateur.
 function describeCharacter(c) {
   if (!c || (!c.description && !c.gender && !c.style)) return "";

@@ -55,6 +55,7 @@ async function init() {
 
   buildStyleGrid(cfg.styles);
   buildMoodChips(cfg.moods);
+  buildPresetGrid(cfg.characterPresets || []);
   buildModelSelect(cfg.models);
   wireNavigation();
   wireAudio();
@@ -261,6 +262,7 @@ function applyProject(p) {
   $("#charDesc").value = state.character.description;
   $("#charGender").value = state.character.gender;
   $("#charStyle").value = state.character.style;
+  syncPresetSelection();
   if (state.character.referenceImage) {
     const img = $("#refPreview");
     img.src = state.character.referenceImage;
@@ -495,6 +497,45 @@ function buildMoodChips(moods) {
   });
 }
 
+function buildPresetGrid(presets) {
+  const grid = $("#presetGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  presets.forEach((p) => {
+    const b = document.createElement("button");
+    b.className = "preset";
+    b.dataset.key = p.key;
+    b.type = "button";
+    b.innerHTML = `<span class="pe">${p.emoji}</span><span>${p.label}</span>`;
+    b.addEventListener("click", () => {
+      // Bascule : reclic = désélection.
+      const wasActive = b.classList.contains("active");
+      $$("#presetGrid .preset").forEach((x) => x.classList.remove("active"));
+      if (wasActive) {
+        state.character.description = "";
+        $("#charDesc").value = "";
+        return;
+      }
+      b.classList.add("active");
+      state.character.description = p.description;
+      state.character.gender = "none"; // le fruit EST le personnage
+      $("#charDesc").value = p.description;
+      $("#charGender").value = "none";
+    });
+    grid.appendChild(b);
+  });
+}
+
+// Met en surbrillance le préréglage dont la description correspond
+// à la description courante (ou aucun si édition libre).
+function syncPresetSelection() {
+  const presets = state.config?.characterPresets || [];
+  const match = presets.find((p) => p.description === state.character.description);
+  $$("#presetGrid .preset").forEach((el) =>
+    el.classList.toggle("active", !!match && el.dataset.key === match.key)
+  );
+}
+
 function buildModelSelect(models) {
   const sel = $("#modelSelect");
   sel.innerHTML = "";
@@ -607,7 +648,11 @@ async function handleAudio(file) {
 
 // ---------- Étape 3 : personnage ----------
 function wireCharacter() {
-  $("#charDesc").addEventListener("input", (e) => (state.character.description = e.target.value));
+  $("#charDesc").addEventListener("input", (e) => {
+    state.character.description = e.target.value;
+    // Édition manuelle -> on désélectionne le préréglage.
+    syncPresetSelection();
+  });
   $("#charGender").addEventListener("change", (e) => (state.character.gender = e.target.value));
   $("#charStyle").addEventListener("input", (e) => (state.character.style = e.target.value));
 
