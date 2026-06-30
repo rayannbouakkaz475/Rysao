@@ -22,6 +22,9 @@ const state = {
   durationSec: 5,
   shotCount: 4,
   prompts: [],
+  audioFile: null,       // fichier musique (pour le montage)
+  audioId: null,         // id renvoyé après upload serveur
+  results: {},           // index du plan -> URL vidéo générée
 };
 
 // ---------- Initialisation ----------
@@ -49,6 +52,7 @@ async function init() {
   wireCharacter();
   wireSettings();
   $("#generateBtn").addEventListener("click", runGeneration);
+  $("#assembleBtn").addEventListener("click", assembleFinal);
 }
 
 // ---------- Construction des UI dynamiques ----------
@@ -164,6 +168,8 @@ function wireAudio() {
 
 async function handleAudio(file) {
   if (!file) return;
+  state.audioFile = file;
+  state.audioId = null; // re-upload nécessaire si la musique change
   $("#audioCard").classList.remove("hidden");
   $("#player").src = URL.createObjectURL(file);
   $("#statName").textContent = file.name.length > 16 ? file.name.slice(0, 14) + "…" : file.name;
@@ -291,12 +297,84 @@ async function runGeneration() {
   const btn = $("#generateBtn");
   btn.disabled = true;
   btn.textContent = "Génération en cours…";
+  state.results = {};
 
   // On lance les plans en parallèle, chacun suivi indépendamment.
   await Promise.all(state.prompts.map((p) => generateShot(p)));
 
   btn.disabled = false;
   btn.textContent = "↻ Relancer la génération";
+
+  // Montage possible dès qu'au moins un plan a réussi.
+  const ok = Object.keys(state.results).length;
+  const zone = $("#assembleZone");
+  if (ok > 0 && state.config.canAssemble) {
+    zone.classList.remove("hidden");
+  } else if (ok > 0 && !state.config.canAssemble) {
+    zone.classList.remove("hidden");
+    $("#assembleBtn").disabled = true;
+    $("#assembleBtn").textContent = "Montage indisponible (FFmpeg absent)";
+  }
+}
+
+// ---------- Montage final ----------
+async function uploadAudioIfNeeded() {
+  if (state.audioId || !state.audioFile) return state.audioId;
+  const res = await fetch("/api/upload-audio", {
+    method: "POST",
+    headers: { "Content-Type": state.audioFile.type || "audio/mpeg" },
+    body: state.audioFile,
+  }).then((r) => r.json());
+  if (res.error) throw new Error(res.error);
+  state.audioId = res.audioId;
+  return state.audioId;
+}
+
+async function assembleFinal() {
+  const btn = $("#assembleBtn");
+  const status = $("#assembleStatus");
+  const out = $("#finalVideo");
+  btn.disabled = true;
+  out.innerHTML = "";
+  status.classList.remove("hidden");
+  status.innerHTML = `<span class="spinner"></span>Préparation…`;
+
+  try {
+    // Plans réussis, dans l'ordre.
+    const shots = state.prompts
+      .filter((p) => state.results[p.index])
+      .map((p) => ({ url: state.results[p.index], durationSec: state.durationSec }));
+    if (!shots.length) throw new Error("aucun plan réussi à assembler");
+
+    if (state.audioFile) {
+      status.innerHTML = `<span class="spinner"></span>Envoi de la musique…`;
+      await uploadAudioIfNeeded();
+    }
+
+    status.innerHTML = `<span class="spinner"></span>Montage en cours (téléchargement, découpe sur le beat, encodage)…`;
+    const res = await fetch("/api/assemble", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        shots,
+        audioId: state.audioId,
+        bpm: state.audio?.bpm || null,
+        aspectRatio: state.aspectRatio,
+        snapToBeat: $("#snapBeat").checked,
+      }),
+    }).then((r) => r.json());
+
+    if (res.error) throw new Error(res.error);
+
+    status.innerHTML = `✅ Clip monté · ${res.durationSec}s · ${shots.length} plans`;
+    out.innerHTML = `
+      <video src="${res.url}" controls autoplay loop playsinline></video>
+      <a class="dl" href="${res.url}" download>⬇️ Télécharger le clip (.mp4)</a>`;
+  } catch (e) {
+    status.innerHTML = `<span style="color:var(--brand2)">Échec du montage : ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function generateShot(p) {
@@ -323,17 +401,17 @@ async function generateShot(p) {
     if (res.error) throw new Error(res.error);
 
     if (res.status === "succeeded" && res.output) {
-      return showVideo(statusEl, videoWrap, res.output, res.demo);
+      return showVideo(statusEl, videoWrap, res.output, res.demo, p.index);
     }
     // Sinon on poll l'état.
-    await pollStatus(res.id, statusEl, videoWrap);
+    await pollStatus(res.id, statusEl, videoWrap, p.index);
   } catch (e) {
     setStatus(statusEl, "failed", "Échec");
     videoWrap.innerHTML = `<small class="hint">${e.message}</small>`;
   }
 }
 
-function pollStatus(id, statusEl, videoWrap) {
+function pollStatus(id, statusEl, videoWrap, index) {
   return new Promise((resolve) => {
     setStatus(statusEl, "processing", "Génération…");
     const timer = setInterval(async () => {
@@ -341,7 +419,7 @@ function pollStatus(id, statusEl, videoWrap) {
         const s = await fetch(`/api/status/${id}`).then((r) => r.json());
         if (s.status === "succeeded") {
           clearInterval(timer);
-          showVideo(statusEl, videoWrap, s.output, s.demo);
+          showVideo(statusEl, videoWrap, s.output, s.demo, index);
           resolve();
         } else if (s.status === "failed" || s.status === "canceled") {
           clearInterval(timer);
@@ -358,10 +436,11 @@ function pollStatus(id, statusEl, videoWrap) {
   });
 }
 
-function showVideo(statusEl, videoWrap, output, demo) {
+function showVideo(statusEl, videoWrap, output, demo, index) {
   const url = Array.isArray(output) ? output[0] : output;
   setStatus(statusEl, "succeeded", demo ? "Démo ✓" : "Prêt ✓");
   videoWrap.innerHTML = `<video src="${url}" controls loop muted playsinline></video>`;
+  if (typeof index === "number") state.results[index] = url;
 }
 
 function setStatus(el, cls, text) {

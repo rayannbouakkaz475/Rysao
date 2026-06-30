@@ -20,6 +20,7 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
 - 🧑‍🎤 **Personnage personnalisable** : description, type, tenue + **image de référence** (cohérence du visage d'un plan à l'autre via l'image-to-video)
 - 🎚️ **Réglages** : choix du moteur, format (16:9 / 9:16 / 1:1), durée des plans, nombre de plans
 - ⚡ **Génération multi-plans en parallèle** avec suivi d'état en direct
+- 🎞️ **Montage automatique** : tous les plans assemblés en **un seul clip**, découpés **sur le beat** (grille BPM), avec ta musique, exporté en .mp4 téléchargeable (FFmpeg)
 - 🧪 **Mode démo** intégré pour tester toute l'interface **sans dépenser un centime**
 
 ---
@@ -81,19 +82,37 @@ coûter plusieurs centaines d'euros. Le **mode démo** existe justement pour tou
 ## 🗺️ Architecture
 
 ```
-server.js          API Express : /config, /plan, /generate, /status — garde la clé côté serveur
+server.js          API Express : /config, /plan, /generate, /status,
+                   /upload-audio, /assemble — garde la clé côté serveur
 models.js          Registre des modèles Replicate + adaptateurs d'entrée
 promptBuilder.js   Construit les prompts (style + personnage + ambiance + audio) par plan
+assemble.js        Montage FFmpeg : download des plans, découpe sur le beat,
+                   concaténation, mux de la musique, export .mp4
 public/
   index.html       Interface en assistant (5 étapes)
   styles.css       Thème
   audio.js         Analyse audio (Web Audio API) : durée, BPM, ambiance
-  app.js           État, navigation, appels API, polling, rendu des vidéos
+  app.js           État, navigation, appels API, polling, rendu + montage
 ```
+
+### Le montage en détail (`assemble.js`)
+
+1. **Téléchargement** de chaque plan généré (URL Replicate ou démo)
+2. **Uniformisation** : mise à l'échelle + letterbox vers la résolution du format
+   (1920×1080 / 1080×1920 / 1080×1080), 24 fps
+3. **Calage rythmique** : chaque plan est coupé sur un nombre entier de beats
+   (`durée = round(durée / (60/BPM)) × (60/BPM)`) → les coupures tombent sur le rythme
+4. **Concaténation** des plans (démuxeur concat)
+5. **Mux de la musique** d'origine (AAC), coupée à la longueur de la vidéo (`-shortest`)
+6. Export d'un seul `.mp4` servi depuis `/outputs`, téléchargeable
+
+> **FFmpeg** : le serveur cherche un binaire qui fonctionne dans cet ordre —
+> `$FFMPEG_PATH`, puis la dépendance **`ffmpeg-static`** (binaire embarqué,
+> aucune install système requise), puis `ffmpeg` du système. Si aucun n'est
+> trouvé, l'app reste pleinement utilisable et désactive juste le bouton de montage.
 
 ## 🧭 Pistes d'évolution
 
-- 🎞️ **Montage automatique** : assembler les plans calés sur le beat (FFmpeg côté serveur)
 - 🔁 **Cohérence de personnage** renforcée (seeds fixes, character refs)
 - 📝 **Transcription des paroles** (Whisper) pour des prompts par couplet/refrain
 - ⬆️ **Upscale 4K** (Topaz / Real-ESRGAN) en post-traitement

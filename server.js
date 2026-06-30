@@ -4,12 +4,16 @@
 import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 
 import { getModel, publicModelList } from "./models.js";
 import { buildPrompts, publicStyleList, publicMoodList } from "./promptBuilder.js";
+import { assembleClip, ffmpegWorks } from "./assemble.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 // --- Chargement minimal du .env (sans dépendance externe) ---
 function loadEnv() {
@@ -36,9 +40,28 @@ const REPLICATE_BASE = "https://api.replicate.com/v1";
 const DEMO_VIDEO =
   "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
 
+// Dossiers de travail : musiques uploadées + clips montés.
+const WORK_DIR = join(__dirname, ".work");
+const UPLOAD_DIR = join(WORK_DIR, "uploads");
+const OUTPUT_DIR = join(WORK_DIR, "outputs");
+for (const d of [WORK_DIR, UPLOAD_DIR, OUTPUT_DIR]) mkdirSync(d, { recursive: true });
+
+// Résolution du binaire FFmpeg : env > ffmpeg-static > système.
+let FFMPEG_PATH = null;
+async function resolveFfmpeg() {
+  const candidates = [process.env.FFMPEG_PATH];
+  try { candidates.push(require("ffmpeg-static")); } catch {}
+  candidates.push("ffmpeg");
+  for (const c of candidates) {
+    if (c && (await ffmpegWorks(c))) return c;
+  }
+  return null;
+}
+
 const app = express();
 app.use(express.json({ limit: "25mb" })); // large pour accepter une image de référence en data URI
 app.use(express.static(join(__dirname, "public")));
+app.use("/outputs", express.static(OUTPUT_DIR)); // clips montés téléchargeables
 
 // --- Config exposée au frontend ---
 app.get("/api/config", (req, res) => {
@@ -49,6 +72,7 @@ app.get("/api/config", (req, res) => {
     models: publicModelList(),
     styles: publicStyleList(),
     moods: publicMoodList(),
+    canAssemble: Boolean(FFMPEG_PATH),
   });
 });
 
@@ -173,9 +197,75 @@ app.get("/api/status/:id", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+// --- Upload de la musique (pour le montage final) ---
+//  Reçoit le fichier audio brut, le stocke, renvoie un audioId.
+const EXT_BY_MIME = {
+  "audio/mpeg": "mp3", "audio/mp3": "mp3", "audio/wav": "wav",
+  "audio/x-wav": "wav", "audio/wave": "wav", "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a", "audio/aac": "aac", "audio/ogg": "ogg",
+  "audio/flac": "flac",
+};
+app.post(
+  "/api/upload-audio",
+  express.raw({ type: () => true, limit: "80mb" }),
+  async (req, res) => {
+    if (!req.body || !req.body.length) {
+      return res.status(400).json({ error: "fichier audio vide" });
+    }
+    const ext = EXT_BY_MIME[(req.headers["content-type"] || "").split(";")[0]] || "mp3";
+    const id = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const path = join(UPLOAD_DIR, `${id}.${ext}`);
+    try {
+      await writeFile(path, req.body);
+      res.json({ audioId: `${id}.${ext}` });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+);
+
+// --- Montage final : assemble les plans + la musique ---
+//  Body : { shots:[{url,durationSec}], audioId, bpm,
+//           aspectRatio, snapToBeat }
+app.post("/api/assemble", async (req, res) => {
+  if (!FFMPEG_PATH) {
+    return res.status(503).json({
+      error:
+        "FFmpeg indisponible sur le serveur. Installe ffmpeg ou la dépendance ffmpeg-static.",
+    });
+  }
+  const { shots, audioId, bpm, aspectRatio, snapToBeat } = req.body || {};
+  if (!Array.isArray(shots) || !shots.length) {
+    return res.status(400).json({ error: "aucun plan à assembler" });
+  }
+  // Sécurise l'audioId (pas de traversée de chemin).
+  let audioPath = null;
+  if (audioId && /^[\w.-]+$/.test(audioId)) {
+    const p = join(UPLOAD_DIR, audioId);
+    if (existsSync(p)) audioPath = p;
+  }
+  try {
+    const result = await assembleClip(shots, {
+      ffmpegPath: FFMPEG_PATH,
+      audioPath,
+      bpm: Number(bpm) || null,
+      aspectRatio: aspectRatio || "16:9",
+      snapToBeat: snapToBeat !== false,
+      workDir: WORK_DIR,
+      outDir: OUTPUT_DIR,
+    });
+    res.json({ url: `/outputs/${result.file}`, durationSec: result.durationSec });
+  } catch (e) {
+    console.error("assemble error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.listen(PORT, async () => {
+  FFMPEG_PATH = await resolveFfmpeg();
   console.log(`\n  🎬  Rysao — AI Music Video`);
   console.log(`  ➜  http://localhost:${PORT}`);
   console.log(`  ➜  Mode : ${DEMO_MODE ? "DÉMO (aucun crédit dépensé)" : "RÉEL (Replicate)"}`);
-  console.log(`  ➜  Clé Replicate : ${REPLICATE_API_TOKEN ? "détectée ✅" : "absente ⚠️"}\n`);
+  console.log(`  ➜  Clé Replicate : ${REPLICATE_API_TOKEN ? "détectée ✅" : "absente ⚠️"}`);
+  console.log(`  ➜  Montage FFmpeg : ${FFMPEG_PATH ? `prêt (${FFMPEG_PATH}) ✅` : "indisponible ⚠️"}\n`);
 });
