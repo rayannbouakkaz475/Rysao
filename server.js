@@ -8,12 +8,15 @@ import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { writeFile, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 
-import { getModel, getImageModel, publicModelList } from "./models.js";
+import { getModel, getImageModel, UPSCALE_MODEL, publicModelList } from "./models.js";
 import {
   buildPrompts, buildPromptsFromLyrics, buildAnchorPrompt,
   publicStyleList, publicMoodList,
 } from "./promptBuilder.js";
-import { assembleClip, extractLastFrame, ffmpegWorks } from "./assemble.js";
+import {
+  assembleClip, extractLastFrame, upscaleTo4K, ffmpegWorks,
+} from "./assemble.js";
+import { basename } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -416,6 +419,82 @@ app.post("/api/assemble", async (req, res) => {
     res.json({ url: `/outputs/${result.file}`, durationSec: result.durationSec });
   } catch (e) {
     console.error("assemble error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Upscale 4K du clip monté ---
+//  Body : { file (nom dans /outputs), aspectRatio, method }
+//    method "fast" -> FFmpeg local (toujours dispo)
+//    method "ai"   -> Replicate Real-ESRGAN (clé requise)
+async function uploadToReplicate(buf, name) {
+  const fd = new FormData();
+  fd.append("content", new Blob([buf], { type: "video/mp4" }), name);
+  const r = await fetch(`${REPLICATE_BASE}/files`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${REPLICATE_API_TOKEN}` },
+    body: fd,
+  });
+  const body = await r.json();
+  if (!r.ok) throw new Error(body?.detail || `upload Replicate HTTP ${r.status}`);
+  const url = body?.urls?.get;
+  if (!url) throw new Error("URL de fichier Replicate manquante");
+  return url;
+}
+
+app.post("/api/upscale", async (req, res) => {
+  const { file, aspectRatio = "16:9", method = "fast" } = req.body || {};
+  // Sécurise le nom de fichier (pas de traversée de chemin).
+  const safe = file ? basename(String(file)) : "";
+  const inputPath = join(OUTPUT_DIR, safe);
+  if (!safe || !existsSync(inputPath)) {
+    return res.status(404).json({ error: "clip introuvable (monte d'abord le clip)." });
+  }
+
+  // Voie IA (Replicate) si demandée et possible.
+  if (method === "ai" && !DEMO_MODE && REPLICATE_API_TOKEN) {
+    try {
+      const buf = await readFile(inputPath);
+      const url = await uploadToReplicate(buf, safe);
+      const input = UPSCALE_MODEL.buildInput(url, 2);
+      const p = await replicate(
+        `/models/${UPSCALE_MODEL.owner}/${UPSCALE_MODEL.name}/predictions`,
+        { method: "POST", body: JSON.stringify({ input }) }
+      );
+      let out = p.output, tries = 0;
+      while (!out && p.id && tries < 120) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const s = await replicate(`/predictions/${p.id}`);
+        if (s.status === "succeeded") out = s.output;
+        else if (s.status === "failed") throw new Error(s.error || "upscale échoué");
+        tries++;
+      }
+      const outUrl = Array.isArray(out) ? out[0] : out;
+      if (!outUrl) throw new Error("aucune sortie d'upscale");
+      return res.json({ url: outUrl, method: "ai" });
+    } catch (e) {
+      return res.status(e.status || 500).json({ error: e.message });
+    }
+  }
+
+  // Voie rapide : upscale FFmpeg local.
+  if (!FFMPEG_PATH) {
+    return res.status(503).json({ error: "FFmpeg indisponible pour l'upscale." });
+  }
+  try {
+    const result = await upscaleTo4K(inputPath, {
+      ffmpegPath: FFMPEG_PATH,
+      aspectRatio,
+      outDir: OUTPUT_DIR,
+    });
+    res.json({
+      url: `/outputs/${result.file}`,
+      method: DEMO_MODE && req.body?.method === "ai" ? "fast-fallback" : "fast",
+      width: result.width,
+      height: result.height,
+    });
+  } catch (e) {
+    console.error("upscale error:", e.message);
     res.status(500).json({ error: e.message });
   }
 });

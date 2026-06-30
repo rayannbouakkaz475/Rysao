@@ -132,6 +132,19 @@ export const IMAGE_MODELS = {
   },
 };
 
+// ------------------------------------------------------------
+//  Modèle d'UPSCALE vidéo (super-résolution IA, optionnel).
+//  Vérifie le schéma sur la page Replicate du modèle si tu en
+//  changes : les noms de champs varient d'un modèle à l'autre.
+// ------------------------------------------------------------
+export const UPSCALE_MODEL = {
+  owner: "lucataco",
+  name: "real-esrgan-video",
+  buildInput(videoUrl, scale = 2) {
+    return { video_path: videoUrl, scale, model_name: "RealESRGAN_x4plus" };
+  },
+};
+
 export function getModel(key) {
   return MODELS[key] || null;
 }

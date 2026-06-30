@@ -202,6 +202,19 @@
         <button class="btn primary" id="assembleBtn">🎬 Monter le clip final</button>
         <div id="assembleStatus" class="assemble-status hidden"></div>
         <div id="finalVideo" class="final-video"></div>
+
+        <!-- Upscale 4K -->
+        <div id="upscaleZone" class="upscale hidden">
+          <h4>⬆️ Passer en 4K</h4>
+          <div class="chips" id="upscaleMethod">
+            <button class="chip active" data-method="fast">⚡ Rapide (FFmpeg)</button>
+            <button class="chip" data-method="ai">🧠 IA (Real-ESRGAN)</button>
+          </div>
+          <small class="hint" id="upscaleHint">Rapide : mise à l'échelle 4K locale, gratuite et instantanée.</small>
+          <button class="btn primary btn-sm" id="upscaleBtn">⬆️ Générer la version 4K</button>
+          <div id="upscaleStatus" class="assemble-status hidden"></div>
+          <div id="upscaleVideo" class="final-video"></div>
+        </div>
       </div>
     </section>
   </main>

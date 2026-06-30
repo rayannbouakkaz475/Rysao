@@ -29,6 +29,8 @@ const state = {
   consistencyMode: "anchor", // anchor | chain | off
   lyrics: null,          // segments transcrits [{start,end,text}]
   useLyrics: false,      // construire les plans à partir des paroles
+  lastClipFile: null,    // nom du dernier clip monté (pour l'upscale)
+  upscaleMethod: "fast", // fast | ai
 };
 
 // ---------- Initialisation ----------
@@ -61,6 +63,61 @@ async function init() {
   $("#genAnchorBtn").addEventListener("click", generateAnchor);
   $("#transcribeBtn").addEventListener("click", transcribeLyrics);
   $("#useLyrics").addEventListener("change", (e) => (state.useLyrics = e.target.checked));
+  wireUpscale();
+}
+
+// ---------- Upscale 4K ----------
+const UPSCALE_HINTS = {
+  fast: "Rapide : mise à l'échelle 4K locale (FFmpeg), gratuite et instantanée.",
+  ai: "IA : super-résolution Real-ESRGAN via Replicate (clé requise, payant, plus long). En mode démo, bascule sur la version rapide.",
+};
+function wireUpscale() {
+  $$("#upscaleMethod .chip").forEach((c) =>
+    c.addEventListener("click", () => {
+      state.upscaleMethod = c.dataset.method;
+      $$("#upscaleMethod .chip").forEach((x) => x.classList.remove("active"));
+      c.classList.add("active");
+      $("#upscaleHint").textContent = UPSCALE_HINTS[c.dataset.method];
+    })
+  );
+  $("#upscaleBtn").addEventListener("click", runUpscale);
+}
+
+async function runUpscale() {
+  if (!state.lastClipFile) { alert("Monte d'abord le clip final."); return; }
+  const btn = $("#upscaleBtn");
+  const status = $("#upscaleStatus");
+  const out = $("#upscaleVideo");
+  btn.disabled = true;
+  out.innerHTML = "";
+  status.classList.remove("hidden");
+  status.innerHTML = `<span class="spinner"></span>${
+    state.upscaleMethod === "ai" ? "Upscale IA en cours (upload + Real-ESRGAN)…" : "Upscale 4K en cours…"
+  }`;
+  try {
+    const res = await fetch("/api/upscale", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        file: state.lastClipFile,
+        aspectRatio: state.aspectRatio,
+        method: state.upscaleMethod,
+      }),
+    }).then((r) => r.json());
+    if (res.error) throw new Error(res.error);
+    const label =
+      res.method === "ai" ? "4K · IA Real-ESRGAN"
+      : res.method === "fast-fallback" ? "4K · rapide (démo : IA indisponible)"
+      : `4K · rapide${res.width ? ` · ${res.width}×${res.height}` : ""}`;
+    status.innerHTML = `✅ ${label}`;
+    out.innerHTML = `
+      <video src="${res.url}" controls loop playsinline></video>
+      <a class="dl" href="${res.url}" download>⬇️ Télécharger la version 4K (.mp4)</a>`;
+  } catch (e) {
+    status.innerHTML = `<span style="color:var(--brand2)">Échec de l'upscale : ${e.message}</span>`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------- Transcription des paroles (Whisper) ----------
@@ -485,6 +542,13 @@ async function assembleFinal() {
     out.innerHTML = `
       <video src="${res.url}" controls autoplay loop playsinline></video>
       <a class="dl" href="${res.url}" download>⬇️ Télécharger le clip (.mp4)</a>`;
+
+    // Le clip monté peut maintenant être passé en 4K.
+    state.lastClipFile = res.url.split("/").pop();
+    const uz = $("#upscaleZone");
+    uz.classList.remove("hidden");
+    $("#upscaleStatus").classList.add("hidden");
+    $("#upscaleVideo").innerHTML = "";
   } catch (e) {
     status.innerHTML = `<span style="color:var(--brand2)">Échec du montage : ${e.message}</span>`;
   } finally {

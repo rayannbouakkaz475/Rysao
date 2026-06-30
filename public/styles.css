@@ -162,6 +162,10 @@ input[type=range] { width: 100%; accent-color: var(--brand); }
 }
 .lyrics-preview .line b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
 .shot-lyric { color: var(--accent); font-size: 13px; font-style: italic; margin-bottom: 6px; }
+.upscale { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.upscale h4 { margin: 0 0 12px; font-family: "Sora"; }
+.upscale .chips { margin-bottom: 8px; }
+.upscale .btn-sm { display: block; margin-top: 14px; }
 
 /* Buttons / nav */
 .nav-row, .gen-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }

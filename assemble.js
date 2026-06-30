@@ -129,6 +129,31 @@ export async function assembleClip(shots, opts) {
   }
 }
 
+// Dimensions cibles 4K selon le format.
+const UHD = {
+  "16:9": [3840, 2160],
+  "9:16": [2160, 3840],
+  "1:1": [2160, 2160],
+};
+
+// Upscale LOCAL vers la 4K (FFmpeg, lanczos + légère accentuation).
+//  Pas de l'IA, mais un vrai export 4K, gratuit et instantané.
+export async function upscaleTo4K(inputPath, opts) {
+  const { ffmpegPath, aspectRatio = "16:9", outDir } = opts;
+  const [W, H] = UHD[aspectRatio] || UHD["16:9"];
+  await mkdir(outDir, { recursive: true });
+  const outName = `clip-${Date.now()}-4k.mp4`;
+  const outPath = join(outDir, outName);
+  await run(ffmpegPath, [
+    "-y", "-i", inputPath,
+    "-vf", `scale=${W}:${H}:flags=lanczos,unsharp=5:5:0.6:5:5:0.0`,
+    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "18",
+    "-c:a", "copy",
+    outPath,
+  ]);
+  return { file: outName, path: outPath, width: W, height: H };
+}
+
 // Extrait la DERNIÈRE image d'une vidéo -> data URI JPEG.
 //  Sert au mode "enchaînement" : cette image devient l'image de
 //  départ du plan suivant (continuité du personnage / décor).
