@@ -15,6 +15,7 @@ const state = {
   step: 0,
   audio: null,            // { duration, bpm, mood, ... }
   styleKey: null,
+  idea: "",              // texte libre : ce que l'utilisateur veut voir
   mood: null,
   character: { description: "", gender: "none", style: "", referenceImage: null },
   modelKey: null,
@@ -64,6 +65,7 @@ async function init() {
   $("#transcribeBtn").addEventListener("click", transcribeLyrics);
   $("#useLyrics").addEventListener("change", (e) => (state.useLyrics = e.target.checked));
   wireUpscale();
+  $("#ideaInput").addEventListener("input", (e) => (state.idea = e.target.value));
 }
 
 // ---------- Upscale 4K ----------
@@ -417,6 +419,7 @@ function updateCost() {
 async function buildPlan() {
   const body = {
     styleKey: state.styleKey,
+    idea: state.idea,
     mood: state.mood,
     character: state.character,
     shotCount: state.shotCount,

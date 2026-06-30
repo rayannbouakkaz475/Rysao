@@ -68,14 +68,20 @@ function describeCharacter(c) {
   return who ? `featuring ${who}` : "";
 }
 
+// Nettoie l'idée libre saisie par l'utilisateur (texte -> fragment de prompt).
+function cleanIdea(idea) {
+  return (idea || "").replace(/\s+/g, " ").trim().slice(0, 300);
+}
+
 // Construit la liste de prompts (un par plan).
 // `config` :
-//   { styleKey, mood, character, shotCount, audio: { bpm, mood } }
+//   { styleKey, mood, character, shotCount, idea, audio: { bpm, mood } }
 export function buildPrompts(config) {
   const style = CLIP_STYLES[config.styleKey] || CLIP_STYLES.cinematic;
   const moodKey = config.mood || config.audio?.mood || "energetic";
   const moodText = MOODS[moodKey] || MOODS.energetic;
   const character = describeCharacter(config.character);
+  const idea = cleanIdea(config.idea);
   const shotCount = Math.max(1, Math.min(12, Number(config.shotCount) || 4));
 
   const tempoHint = config.audio?.bpm
@@ -88,6 +94,7 @@ export function buildPrompts(config) {
   for (let i = 0; i < shotCount; i++) {
     const camera = style.camera[i % style.camera.length];
     const segments = [
+      idea,           // l'idée libre de l'utilisateur prime
       style.base,
       character,
       camera,
@@ -117,6 +124,7 @@ export function buildPromptsFromLyrics(config, segments) {
   const moodKey = config.mood || config.audio?.mood || "energetic";
   const moodText = MOODS[moodKey] || MOODS.energetic;
   const character = describeCharacter(config.character);
+  const idea = cleanIdea(config.idea);
   const shotCount = Math.max(1, Math.min(12, Number(config.shotCount) || clean.length));
 
   // Regroupe les segments en `shotCount` paquets contigus.
@@ -130,6 +138,7 @@ export function buildPromptsFromLyrics(config, segments) {
     const durationSec = Math.max(3, Math.min(10, Math.round(span) || 5));
     const camera = style.camera[i % style.camera.length];
     const prompt = [
+      idea,           // l'idée libre de l'utilisateur prime
       style.base,
       character,
       camera,

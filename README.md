@@ -16,6 +16,7 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
 ## ✨ Fonctionnalités
 
 - 🎵 **Analyse audio dans le navigateur** : durée, BPM estimé, énergie → suggestion d'ambiance
+- ✍️ **Prompt libre** : décris en toutes lettres ce que tu veux voir (ta scène, ton univers) — ton idée guide chaque plan, **avec ou sans piste audio / paroles**
 - 🎨 **7 styles de clip** : concert, cinématique, anime, néon/cyberpunk, nature, abstrait, rétro
 - 🧑‍🎤 **Personnage personnalisable** : description, type, tenue + **image de référence**
 - 🪄 **Cohérence du personnage** entre tous les plans, 3 modes :
