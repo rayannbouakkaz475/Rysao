@@ -24,6 +24,7 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
   - **Aucune** : plans indépendants
 - 🎚️ **Réglages** : choix du moteur, format (16:9 / 9:16 / 1:1), durée des plans, nombre de plans
 - ⚡ **Génération multi-plans en parallèle** avec suivi d'état en direct
+- 📝 **Transcription des paroles** (Whisper) : cale chaque plan sur une ligne de paroles, avec la durée réelle issue des timestamps
 - 🎞️ **Montage automatique** : tous les plans assemblés en **un seul clip**, découpés **sur le beat** (grille BPM), avec ta musique, exporté en .mp4 téléchargeable (FFmpeg)
 - 🧪 **Mode démo** intégré pour tester toute l'interface **sans dépenser un centime**
 
@@ -86,10 +87,11 @@ coûter plusieurs centaines d'euros. Le **mode démo** existe justement pour tou
 ## 🗺️ Architecture
 
 ```
-server.js          API Express : /config, /plan, /generate, /status,
-                   /upload-audio, /assemble — garde la clé côté serveur
-models.js          Registre des modèles Replicate + adaptateurs d'entrée
-promptBuilder.js   Construit les prompts (style + personnage + ambiance + audio) par plan
+server.js          API Express : /config, /plan, /generate, /status, /anchor,
+                   /last-frame, /transcribe, /upload-audio, /assemble
+models.js          Modèles vidéo + image Replicate + adaptateurs d'entrée
+promptBuilder.js   Construit les prompts (style + personnage + ambiance + audio
+                   + paroles) par plan, + le prompt d'ancrage du personnage
 assemble.js        Montage FFmpeg : download des plans, découpe sur le beat,
                    concaténation, mux de la musique, export .mp4
 public/
@@ -117,7 +119,6 @@ public/
 
 ## 🧭 Pistes d'évolution
 
-- 📝 **Transcription des paroles** (Whisper) pour des prompts par couplet/refrain
 - ⬆️ **Upscale 4K** (Topaz / Real-ESRGAN) en post-traitement
 - 💾 Sauvegarde des projets et files d'attente de génération
 

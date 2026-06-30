@@ -5,12 +5,13 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { writeFile, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 
 import { getModel, getImageModel, publicModelList } from "./models.js";
 import {
-  buildPrompts, buildAnchorPrompt, publicStyleList, publicMoodList,
+  buildPrompts, buildPromptsFromLyrics, buildAnchorPrompt,
+  publicStyleList, publicMoodList,
 } from "./promptBuilder.js";
 import { assembleClip, extractLastFrame, ffmpegWorks } from "./assemble.js";
 
@@ -107,7 +108,11 @@ async function replicate(path, options = {}) {
 // --- Construire la liste des prompts (preview, sans générer) ---
 app.post("/api/plan", (req, res) => {
   try {
-    const prompts = buildPrompts(req.body || {});
+    const body = req.body || {};
+    const prompts =
+      body.useLyrics && Array.isArray(body.lyrics) && body.lyrics.length
+        ? buildPromptsFromLyrics(body, body.lyrics)
+        : buildPrompts(body);
     res.json({ prompts });
   } catch (e) {
     res.status(400).json({ error: e.message });
@@ -276,6 +281,78 @@ app.post("/api/last-frame", async (req, res) => {
     res.json({ image });
   } catch (e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Transcription des paroles (Whisper via Replicate) ---
+//  Body : { audioId } -> { segments:[{start,end,text}], language }
+const WHISPER = { owner: "openai", name: "whisper" };
+const MIME_BY_EXT = {
+  mp3: "audio/mpeg", wav: "audio/wav", m4a: "audio/mp4",
+  aac: "audio/aac", ogg: "audio/ogg", flac: "audio/flac",
+};
+// Normalise les différents formats de sortie Whisper en segments simples.
+function normalizeSegments(output) {
+  const raw =
+    output?.segments ||
+    output?.chunks ||
+    (Array.isArray(output) ? output : []) ||
+    [];
+  return raw
+    .map((s) => {
+      const start = s.start ?? s.timestamp?.[0] ?? 0;
+      const end = s.end ?? s.timestamp?.[1] ?? start;
+      const text = (s.text || s.transcription || "").trim();
+      return { start: Number(start) || 0, end: Number(end) || 0, text };
+    })
+    .filter((s) => s.text);
+}
+
+const DEMO_LYRICS = [
+  { start: 0, end: 4, text: "Lumières qui s'allument dans la nuit" },
+  { start: 4, end: 8, text: "On danse jusqu'au lever du jour" },
+  { start: 8, end: 12, text: "Le rythme nous emporte plus haut" },
+  { start: 12, end: 16, text: "Rien ne peut nous arrêter ce soir" },
+];
+
+app.post("/api/transcribe", async (req, res) => {
+  const { audioId } = req.body || {};
+  if (DEMO_MODE) {
+    return res.json({ segments: DEMO_LYRICS, language: "fr", demo: true });
+  }
+  if (!REPLICATE_API_TOKEN) {
+    return res.status(400).json({ error: "REPLICATE_API_TOKEN absent." });
+  }
+  if (!audioId || !/^[\w.-]+$/.test(audioId)) {
+    return res.status(400).json({ error: "audioId invalide (upload la musique d'abord)." });
+  }
+  const path = join(UPLOAD_DIR, audioId);
+  if (!existsSync(path)) {
+    return res.status(404).json({ error: "audio introuvable, re-upload nécessaire." });
+  }
+  try {
+    const buf = await readFile(path);
+    const ext = audioId.split(".").pop().toLowerCase();
+    const dataUri = `data:${MIME_BY_EXT[ext] || "audio/mpeg"};base64,${buf.toString("base64")}`;
+    const p = await replicate(`/models/${WHISPER.owner}/${WHISPER.name}/predictions`, {
+      method: "POST",
+      headers: { Prefer: "wait" },
+      body: JSON.stringify({ input: { audio: dataUri } }),
+    });
+    let out = p.output;
+    let tries = 0;
+    while (!out && p.id && tries < 40) {
+      await new Promise((r) => setTimeout(r, 2000));
+      const s = await replicate(`/predictions/${p.id}`);
+      if (s.status === "succeeded") out = s.output;
+      else if (s.status === "failed") throw new Error(s.error || "transcription échouée");
+      tries++;
+    }
+    const segments = normalizeSegments(out);
+    if (!segments.length) throw new Error("aucune parole détectée");
+    res.json({ segments, language: out?.detected_language || out?.language || null });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
   }
 });
 

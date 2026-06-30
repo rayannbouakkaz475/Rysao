@@ -27,6 +27,8 @@ const state = {
   results: {},           // index du plan -> URL vidéo générée
   seed: Math.floor(Math.random() * 1_000_000), // seed partagé -> cohérence
   consistencyMode: "anchor", // anchor | chain | off
+  lyrics: null,          // segments transcrits [{start,end,text}]
+  useLyrics: false,      // construire les plans à partir des paroles
 };
 
 // ---------- Initialisation ----------
@@ -57,6 +59,51 @@ async function init() {
   $("#assembleBtn").addEventListener("click", assembleFinal);
   wireConsistency();
   $("#genAnchorBtn").addEventListener("click", generateAnchor);
+  $("#transcribeBtn").addEventListener("click", transcribeLyrics);
+  $("#useLyrics").addEventListener("change", (e) => (state.useLyrics = e.target.checked));
+}
+
+// ---------- Transcription des paroles (Whisper) ----------
+function fmtTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+async function transcribeLyrics() {
+  const btn = $("#transcribeBtn");
+  const old = btn.textContent;
+  if (!state.audioFile) { alert("Importe d'abord une musique (étape 1)."); return; }
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Transcription…`;
+  try {
+    await uploadAudioIfNeeded();
+    const res = await fetch("/api/transcribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audioId: state.audioId }),
+    }).then((r) => r.json());
+    if (res.error) throw new Error(res.error);
+    state.lyrics = res.segments;
+    renderLyrics(res.segments, res.demo);
+    $("#useLyricsRow").style.display = "flex";
+    $("#useLyrics").checked = true;
+    state.useLyrics = true;
+    btn.textContent = res.demo ? "📝 Re-transcrire (démo)" : "📝 Re-transcrire";
+  } catch (e) {
+    btn.textContent = old;
+    alert("Échec de la transcription : " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+function renderLyrics(segments, demo) {
+  const wrap = $("#lyricsPreview");
+  const head = demo ? `<small class="hint">Paroles d'exemple (mode démo).</small>` : "";
+  wrap.innerHTML =
+    head +
+    segments
+      .map((s) => `<div class="line"><b>${fmtTime(s.start)}</b><span>${s.text}</span></div>`)
+      .join("");
 }
 
 // ---------- Cohérence du personnage ----------
@@ -317,6 +364,8 @@ async function buildPlan() {
     character: state.character,
     shotCount: state.shotCount,
     audio: state.audio,
+    useLyrics: state.useLyrics,
+    lyrics: state.useLyrics ? state.lyrics : null,
   };
   const { prompts } = await fetch("/api/plan", {
     method: "POST",
@@ -334,11 +383,13 @@ function renderShots() {
     const div = document.createElement("div");
     div.className = "shot";
     div.id = `shot-${p.index}`;
+    const lyric = p.lyric ? `<div class="shot-lyric">🎤 « ${p.lyric} »</div>` : "";
     div.innerHTML = `
       <div class="shot-head">
-        <b>Plan ${p.index + 1}</b>
+        <b>Plan ${p.index + 1}${p.durationSec ? ` · ${p.durationSec}s` : ""}</b>
         <span class="status" data-status>En attente</span>
       </div>
+      ${lyric}
       <div class="shot-prompt">${p.prompt}</div>
       <div class="shot-video"></div>`;
     list.appendChild(div);
@@ -407,7 +458,7 @@ async function assembleFinal() {
     // Plans réussis, dans l'ordre.
     const shots = state.prompts
       .filter((p) => state.results[p.index])
-      .map((p) => ({ url: state.results[p.index], durationSec: state.durationSec }));
+      .map((p) => ({ url: state.results[p.index], durationSec: p.durationSec || state.durationSec }));
     if (!shots.length) throw new Error("aucun plan réussi à assembler");
 
     if (state.audioFile) {
@@ -467,7 +518,7 @@ async function generateShot(p, startImageOverride) {
         modelKey: state.modelKey,
         prompt: p.prompt,
         negativePrompt: p.negativePrompt,
-        durationSec: state.durationSec,
+        durationSec: p.durationSec || state.durationSec,
         aspectRatio: state.aspectRatio,
         referenceImage,
         seed: useConsistency ? state.seed : null,

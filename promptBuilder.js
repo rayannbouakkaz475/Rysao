@@ -105,6 +105,49 @@ export function buildPrompts(config) {
   return prompts;
 }
 
+// Construit des plans à partir des PAROLES transcrites (Whisper).
+//  Les segments sont regroupés en `shotCount` plans contigus ; chaque
+//  plan illustre ses paroles et hérite de la durée réelle (timestamps).
+//  segments : [{ start, end, text }]
+export function buildPromptsFromLyrics(config, segments) {
+  const clean = (segments || []).filter((s) => s && (s.text || "").trim());
+  if (!clean.length) return buildPrompts(config);
+
+  const style = CLIP_STYLES[config.styleKey] || CLIP_STYLES.cinematic;
+  const moodKey = config.mood || config.audio?.mood || "energetic";
+  const moodText = MOODS[moodKey] || MOODS.energetic;
+  const character = describeCharacter(config.character);
+  const shotCount = Math.max(1, Math.min(12, Number(config.shotCount) || clean.length));
+
+  // Regroupe les segments en `shotCount` paquets contigus.
+  const groups = [];
+  const per = Math.ceil(clean.length / shotCount);
+  for (let i = 0; i < clean.length; i += per) groups.push(clean.slice(i, i + per));
+
+  return groups.map((g, i) => {
+    const text = g.map((s) => s.text.trim()).join(" ").replace(/\s+/g, " ").trim();
+    const span = (g[g.length - 1].end ?? 0) - (g[0].start ?? 0);
+    const durationSec = Math.max(3, Math.min(10, Math.round(span) || 5));
+    const camera = style.camera[i % style.camera.length];
+    const prompt = [
+      style.base,
+      character,
+      camera,
+      moodText,
+      `visualizing the lyrics: "${text.slice(0, 180)}"`,
+      QUALITY,
+    ].filter(Boolean).join(", ");
+    return {
+      index: i,
+      prompt,
+      negativePrompt: NEGATIVE,
+      durationSec,
+      lyric: text,
+      startSec: +(g[0].start ?? 0).toFixed(2),
+    };
+  });
+}
+
 // Prompt pour l'IMAGE d'ancrage du personnage : un portrait net,
 // fond neutre, qui servira de référence visuelle à tous les plans.
 export function buildAnchorPrompt(character, styleKey) {

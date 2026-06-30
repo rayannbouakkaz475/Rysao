@@ -162,6 +162,17 @@
         <small class="hint" id="costHint"></small>
       </div>
 
+      <div class="field lyrics-block">
+        <label>📝 Paroles (optionnel)</label>
+        <p class="hint" style="margin:0 0 10px">Transcris la musique pour caler chaque plan sur une ligne de paroles (durées issues des timestamps).</p>
+        <button class="btn ghost btn-sm" id="transcribeBtn" type="button">📝 Transcrire les paroles (Whisper)</button>
+        <label class="switch" id="useLyricsRow" style="display:none">
+          <input type="checkbox" id="useLyrics" />
+          <span>Construire les plans à partir des paroles</span>
+        </label>
+        <div id="lyricsPreview" class="lyrics-preview"></div>
+      </div>
+
       <div class="nav-row">
         <button class="btn ghost" data-back>← Retour</button>
         <button class="btn primary" id="next3">Voir le plan de tournage →</button>

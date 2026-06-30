@@ -154,6 +154,14 @@ input[type=range] { width: 100%; accent-color: var(--brand); }
 }
 .ref-drop img { max-height: 180px; border-radius: 10px; }
 .btn-sm { padding: 8px 14px; font-size: 13px; margin-top: 10px; }
+.lyrics-block { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 22px; }
+.lyrics-preview { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.lyrics-preview .line {
+  font-size: 13px; color: var(--muted); display: flex; gap: 10px;
+  background: rgba(255,255,255,0.03); padding: 7px 10px; border-radius: 8px;
+}
+.lyrics-preview .line b { color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 600; }
+.shot-lyric { color: var(--accent); font-size: 13px; font-style: italic; margin-bottom: 6px; }
 
 /* Buttons / nav */
 .nav-row, .gen-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }
