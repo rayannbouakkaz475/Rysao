@@ -1,0 +1,18 @@
+{
+  "name": "rysao-ai-music-video",
+  "version": "1.0.0",
+  "description": "Transforme une musique en clip vidéo IA (4K) via Replicate, avec choix du style et du personnage.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "license": "MIT"
+}
