@@ -101,13 +101,24 @@
       </div>
 
       <div class="field">
-        <label>Image de référence (visage / look) — optionnel</label>
+        <label>Image de référence / d'ancrage (visage · look)</label>
         <label class="ref-drop" id="refDrop">
           <input type="file" id="refInput" accept="image/*" hidden />
           <img id="refPreview" class="hidden" alt="aperçu" />
           <span id="refText">Clique pour ajouter une image</span>
         </label>
-        <small class="hint" id="refHint">Utilisée comme première image (image-to-video) si le modèle le supporte.</small>
+        <button class="btn ghost btn-sm" id="genAnchorBtn" type="button">🪄 Générer le personnage à partir de la description</button>
+        <small class="hint" id="refHint">Cette image sert d'<b>ancrage</b> : elle est réutilisée comme image de départ de chaque plan pour garder le même personnage.</small>
+      </div>
+
+      <div class="field">
+        <label>Cohérence du personnage entre les plans</label>
+        <div class="chips" id="consistencyChips">
+          <button class="chip active" data-mode="anchor">⚓ Ancre (recommandé)</button>
+          <button class="chip" data-mode="chain">🔗 Enchaînement</button>
+          <button class="chip" data-mode="off">Aucune</button>
+        </div>
+        <small class="hint" id="consistencyHint">Ancre : même image de départ + seed fixe pour tous les plans.</small>
       </div>
 
       <div class="nav-row">

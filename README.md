@@ -17,7 +17,11 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
 
 - 🎵 **Analyse audio dans le navigateur** : durée, BPM estimé, énergie → suggestion d'ambiance
 - 🎨 **7 styles de clip** : concert, cinématique, anime, néon/cyberpunk, nature, abstrait, rétro
-- 🧑‍🎤 **Personnage personnalisable** : description, type, tenue + **image de référence** (cohérence du visage d'un plan à l'autre via l'image-to-video)
+- 🧑‍🎤 **Personnage personnalisable** : description, type, tenue + **image de référence**
+- 🪄 **Cohérence du personnage** entre tous les plans, 3 modes :
+  - **Ancre** : une image de référence (uploadée *ou générée* depuis la description via Flux) sert d'image de départ commune + **seed fixe** → même visage partout
+  - **Enchaînement** : la dernière image d'un plan amorce le suivant (continuité fluide, extraction FFmpeg)
+  - **Aucune** : plans indépendants
 - 🎚️ **Réglages** : choix du moteur, format (16:9 / 9:16 / 1:1), durée des plans, nombre de plans
 - ⚡ **Génération multi-plans en parallèle** avec suivi d'état en direct
 - 🎞️ **Montage automatique** : tous les plans assemblés en **un seul clip**, découpés **sur le beat** (grille BPM), avec ta musique, exporté en .mp4 téléchargeable (FFmpeg)
@@ -113,7 +117,6 @@ public/
 
 ## 🧭 Pistes d'évolution
 
-- 🔁 **Cohérence de personnage** renforcée (seeds fixes, character refs)
 - 📝 **Transcription des paroles** (Whisper) pour des prompts par couplet/refrain
 - ⬆️ **Upscale 4K** (Topaz / Real-ESRGAN) en post-traitement
 - 💾 Sauvegarde des projets et files d'attente de génération

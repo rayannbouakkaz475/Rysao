@@ -153,6 +153,7 @@ input[type=range] { width: 100%; accent-color: var(--brand); }
   background: var(--panel); cursor: pointer; overflow: hidden;
 }
 .ref-drop img { max-height: 180px; border-radius: 10px; }
+.btn-sm { padding: 8px 14px; font-size: 13px; margin-top: 10px; }
 
 /* Buttons / nav */
 .nav-row, .gen-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; gap: 12px; }

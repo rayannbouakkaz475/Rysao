@@ -129,6 +129,29 @@ export async function assembleClip(shots, opts) {
   }
 }
 
+// Extrait la DERNIÈRE image d'une vidéo -> data URI JPEG.
+//  Sert au mode "enchaînement" : cette image devient l'image de
+//  départ du plan suivant (continuité du personnage / décor).
+export async function extractLastFrame(videoUrl, opts) {
+  const { ffmpegPath, workDir } = opts;
+  const tmp = join(workDir, `frame-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+  await mkdir(tmp, { recursive: true });
+  const src = join(tmp, "src.mp4");
+  const out = join(tmp, "last.jpg");
+  try {
+    await download(videoUrl, src);
+    // -sseof -0.1 : se positionne ~0,1s avant la fin et prend 1 image.
+    await run(ffmpegPath, [
+      "-y", "-sseof", "-0.2", "-i", src,
+      "-vframes", "1", "-q:v", "3", out,
+    ]);
+    const buf = await readFile(out);
+    return `data:image/jpeg;base64,${buf.toString("base64")}`;
+  } finally {
+    rm(tmp, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 // Vérifie qu'un binaire ffmpeg répond à "-version".
 export async function ffmpegWorks(bin) {
   if (!bin) return false;

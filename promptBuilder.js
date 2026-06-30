@@ -105,6 +105,23 @@ export function buildPrompts(config) {
   return prompts;
 }
 
+// Prompt pour l'IMAGE d'ancrage du personnage : un portrait net,
+// fond neutre, qui servira de référence visuelle à tous les plans.
+export function buildAnchorPrompt(character, styleKey) {
+  const style = CLIP_STYLES[styleKey];
+  const who = describeCharacter(character) || "a charismatic music artist";
+  const styleHint = style ? style.base.split(",")[0] : "cinematic";
+  return {
+    prompt: [
+      `character reference portrait, ${who.replace(/^featuring /, "")}`,
+      "centered, looking at camera, upper body, clean simple background",
+      `${styleHint} aesthetic`,
+      "consistent character design, photorealistic, sharp focus, soft studio lighting, 4K",
+    ].join(", "),
+    negativePrompt: NEGATIVE,
+  };
+}
+
 export function publicStyleList() {
   return Object.entries(CLIP_STYLES).map(([key, s]) => ({ key, label: s.label }));
 }

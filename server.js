@@ -8,9 +8,11 @@ import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 
-import { getModel, publicModelList } from "./models.js";
-import { buildPrompts, publicStyleList, publicMoodList } from "./promptBuilder.js";
-import { assembleClip, ffmpegWorks } from "./assemble.js";
+import { getModel, getImageModel, publicModelList } from "./models.js";
+import {
+  buildPrompts, buildAnchorPrompt, publicStyleList, publicMoodList,
+} from "./promptBuilder.js";
+import { assembleClip, extractLastFrame, ffmpegWorks } from "./assemble.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -115,7 +117,7 @@ app.post("/api/plan", (req, res) => {
 // --- Lancer la génération d'UN plan ---
 //  Body attendu :
 //   { modelKey, prompt, negativePrompt, durationSec,
-//     aspectRatio, referenceImage }
+//     aspectRatio, referenceImage, seed }
 app.post("/api/generate", async (req, res) => {
   const {
     modelKey = DEFAULT_MODEL,
@@ -124,6 +126,7 @@ app.post("/api/generate", async (req, res) => {
     durationSec = 5,
     aspectRatio = "16:9",
     referenceImage = null,
+    seed = null,
   } = req.body || {};
 
   if (!prompt) return res.status(400).json({ error: "prompt manquant" });
@@ -156,6 +159,7 @@ app.post("/api/generate", async (req, res) => {
       durationSec,
       aspectRatio,
       referenceImage: model.supportsReferenceImage ? referenceImage : null,
+      seed: model.supportsSeed && seed != null ? Number(seed) : null,
     });
     const prediction = await replicate(
       `/models/${model.owner}/${model.name}/predictions`,
@@ -194,6 +198,84 @@ app.get("/api/status/:id", async (req, res) => {
     });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
+  }
+});
+
+// --- Image d'ancrage du personnage (cohérence) ---
+//  Génère un portrait de référence réutilisé comme image de départ
+//  de tous les plans -> même visage / look partout.
+//  Body : { character, styleKey, aspectRatio, seed }
+function placeholderAnchor(character) {
+  const name = (character?.description || character?.gender || "Personnage").slice(0, 28);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/>
+    </linearGradient></defs>
+    <rect width="512" height="512" fill="url(#g)"/>
+    <circle cx="256" cy="205" r="92" fill="#ffffff22"/>
+    <rect x="140" y="320" width="232" height="150" rx="40" fill="#ffffff22"/>
+    <text x="256" y="492" font-family="sans-serif" font-size="22" fill="#fff"
+      text-anchor="middle">${name.replace(/[<>&]/g, "")}</text>
+    <text x="256" y="40" font-family="sans-serif" font-size="18" fill="#ffffffaa"
+      text-anchor="middle">ancrage (démo)</text>
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+app.post("/api/anchor", async (req, res) => {
+  const { character, styleKey, aspectRatio = "1:1", seed = null } = req.body || {};
+  const { prompt } = buildAnchorPrompt(character || {}, styleKey);
+
+  if (DEMO_MODE) {
+    return res.json({ image: placeholderAnchor(character), demo: true, prompt });
+  }
+  if (!REPLICATE_API_TOKEN) {
+    return res.status(400).json({ error: "REPLICATE_API_TOKEN absent." });
+  }
+  try {
+    const im = getImageModel("flux-schnell");
+    const input = im.buildInput({ prompt, aspectRatio, seed: seed != null ? Number(seed) : null });
+    // Prefer: wait -> Replicate renvoie directement le résultat (modèle rapide).
+    const p = await replicate(`/models/${im.owner}/${im.name}/predictions`, {
+      method: "POST",
+      headers: { Prefer: "wait" },
+      body: JSON.stringify({ input }),
+    });
+    let out = p.output;
+    // Si pas encore prêt, on poll quelques secondes.
+    let tries = 0;
+    while (!out && p.id && tries < 20) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const s = await replicate(`/predictions/${p.id}`);
+      if (s.status === "succeeded") out = s.output;
+      else if (s.status === "failed") throw new Error(s.error || "génération d'image échouée");
+      tries++;
+    }
+    const image = Array.isArray(out) ? out[0] : out;
+    if (!image) throw new Error("aucune image générée");
+    res.json({ image, prompt });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+});
+
+// --- Dernière image d'un plan (mode enchaînement) ---
+//  Body : { videoUrl } -> { image: dataUri }
+app.post("/api/last-frame", async (req, res) => {
+  const { videoUrl } = req.body || {};
+  if (!videoUrl) return res.status(400).json({ error: "videoUrl manquant" });
+  // En démo, on évite de télécharger la grosse vidéo d'exemple :
+  // le mode enchaînement retombe alors sur l'image d'ancrage.
+  if (DEMO_MODE) return res.json({ image: null, demo: true });
+  if (!FFMPEG_PATH) return res.status(503).json({ error: "FFmpeg indisponible." });
+  try {
+    const image = await extractLastFrame(videoUrl, {
+      ffmpegPath: FFMPEG_PATH,
+      workDir: WORK_DIR,
+    });
+    res.json({ image });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 });
 

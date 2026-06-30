@@ -25,6 +25,8 @@ const state = {
   audioFile: null,       // fichier musique (pour le montage)
   audioId: null,         // id renvoyé après upload serveur
   results: {},           // index du plan -> URL vidéo générée
+  seed: Math.floor(Math.random() * 1_000_000), // seed partagé -> cohérence
+  consistencyMode: "anchor", // anchor | chain | off
 };
 
 // ---------- Initialisation ----------
@@ -53,6 +55,56 @@ async function init() {
   wireSettings();
   $("#generateBtn").addEventListener("click", runGeneration);
   $("#assembleBtn").addEventListener("click", assembleFinal);
+  wireConsistency();
+  $("#genAnchorBtn").addEventListener("click", generateAnchor);
+}
+
+// ---------- Cohérence du personnage ----------
+const CONSISTENCY_HINTS = {
+  anchor: "Ancre : même image de départ + seed fixe pour tous les plans.",
+  chain: "Enchaînement : la dernière image d'un plan devient l'image de départ du suivant (continuité fluide, génération séquentielle).",
+  off: "Aucune : plans indépendants, sans contrainte de cohérence.",
+};
+function wireConsistency() {
+  $$("#consistencyChips .chip").forEach((c) =>
+    c.addEventListener("click", () => {
+      state.consistencyMode = c.dataset.mode;
+      $$("#consistencyChips .chip").forEach((x) => x.classList.remove("active"));
+      c.classList.add("active");
+      $("#consistencyHint").textContent = CONSISTENCY_HINTS[c.dataset.mode];
+    })
+  );
+}
+
+async function generateAnchor() {
+  const btn = $("#genAnchorBtn");
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Génération du personnage…`;
+  try {
+    const res = await fetch("/api/anchor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        character: state.character,
+        styleKey: state.styleKey,
+        aspectRatio: "1:1",
+        seed: state.seed,
+      }),
+    }).then((r) => r.json());
+    if (res.error) throw new Error(res.error);
+    state.character.referenceImage = res.image;
+    const img = $("#refPreview");
+    img.src = res.image;
+    img.classList.remove("hidden");
+    $("#refText").classList.add("hidden");
+    btn.textContent = res.demo ? "🪄 Régénérer (ancrage démo)" : "🪄 Régénérer le personnage";
+  } catch (e) {
+    btn.textContent = old;
+    alert("Échec de la génération du personnage : " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------- Construction des UI dynamiques ----------
@@ -299,8 +351,20 @@ async function runGeneration() {
   btn.textContent = "Génération en cours…";
   state.results = {};
 
-  // On lance les plans en parallèle, chacun suivi indépendamment.
-  await Promise.all(state.prompts.map((p) => generateShot(p)));
+  if (state.consistencyMode === "chain") {
+    // Séquentiel : la dernière image d'un plan amorce le suivant.
+    let startImage = state.character.referenceImage || null;
+    for (const p of state.prompts) {
+      const url = await generateShot(p, startImage);
+      if (url) {
+        const frame = await fetchLastFrame(url);
+        if (frame) startImage = frame; // sinon on garde l'ancrage
+      }
+    }
+  } else {
+    // Ancre / Aucune : plans en parallèle (image de départ commune).
+    await Promise.all(state.prompts.map((p) => generateShot(p)));
+  }
 
   btn.disabled = false;
   btn.textContent = "↻ Relancer la génération";
@@ -377,12 +441,23 @@ async function assembleFinal() {
   }
 }
 
-async function generateShot(p) {
+// startImageOverride : image de départ imposée (mode enchaînement).
+// Retourne l'URL de la vidéo produite (ou undefined si échec).
+async function generateShot(p, startImageOverride) {
   const shot = $(`#shot-${p.index}`);
   const statusEl = shot.querySelector("[data-status]");
   const videoWrap = shot.querySelector(".shot-video");
   setStatus(statusEl, "processing", "Envoi…");
   videoWrap.innerHTML = "";
+
+  // Mode "off" : pas d'image de départ ni de seed partagé.
+  const useConsistency = state.consistencyMode !== "off";
+  const referenceImage =
+    startImageOverride !== undefined
+      ? startImageOverride
+      : useConsistency
+        ? state.character.referenceImage
+        : null;
 
   try {
     const res = await fetch("/api/generate", {
@@ -394,7 +469,8 @@ async function generateShot(p) {
         negativePrompt: p.negativePrompt,
         durationSec: state.durationSec,
         aspectRatio: state.aspectRatio,
-        referenceImage: state.character.referenceImage,
+        referenceImage,
+        seed: useConsistency ? state.seed : null,
       }),
     }).then((r) => r.json());
 
@@ -404,10 +480,24 @@ async function generateShot(p) {
       return showVideo(statusEl, videoWrap, res.output, res.demo, p.index);
     }
     // Sinon on poll l'état.
-    await pollStatus(res.id, statusEl, videoWrap, p.index);
+    return await pollStatus(res.id, statusEl, videoWrap, p.index);
   } catch (e) {
     setStatus(statusEl, "failed", "Échec");
     videoWrap.innerHTML = `<small class="hint">${e.message}</small>`;
+  }
+}
+
+// Récupère la dernière image d'un plan généré (mode enchaînement).
+async function fetchLastFrame(videoUrl) {
+  try {
+    const res = await fetch("/api/last-frame", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ videoUrl }),
+    }).then((r) => r.json());
+    return res.image || null;
+  } catch {
+    return null;
   }
 }
 
@@ -419,8 +509,7 @@ function pollStatus(id, statusEl, videoWrap, index) {
         const s = await fetch(`/api/status/${id}`).then((r) => r.json());
         if (s.status === "succeeded") {
           clearInterval(timer);
-          showVideo(statusEl, videoWrap, s.output, s.demo, index);
-          resolve();
+          resolve(showVideo(statusEl, videoWrap, s.output, s.demo, index));
         } else if (s.status === "failed" || s.status === "canceled") {
           clearInterval(timer);
           setStatus(statusEl, "failed", "Échec");
@@ -441,6 +530,7 @@ function showVideo(statusEl, videoWrap, output, demo, index) {
   setStatus(statusEl, "succeeded", demo ? "Démo ✓" : "Prêt ✓");
   videoWrap.innerHTML = `<video src="${url}" controls loop muted playsinline></video>`;
   if (typeof index === "number") state.results[index] = url;
+  return url;
 }
 
 function setStatus(el, cls, text) {

@@ -10,11 +10,17 @@
 //      negativePrompt:   string,
 //      durationSec:      number,   // durée souhaitée du plan
 //      aspectRatio:      "16:9" | "9:16" | "1:1",
-//      referenceImage:   string | null  // data URI ou URL (image-to-video)
+//      referenceImage:   string | null,  // data URI ou URL (image-to-video)
+//      seed:             number | null   // seed partagé -> cohérence
 //    }
 //
 //  `buildInput(req)` retourne l'objet `input` attendu par
 //  l'API Replicate pour CE modèle précis.
+//
+//  ⚠️ `supportsSeed` : n'ajoute le seed QUE si le modèle l'accepte
+//  réellement dans son schéma Replicate (sinon erreur 422 "unexpected
+//  input"). Vérifie la page du modèle et passe le flag à true pour en
+//  profiter. La cohérence vient surtout de l'image d'ancrage commune.
 // ============================================================
 
 export const MODELS = {
@@ -76,13 +82,16 @@ export const MODELS = {
     owner: "wan-video",
     name: "wan-2.1-1.3b",
     supportsReferenceImage: false,
+    supportsSeed: true,
     maxDurationSec: 5,
     buildInput(req) {
-      return {
+      const input = {
         prompt: req.prompt,
         negative_prompt: req.negativePrompt || "",
         aspect_ratio: req.aspectRatio === "9:16" ? "9:16" : "16:9",
       };
+      if (req.seed != null) input.seed = req.seed;
+      return input;
     },
   },
 
@@ -103,8 +112,32 @@ export const MODELS = {
   },
 };
 
+// ------------------------------------------------------------
+//  Modèles d'IMAGE — servent à générer l'image d'ancrage du
+//  personnage (réutilisée comme image de départ de tous les plans).
+// ------------------------------------------------------------
+export const IMAGE_MODELS = {
+  "flux-schnell": {
+    owner: "black-forest-labs",
+    name: "flux-schnell",
+    buildInput(req) {
+      return {
+        prompt: req.prompt,
+        aspect_ratio: req.aspectRatio || "1:1",
+        output_format: "jpg",
+        num_outputs: 1,
+        ...(req.seed != null ? { seed: req.seed } : {}),
+      };
+    },
+  },
+};
+
 export function getModel(key) {
   return MODELS[key] || null;
+}
+
+export function getImageModel(key) {
+  return IMAGE_MODELS[key] || IMAGE_MODELS["flux-schnell"];
 }
 
 // Liste légère envoyée au frontend (sans les fonctions).
