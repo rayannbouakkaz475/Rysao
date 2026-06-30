@@ -32,6 +32,8 @@ const state = {
   useLyrics: false,      // construire les plans à partir des paroles
   lastClipFile: null,    // nom du dernier clip monté (pour l'upscale)
   upscaleMethod: "fast", // fast | ai
+  projectId: null,       // id du projet courant (si sauvegardé)
+  projectName: "",       // nom du projet courant
 };
 
 // ---------- Initialisation ----------
@@ -66,6 +68,250 @@ async function init() {
   $("#useLyrics").addEventListener("change", (e) => (state.useLyrics = e.target.checked));
   wireUpscale();
   $("#ideaInput").addEventListener("input", (e) => (state.idea = e.target.value));
+  wireProjects();
+}
+
+// ---------- Sauvegarde des projets ----------
+function wireProjects() {
+  $("#projectsBtn").addEventListener("click", openProjects);
+  $("#projectsClose").addEventListener("click", () => $("#projectsModal").classList.add("hidden"));
+  $("#projectsModal").addEventListener("click", (e) => {
+    if (e.target.id === "projectsModal") $("#projectsModal").classList.add("hidden");
+  });
+  $("#saveProjectBtn").addEventListener("click", saveProject);
+  $("#newProjectBtn").addEventListener("click", newProject);
+}
+
+async function openProjects() {
+  $("#projectsModal").classList.remove("hidden");
+  await refreshProjects();
+}
+
+async function refreshProjects() {
+  const list = $("#projectsList");
+  list.innerHTML = `<div class="projects-empty">Chargement…</div>`;
+  try {
+    const { projects } = await fetch("/api/projects").then((r) => r.json());
+    if (!projects?.length) {
+      list.innerHTML = `<div class="projects-empty">Aucun projet sauvegardé pour l'instant.</div>`;
+      return;
+    }
+    list.innerHTML = "";
+    projects.forEach((p) => {
+      const div = document.createElement("div");
+      div.className = "proj";
+      const date = p.updatedAt ? new Date(p.updatedAt).toLocaleString("fr-FR") : "";
+      div.innerHTML = `
+        <div class="meta">
+          <b>${p.name}</b>
+          <small>${p.styleKey || "—"} · ${p.shots} plan(s) · ${date}</small>
+        </div>
+        <div class="proj-btns">
+          <button class="load" data-id="${p.id}">Charger</button>
+          <button class="del" data-id="${p.id}">🗑</button>
+        </div>`;
+      div.querySelector(".load").addEventListener("click", () => loadProject(p.id));
+      div.querySelector(".del").addEventListener("click", () => deleteProject(p.id, p.name));
+      list.appendChild(div);
+    });
+  } catch (e) {
+    list.innerHTML = `<div class="projects-empty">Erreur : ${e.message}</div>`;
+  }
+}
+
+function collectProject(name) {
+  return {
+    id: state.projectId,
+    name,
+    idea: state.idea,
+    styleKey: state.styleKey,
+    mood: state.mood,
+    character: state.character,
+    consistencyMode: state.consistencyMode,
+    seed: state.seed,
+    modelKey: state.modelKey,
+    aspectRatio: state.aspectRatio,
+    durationSec: state.durationSec,
+    shotCount: state.shotCount,
+    audio: state.audio,
+    audioId: state.audioId,
+    audioName: state.audioFile?.name || state.projectAudioName || "",
+    lyrics: state.lyrics,
+    useLyrics: state.useLyrics,
+    prompts: state.prompts,
+    results: state.results,
+    lastClipFile: state.lastClipFile,
+  };
+}
+
+async function saveProject() {
+  const suggested = state.projectName || (state.idea ? state.idea.slice(0, 40) : "Mon clip");
+  const name = prompt("Nom du projet :", suggested);
+  if (name === null) return;
+  // Si la musique n'est pas encore uploadée, on l'envoie pour la réutiliser plus tard.
+  try {
+    if (state.audioFile && !state.audioId) await uploadAudioIfNeeded();
+  } catch {}
+  try {
+    const res = await fetch("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(collectProject(name)),
+    }).then((r) => r.json());
+    if (res.error) throw new Error(res.error);
+    state.projectId = res.id;
+    state.projectName = res.name;
+    $("#projectName").textContent = "💾 " + res.name;
+    await refreshProjects();
+  } catch (e) {
+    alert("Échec de la sauvegarde : " + e.message);
+  }
+}
+
+function newProject() {
+  if (!confirm("Démarrer un nouveau projet ? Les choix non sauvegardés seront perdus.")) return;
+  location.reload();
+}
+
+async function deleteProject(id, name) {
+  if (!confirm(`Supprimer le projet « ${name} » ?`)) return;
+  try {
+    await fetch(`/api/projects/${id}`, { method: "DELETE" });
+    if (state.projectId === id) {
+      state.projectId = null;
+      state.projectName = "";
+      $("#projectName").textContent = "";
+    }
+    await refreshProjects();
+  } catch (e) {
+    alert("Échec de la suppression : " + e.message);
+  }
+}
+
+async function loadProject(id) {
+  try {
+    const p = await fetch(`/api/projects/${id}`).then((r) => r.json());
+    if (p.error) throw new Error(p.error);
+    applyProject(p);
+    $("#projectsModal").classList.add("hidden");
+  } catch (e) {
+    alert("Échec du chargement : " + e.message);
+  }
+}
+
+// Active le chip/carte dont l'attribut `attr` vaut `val`.
+function activate(containerSel, attr, val) {
+  $$(`${containerSel} [data-${attr}]`).forEach((el) =>
+    el.classList.toggle("active", el.dataset[attr] === String(val))
+  );
+}
+
+// Restaure l'état complet + l'interface depuis un projet sauvegardé.
+function applyProject(p) {
+  // --- État ---
+  state.projectId = p.id;
+  state.projectName = p.name;
+  state.idea = p.idea || "";
+  state.styleKey = p.styleKey || null;
+  state.mood = p.mood || null;
+  state.character = {
+    description: p.character?.description || "",
+    gender: p.character?.gender || "none",
+    style: p.character?.style || "",
+    referenceImage: p.character?.referenceImage || null,
+  };
+  state.consistencyMode = p.consistencyMode || "anchor";
+  state.seed = p.seed || state.seed;
+  state.modelKey = p.modelKey || state.config.defaultModel;
+  state.aspectRatio = p.aspectRatio || "16:9";
+  state.durationSec = p.durationSec || 5;
+  state.shotCount = p.shotCount || 4;
+  state.audio = p.audio || null;
+  state.audioId = p.audioId || null;
+  state.audioFile = null; // le fichier n'est pas restauré dans l'input
+  state.projectAudioName = p.audioName || "";
+  state.lyrics = p.lyrics || null;
+  state.useLyrics = Boolean(p.useLyrics);
+  state.prompts = p.prompts || [];
+  state.results = p.results || {};
+  state.lastClipFile = p.lastClipFile || null;
+
+  // --- UI : en-tête ---
+  $("#projectName").textContent = "💾 " + p.name;
+
+  // --- Étape 1 : audio (métadonnées sauvegardées) ---
+  if (state.audio) {
+    $("#audioCard").classList.remove("hidden");
+    $("#statName").textContent = (state.projectAudioName || "musique").slice(0, 16);
+    $("#statDur").textContent = state.audio.durationLabel || "—";
+    $("#statBpm").textContent = state.audio.bpm || "—";
+    $("#statMood").textContent = state.audio.moodLabel || "—";
+    $("#next0").disabled = false;
+  }
+
+  // --- Étape 2 : idée + style + ambiance ---
+  $("#ideaInput").value = state.idea;
+  if (state.styleKey) {
+    activate("#styleGrid", "key", state.styleKey);
+    $("#next1").disabled = false;
+  }
+  if (state.mood) activate("#moodChips", "key", state.mood);
+
+  // --- Étape 3 : personnage + cohérence ---
+  $("#charDesc").value = state.character.description;
+  $("#charGender").value = state.character.gender;
+  $("#charStyle").value = state.character.style;
+  if (state.character.referenceImage) {
+    const img = $("#refPreview");
+    img.src = state.character.referenceImage;
+    img.classList.remove("hidden");
+    $("#refText").classList.add("hidden");
+  }
+  activate("#consistencyChips", "mode", state.consistencyMode);
+  $("#consistencyHint").textContent = CONSISTENCY_HINTS[state.consistencyMode];
+
+  // --- Étape 4 : réglages ---
+  $("#modelSelect").value = state.modelKey;
+  updateModelHint();
+  activate("#ratioChips", "ratio", state.aspectRatio);
+  activate("#durChips", "dur", state.durationSec);
+  $("#shotRange").value = state.shotCount;
+  $("#shotVal").textContent = state.shotCount;
+  updateCost();
+
+  // --- Paroles ---
+  if (state.lyrics?.length) {
+    renderLyrics(state.lyrics, false);
+    $("#useLyricsRow").style.display = "flex";
+    $("#useLyrics").checked = state.useLyrics;
+  }
+
+  // --- Étape 5 : plans + résultats déjà générés ---
+  if (state.prompts.length) {
+    renderShots();
+    state.prompts.forEach((p2) => {
+      const url = state.results[p2.index];
+      if (!url) return;
+      const shot = $(`#shot-${p2.index}`);
+      shot.querySelector("[data-status]").className = "status succeeded";
+      shot.querySelector("[data-status]").textContent = "Restauré ✓";
+      shot.querySelector(".shot-video").innerHTML =
+        `<video src="${url}" controls loop muted playsinline></video>`;
+    });
+    // Montage / upscale si au moins un plan présent.
+    if (Object.keys(state.results).length && state.config.canAssemble) {
+      $("#assembleZone").classList.remove("hidden");
+    }
+    if (state.lastClipFile) {
+      $("#finalVideo").innerHTML = `
+        <video src="/outputs/${state.lastClipFile}" controls loop playsinline></video>
+        <a class="dl" href="/outputs/${state.lastClipFile}" download>⬇️ Télécharger le clip (.mp4)</a>`;
+      $("#upscaleZone").classList.remove("hidden");
+    }
+  }
+
+  goTo(0, false);
+  alert(`Projet « ${p.name} » chargé.`);
 }
 
 // ---------- Upscale 4K ----------
@@ -220,6 +466,7 @@ function buildStyleGrid(styles) {
   styles.forEach((s) => {
     const b = document.createElement("button");
     b.className = "card";
+    b.dataset.key = s.key;
     b.innerHTML = `<span class="emoji">${STYLE_EMOJI[s.key] || "🎞️"}</span><span class="ttl">${s.label}</span>`;
     b.addEventListener("click", () => {
       state.styleKey = s.key;
@@ -237,6 +484,7 @@ function buildMoodChips(moods) {
   moods.forEach((m) => {
     const c = document.createElement("button");
     c.className = "chip";
+    c.dataset.key = m.key;
     c.textContent = m.label;
     c.addEventListener("click", () => {
       state.mood = m.key;

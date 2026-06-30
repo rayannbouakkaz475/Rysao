@@ -5,7 +5,7 @@ import express from "express";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
-import { writeFile, readFile } from "node:fs/promises";
+import { writeFile, readFile, readdir, unlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 
 import { getModel, getImageModel, UPSCALE_MODEL, publicModelList } from "./models.js";
@@ -50,7 +50,9 @@ const DEMO_VIDEO =
 const WORK_DIR = join(__dirname, ".work");
 const UPLOAD_DIR = join(WORK_DIR, "uploads");
 const OUTPUT_DIR = join(WORK_DIR, "outputs");
-for (const d of [WORK_DIR, UPLOAD_DIR, OUTPUT_DIR]) mkdirSync(d, { recursive: true });
+const PROJECTS_DIR = join(WORK_DIR, "projects");
+for (const d of [WORK_DIR, UPLOAD_DIR, OUTPUT_DIR, PROJECTS_DIR])
+  mkdirSync(d, { recursive: true });
 
 // Résolution du binaire FFmpeg : env > ffmpeg-static > système.
 let FFMPEG_PATH = null;
@@ -495,6 +497,119 @@ app.post("/api/upscale", async (req, res) => {
     });
   } catch (e) {
     console.error("upscale error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ============================================================
+//  Sauvegarde des projets (JSON dans .work/projects)
+// ============================================================
+const isProjectId = (id) => /^proj-[\w-]+$/.test(id);
+const projectPath = (id) => join(PROJECTS_DIR, `${id}.json`);
+
+// Champs persistés (on ignore tout le reste envoyé par le client).
+function sanitizeProject(body) {
+  const p = body || {};
+  const char = p.character || {};
+  return {
+    name: String(p.name || "Projet sans titre").slice(0, 120),
+    idea: String(p.idea || "").slice(0, 2000),
+    styleKey: p.styleKey || null,
+    mood: p.mood || null,
+    character: {
+      description: String(char.description || "").slice(0, 500),
+      gender: char.gender || "none",
+      style: String(char.style || "").slice(0, 300),
+      referenceImage: typeof char.referenceImage === "string" ? char.referenceImage : null,
+    },
+    consistencyMode: p.consistencyMode || "anchor",
+    seed: Number(p.seed) || 0,
+    modelKey: p.modelKey || null,
+    aspectRatio: p.aspectRatio || "16:9",
+    durationSec: Number(p.durationSec) || 5,
+    shotCount: Number(p.shotCount) || 4,
+    audio: p.audio || null,
+    audioId: typeof p.audioId === "string" ? p.audioId : null,
+    audioName: String(p.audioName || "").slice(0, 200),
+    lyrics: Array.isArray(p.lyrics) ? p.lyrics.slice(0, 200) : null,
+    useLyrics: Boolean(p.useLyrics),
+    prompts: Array.isArray(p.prompts) ? p.prompts : [],
+    results: p.results && typeof p.results === "object" ? p.results : {},
+    lastClipFile: typeof p.lastClipFile === "string" ? p.lastClipFile : null,
+  };
+}
+
+// Lister les projets (métadonnées légères).
+app.get("/api/projects", async (req, res) => {
+  try {
+    const files = (await readdir(PROJECTS_DIR)).filter((f) => f.endsWith(".json"));
+    const list = [];
+    for (const f of files) {
+      try {
+        const j = JSON.parse(await readFile(join(PROJECTS_DIR, f), "utf8"));
+        list.push({
+          id: f.replace(/\.json$/, ""),
+          name: j.name,
+          styleKey: j.styleKey,
+          updatedAt: j.updatedAt,
+          shots: Object.keys(j.results || {}).length,
+        });
+      } catch {}
+    }
+    list.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    res.json({ projects: list });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Créer / mettre à jour un projet.
+app.post("/api/projects", async (req, res) => {
+  try {
+    const incomingId = req.body?.id;
+    const id =
+      incomingId && isProjectId(incomingId)
+        ? incomingId
+        : `proj-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const existing = existsSync(projectPath(id))
+      ? JSON.parse(await readFile(projectPath(id), "utf8"))
+      : {};
+    const data = {
+      ...sanitizeProject(req.body),
+      id,
+      createdAt: existing.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await writeFile(projectPath(id), JSON.stringify(data, null, 2));
+    res.json({ id, name: data.name, updatedAt: data.updatedAt });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Charger un projet complet.
+app.get("/api/projects/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!isProjectId(id) || !existsSync(projectPath(id))) {
+    return res.status(404).json({ error: "projet introuvable" });
+  }
+  try {
+    res.json(JSON.parse(await readFile(projectPath(id), "utf8")));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Supprimer un projet.
+app.delete("/api/projects/:id", async (req, res) => {
+  const { id } = req.params;
+  if (!isProjectId(id) || !existsSync(projectPath(id))) {
+    return res.status(404).json({ error: "projet introuvable" });
+  }
+  try {
+    await unlink(projectPath(id));
+    res.json({ ok: true });
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });

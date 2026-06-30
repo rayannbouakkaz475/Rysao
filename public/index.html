@@ -19,8 +19,28 @@
         <small>Studio de clips IA</small>
       </div>
     </div>
-    <div id="modeBadge" class="badge">…</div>
+    <div class="topbar-right">
+      <span id="projectName" class="project-name"></span>
+      <button id="projectsBtn" class="btn ghost btn-sm">💾 Projets</button>
+      <div id="modeBadge" class="badge">…</div>
+    </div>
   </header>
+
+  <!-- Panneau Projets -->
+  <div id="projectsModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3>💾 Projets</h3>
+        <button id="projectsClose" class="modal-x">✕</button>
+      </div>
+      <div class="modal-actions">
+        <button id="saveProjectBtn" class="btn primary btn-sm">💾 Sauvegarder le projet actuel</button>
+        <button id="newProjectBtn" class="btn ghost btn-sm">＋ Nouveau projet</button>
+      </div>
+      <div id="projectsList" class="projects-list"></div>
+      <small class="hint">Les projets sont enregistrés sur ton serveur (dossier <code>.work/projects</code>). La musique reste réutilisable côté serveur ; recharge le fichier pour le réécouter.</small>
+    </div>
+  </div>
 
   <!-- Barre d'étapes -->
   <nav class="steps" id="steps">
