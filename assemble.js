@@ -177,6 +177,24 @@ export async function extractLastFrame(videoUrl, opts) {
   }
 }
 
+// Découpe un segment audio [startSec, startSec+durationSec] -> fichier WAV.
+//  Sert au lip-sync : on n'envoie que la portion de chanson qui
+//  correspond au plan, pour que la bouche suive les bonnes paroles.
+export async function trimAudio(inputPath, startSec, durationSec, opts) {
+  const { ffmpegPath, outDir } = opts;
+  await mkdir(outDir, { recursive: true });
+  const out = join(outDir, `seg-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.wav`);
+  await run(ffmpegPath, [
+    "-y",
+    "-ss", String(Math.max(0, startSec || 0)),
+    "-t", String(Math.max(1, durationSec || 5)),
+    "-i", inputPath,
+    "-vn", "-ac", "2", "-ar", "44100", "-c:a", "pcm_s16le",
+    out,
+  ]);
+  return out;
+}
+
 // Vérifie qu'un binaire ffmpeg répond à "-version".
 export async function ffmpegWorks(bin) {
   if (!bin) return false;

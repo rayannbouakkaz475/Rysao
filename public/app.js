@@ -297,8 +297,9 @@ function applyProject(p) {
       const shot = $(`#shot-${p2.index}`);
       shot.querySelector("[data-status]").className = "status succeeded";
       shot.querySelector("[data-status]").textContent = "Restauré ✓";
-      shot.querySelector(".shot-video").innerHTML =
-        `<video src="${url}" controls loop muted playsinline></video>`;
+      const vw = shot.querySelector(".shot-video");
+      vw.innerHTML = `<video src="${url}" controls loop muted playsinline></video>`;
+      addLipsyncButton(vw, p2.index);
     });
     // Montage / upscale si au moins un plan présent.
     if (Object.keys(state.results).length && state.config.canAssemble) {
@@ -940,8 +941,53 @@ function showVideo(statusEl, videoWrap, output, demo, index) {
   const url = Array.isArray(output) ? output[0] : output;
   setStatus(statusEl, "succeeded", demo ? "Démo ✓" : "Prêt ✓");
   videoWrap.innerHTML = `<video src="${url}" controls loop muted playsinline></video>`;
-  if (typeof index === "number") state.results[index] = url;
+  if (typeof index === "number") {
+    state.results[index] = url;
+    addLipsyncButton(videoWrap, index);
+  }
   return url;
+}
+
+// Ajoute le bouton "Faire chanter" (lip-sync) sous une vidéo de plan.
+function addLipsyncButton(videoWrap, index) {
+  const btn = document.createElement("button");
+  btn.className = "btn ghost btn-sm lipsync-btn";
+  btn.textContent = "🎤 Faire chanter (lip-sync)";
+  btn.addEventListener("click", () => lipSyncShot(index));
+  videoWrap.appendChild(btn);
+}
+
+async function lipSyncShot(index) {
+  const p = state.prompts.find((x) => x.index === index);
+  const url = state.results[index];
+  if (!p || !url) return;
+  const shot = $(`#shot-${index}`);
+  const statusEl = shot.querySelector("[data-status]");
+  const btn = shot.querySelector(".lipsync-btn");
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>Synchro des lèvres…`; }
+  setStatus(statusEl, "processing", "Lip-sync…");
+  try {
+    if (state.audioFile && !state.audioId) await uploadAudioIfNeeded();
+    if (!state.audioId) throw new Error("ajoute une musique (étape 1) avant le lip-sync");
+    const res = await fetch("/api/lipsync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoUrl: url,
+        audioId: state.audioId,
+        startSec: p.startSec || 0,
+        durationSec: p.durationSec || state.durationSec,
+      }),
+    }).then((r) => r.json());
+    if (res.error) throw new Error(res.error);
+    showVideo(statusEl, shot.querySelector(".shot-video"), res.url, false, index);
+    if (res.demo) setStatus(statusEl, "succeeded", "Démo (pas de vrai lip-sync)");
+    else setStatus(statusEl, "succeeded", "🎤 Synchronisé ✓");
+  } catch (e) {
+    setStatus(statusEl, "failed", "Lip-sync échoué");
+    if (btn) { btn.disabled = false; btn.textContent = "🎤 Réessayer le lip-sync"; }
+    alert("Lip-sync : " + e.message);
+  }
 }
 
 function setStatus(el, cls, text) {

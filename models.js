@@ -145,6 +145,20 @@ export const UPSCALE_MODEL = {
   },
 };
 
+// ------------------------------------------------------------
+//  Modèle de LIP-SYNC (synchronisation labiale audio -> bouche).
+//  Prend une vidéo (avec un visage) + un audio, et remodèle la
+//  bouche pour qu'elle suive le son. Vérifie le schéma du modèle
+//  sur sa page Replicate si tu en changes (noms de champs).
+// ------------------------------------------------------------
+export const LIPSYNC_MODEL = {
+  owner: "bytedance",
+  name: "latentsync",
+  buildInput(videoUrl, audioUrl) {
+    return { video: videoUrl, audio: audioUrl };
+  },
+};
+
 export function getModel(key) {
   return MODELS[key] || null;
 }

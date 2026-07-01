@@ -8,13 +8,15 @@ import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { writeFile, readFile, readdir, unlink } from "node:fs/promises";
 import { createRequire } from "node:module";
 
-import { getModel, getImageModel, UPSCALE_MODEL, publicModelList } from "./models.js";
+import {
+  getModel, getImageModel, UPSCALE_MODEL, LIPSYNC_MODEL, publicModelList,
+} from "./models.js";
 import {
   buildPrompts, buildPromptsFromLyrics, buildAnchorPrompt,
   publicStyleList, publicMoodList, publicCharacterPresets,
 } from "./promptBuilder.js";
 import {
-  assembleClip, extractLastFrame, upscaleTo4K, ffmpegWorks,
+  assembleClip, extractLastFrame, upscaleTo4K, trimAudio, ffmpegWorks,
 } from "./assemble.js";
 import { basename } from "node:path";
 
@@ -430,9 +432,9 @@ app.post("/api/assemble", async (req, res) => {
 //  Body : { file (nom dans /outputs), aspectRatio, method }
 //    method "fast" -> FFmpeg local (toujours dispo)
 //    method "ai"   -> Replicate Real-ESRGAN (clé requise)
-async function uploadToReplicate(buf, name) {
+async function uploadToReplicate(buf, name, type = "video/mp4") {
   const fd = new FormData();
-  fd.append("content", new Blob([buf], { type: "video/mp4" }), name);
+  fd.append("content", new Blob([buf], { type }), name);
   const r = await fetch(`${REPLICATE_BASE}/files`, {
     method: "POST",
     headers: { Authorization: `Bearer ${REPLICATE_API_TOKEN}` },
@@ -499,6 +501,64 @@ app.post("/api/upscale", async (req, res) => {
   } catch (e) {
     console.error("upscale error:", e.message);
     res.status(500).json({ error: e.message });
+  }
+});
+
+// --- Lip-sync : faire chanter un plan sur le bon segment audio ---
+//  Body : { videoUrl, audioId, startSec, durationSec }
+//  Découpe le segment de musique correspondant au plan, l'envoie
+//  avec la vidéo au modèle de lip-sync, renvoie la vidéo synchronisée.
+app.post("/api/lipsync", async (req, res) => {
+  const { videoUrl, audioId, startSec = 0, durationSec = 5 } = req.body || {};
+  if (!videoUrl) return res.status(400).json({ error: "videoUrl manquant" });
+
+  // En démo, pas de vrai lip-sync : on renvoie la vidéo telle quelle.
+  if (DEMO_MODE) return res.json({ url: videoUrl, demo: true });
+
+  if (!REPLICATE_API_TOKEN) {
+    return res.status(400).json({ error: "REPLICATE_API_TOKEN absent." });
+  }
+  if (!FFMPEG_PATH) {
+    return res.status(503).json({ error: "FFmpeg requis pour découper l'audio." });
+  }
+  if (!audioId || !/^[\w.-]+$/.test(audioId)) {
+    return res.status(400).json({ error: "musique manquante (upload d'abord)." });
+  }
+  const audioPath = join(UPLOAD_DIR, audioId);
+  if (!existsSync(audioPath)) {
+    return res.status(404).json({ error: "audio introuvable, re-upload nécessaire." });
+  }
+
+  let segPath = null;
+  try {
+    segPath = await trimAudio(audioPath, Number(startSec) || 0, Number(durationSec) || 5, {
+      ffmpegPath: FFMPEG_PATH,
+      outDir: WORK_DIR,
+    });
+    const buf = await readFile(segPath);
+    const audioUrl = await uploadToReplicate(buf, basename(segPath), "audio/wav");
+
+    const input = LIPSYNC_MODEL.buildInput(videoUrl, audioUrl);
+    const p = await replicate(
+      `/models/${LIPSYNC_MODEL.owner}/${LIPSYNC_MODEL.name}/predictions`,
+      { method: "POST", body: JSON.stringify({ input }) }
+    );
+    let out = p.output, tries = 0;
+    while (!out && p.id && tries < 120) {
+      await new Promise((r) => setTimeout(r, 3000));
+      const s = await replicate(`/predictions/${p.id}`);
+      if (s.status === "succeeded") out = s.output;
+      else if (s.status === "failed") throw new Error(s.error || "lip-sync échoué");
+      tries++;
+    }
+    const url = Array.isArray(out) ? out[0] : out;
+    if (!url) throw new Error("aucune sortie de lip-sync");
+    res.json({ url });
+  } catch (e) {
+    console.error("lipsync error:", e.message);
+    res.status(e.status || 500).json({ error: e.message });
+  } finally {
+    if (segPath) unlink(segPath).catch(() => {});
   }
 });
 

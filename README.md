@@ -27,6 +27,7 @@ prompts plan par plan, et génère la vidéo via les meilleurs moteurs d'IA du m
 - 🎚️ **Réglages** : choix du moteur, format (16:9 / 9:16 / 1:1), durée des plans, nombre de plans
 - ⚡ **Génération multi-plans en parallèle** avec suivi d'état en direct
 - 📝 **Transcription des paroles** (Whisper) : cale chaque plan sur une ligne de paroles, avec la durée réelle issue des timestamps
+- 🎤 **Lip-sync** : fais « chanter » un plan en synchronisant la bouche sur le segment de musique correspondant (modèle Replicate dédié)
 - 🎞️ **Montage automatique** : tous les plans assemblés en **un seul clip**, découpés **sur le beat** (grille BPM), avec ta musique, exporté en .mp4 téléchargeable (FFmpeg)
 - ⬆️ **Upscale 4K** du clip monté : **rapide** (FFmpeg local, 3840×2160, gratuit) ou **IA** (Real-ESRGAN via Replicate)
 - 💾 **Sauvegarde des projets** : enregistre tous tes choix + les plans générés, recharge une session quand tu veux (stockage serveur en JSON)
@@ -93,7 +94,7 @@ coûter plusieurs centaines d'euros. Le **mode démo** existe justement pour tou
 ```
 server.js          API Express : /config, /plan, /generate, /status, /anchor,
                    /last-frame, /transcribe, /upload-audio, /assemble, /upscale,
-                   /projects (CRUD)
+                   /lipsync, /projects (CRUD)
 models.js          Modèles vidéo + image Replicate + adaptateurs d'entrée
 promptBuilder.js   Construit les prompts (style + personnage + ambiance + audio
                    + paroles) par plan, + le prompt d'ancrage du personnage

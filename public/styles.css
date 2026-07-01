@@ -230,6 +230,7 @@ input[type=range] { width: 100%; accent-color: var(--brand); }
 .shot-head b { font-family: "Sora"; }
 .shot-prompt { color: var(--muted); font-size: 13px; line-height: 1.5; }
 .shot video { width: 100%; border-radius: 12px; margin-top: 12px; background: #000; }
+.lipsync-btn { display: block; margin-top: 10px; }
 .status {
   font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
 }
