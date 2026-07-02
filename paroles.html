@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RYSAO — Atelier de Paroles</title>
+<meta name="description" content="Atelier de paroles RYSAO — une intelligence artificielle qui compose des paroles de chansons dans n'importe quelle langue et n'importe quel style.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2308080a' stroke='%23c9a771' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='50' fill='%23c9a771' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noir:#08080a; --noir-2:#0e0e11; --carte:#131318;
+    --or:#c9a771; --or-clair:#e6cfa6; --texte:#e9e6e0; --gris:#9a968e;
+    --bordure:rgba(201,167,113,.18);
+    --serif:"Cormorant Garamond",Georgia,serif; --sans:"Jost",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--noir); color:var(--texte);
+    font-family:var(--sans); font-weight:300; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none}
+  .eyebrow{
+    font-family:var(--sans); font-size:.72rem; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--or); font-weight:400;
+  }
+
+  /* --- En-tête --- */
+  header.nav{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.1rem clamp(1.2rem,4vw,3rem);
+    background:rgba(8,8,10,.82); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--bordure);
+  }
+  .logo-nav{font-family:var(--serif); font-size:1.5rem; letter-spacing:.18em}
+  .logo-nav b{color:var(--or); font-weight:600}
+  .retour{font-size:.78rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris)}
+  .retour:hover{color:var(--or)}
+
+  /* --- Titre --- */
+  .intro{
+    text-align:center; padding:clamp(2.6rem,6vw,4.5rem) 1.2rem 1.5rem;
+    max-width:760px; margin:0 auto;
+  }
+  .intro h1{
+    font-family:var(--serif); font-weight:500;
+    font-size:clamp(2.4rem,7vw,4rem); line-height:1.05; margin:.7rem 0;
+  }
+  .intro h1 span{color:var(--or)}
+  .intro p{color:var(--gris); font-size:1.05rem; max-width:560px; margin:.4rem auto 0}
+
+  /* --- Disposition --- */
+  .atelier{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+    gap:1.6rem; align-items:start;
+    max-width:1200px; margin:0 auto; padding:1.5rem clamp(1.2rem,4vw,3rem) 4rem;
+  }
+  @media(max-width:900px){ .atelier{grid-template-columns:1fr} }
+
+  .panneau{
+    background:var(--carte); border:1px solid var(--bordure);
+    border-radius:14px; padding:clamp(1.3rem,3vw,2rem);
+  }
+  .panneau h2{
+    font-family:var(--serif); font-weight:500; font-size:1.5rem;
+    margin-bottom:1.3rem; padding-bottom:.9rem; border-bottom:1px solid var(--bordure);
+  }
+
+  label.champ{display:block; margin-bottom:1.15rem}
+  label.champ > span{
+    display:block; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--or); margin-bottom:.5rem; font-weight:400;
+  }
+  input[type=text], textarea, select{
+    width:100%; background:var(--noir-2); color:var(--texte);
+    border:1px solid var(--bordure); border-radius:8px;
+    padding:.7rem .85rem; font-family:var(--sans); font-size:.95rem; font-weight:300;
+    transition:border-color .2s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus{outline:none; border-color:var(--or)}
+  textarea{resize:vertical; min-height:88px}
+  select{appearance:none; cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a771' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right .9rem center; padding-right:2.2rem;}
+
+  .puces{display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.6rem}
+  .puce{
+    font-size:.78rem; letter-spacing:.04em; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:999px; padding:.32rem .8rem;
+    cursor:pointer; background:transparent; transition:.18s; font-family:var(--sans);
+  }
+  .puce:hover{color:var(--or-clair); border-color:var(--or)}
+
+  .rangee{display:grid; grid-template-columns:1fr 1fr; gap:1rem}
+  @media(max-width:480px){ .rangee{grid-template-columns:1fr} }
+
+  .bouton{
+    width:100%; margin-top:.4rem;
+    background:linear-gradient(135deg,var(--or),var(--or-clair));
+    color:#1a1408; border:none; border-radius:8px;
+    padding:.95rem; font-family:var(--sans); font-weight:500;
+    font-size:.82rem; letter-spacing:.2em; text-transform:uppercase;
+    cursor:pointer; transition:.2s;
+  }
+  .bouton:hover{filter:brightness(1.08)}
+  .bouton:disabled{opacity:.5; cursor:not-allowed; filter:none}
+
+  /* --- Clé API --- */
+  details.cle{margin-top:1.4rem; border-top:1px solid var(--bordure); padding-top:1rem}
+  details.cle summary{
+    cursor:pointer; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--gris); list-style:none;
+  }
+  details.cle summary::-webkit-details-marker{display:none}
+  details.cle summary:hover{color:var(--or)}
+  details.cle .aide{font-size:.82rem; color:var(--gris); margin:.7rem 0}
+  details.cle a{color:var(--or); border-bottom:1px solid var(--bordure)}
+  .etat-cle{font-size:.78rem; margin-top:.55rem}
+  .etat-cle.ok{color:#7fbf8f} .etat-cle.non{color:var(--gris)}
+
+  /* --- Sortie --- */
+  .sortie-tete{display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding-bottom:.9rem; margin-bottom:1.1rem; border-bottom:1px solid var(--bordure)}
+  .sortie-tete h2{border:none; padding:0; margin:0}
+  .actions{display:flex; gap:.5rem}
+  .mini{
+    font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:6px; padding:.4rem .7rem;
+    background:transparent; cursor:pointer; transition:.18s; font-family:var(--sans);
+  }
+  .mini:hover:not(:disabled){color:var(--or); border-color:var(--or)}
+  .mini:disabled{opacity:.4; cursor:not-allowed}
+
+  #paroles{
+    font-family:var(--serif); font-size:1.18rem; line-height:1.75;
+    white-space:pre-wrap; word-wrap:break-word; min-height:340px; color:var(--texte);
+  }
+  #paroles .vide{color:var(--gris); font-family:var(--sans); font-size:.95rem; font-style:italic}
+  #paroles .curseur{display:inline-block; width:2px; height:1.1em; background:var(--or);
+    vertical-align:text-bottom; animation:clign 1s steps(2) infinite}
+  @keyframes clign{0%{opacity:1}50%{opacity:0}}
+
+  .erreur{color:#e0918a; font-family:var(--sans); font-size:.9rem;
+    background:rgba(224,145,138,.08); border:1px solid rgba(224,145,138,.25);
+    border-radius:8px; padding:.8rem 1rem; margin-top:1rem; display:none}
+
+  footer{text-align:center; padding:2rem 1.2rem 3rem; color:var(--gris); font-size:.78rem;
+    letter-spacing:.06em; border-top:1px solid var(--bordure)}
+  footer b{color:var(--or); font-weight:400}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a href="index.html" class="logo-nav">RY<b>S</b>AO</a>
+  <a href="index.html" class="retour">← Retour à la Maison</a>
+</header>
+
+<section class="intro">
+  <span class="eyebrow">Atelier de Paroles — Intelligence Artificielle</span>
+  <h1>Écrire une <span>chanson</span></h1>
+  <p>Une IA qui compose des paroles dans n'importe quelle langue et dans n'importe quel style. Décrivez votre idée, elle écrit.</p>
+</section>
+
+<main class="atelier">
+
+  <!-- Colonne des réglages -->
+  <div class="panneau">
+    <h2>Votre chanson</h2>
+
+    <label class="champ">
+      <span>Langue</span>
+      <input type="text" id="langue" placeholder="Français, English, Español, 日本語, العربية, wolof…" value="Français">
+      <div class="puces" data-cible="langue">
+        <button class="puce" type="button">Français</button>
+        <button class="puce" type="button">English</button>
+        <button class="puce" type="button">Español</button>
+        <button class="puce" type="button">Italiano</button>
+        <button class="puce" type="button">Português</button>
+        <button class="puce" type="button">Deutsch</button>
+        <button class="puce" type="button">العربية</button>
+        <button class="puce" type="button">日本語</button>
+        <button class="puce" type="button">한국어</button>
+        <button class="puce" type="button">Créole</button>
+      </div>
+    </label>
+
+    <label class="champ">
+      <span>Style / Genre</span>
+      <input type="text" id="style" placeholder="Rap, pop, chanson française, jazz, opéra…" value="Chanson française">
+      <div class="puces" data-cible="style">
+        <button class="puce" type="button">Rap</button>
+        <button class="puce" type="button">Pop</button>
+        <button class="puce" type="button">Chanson française</button>
+        <button class="puce" type="button">Rock</button>
+        <button class="puce" type="button">R&B / Soul</button>
+        <button class="puce" type="button">Reggaeton</button>
+        <button class="puce" type="button">K-pop</button>
+        <button class="puce" type="button">Jazz</button>
+        <button class="puce" type="button">Folk</button>
+        <button class="puce" type="button">Metal</button>
+        <button class="puce" type="button">Slam / Poésie</button>
+        <button class="puce" type="button">Afrobeat</button>
+      </div>
+    </label>
+
+    <label class="champ">
+      <span>Thème / Sujet</span>
+      <textarea id="theme" placeholder="De quoi parle la chanson ? Une histoire, une émotion, une personne, un lieu…">Le temps qui passe et la valeur d'un instant partagé.</textarea>
+    </label>
+
+    <div class="rangee">
+      <label class="champ">
+        <span>Ambiance</span>
+        <select id="ambiance">
+          <option>Libre (au choix de l'IA)</option>
+          <option>Mélancolique</option>
+          <option>Joyeuse</option>
+          <option>Romantique</option>
+          <option>Énergique</option>
+          <option>Nostalgique</option>
+          <option>Sombre</option>
+          <option>Épique</option>
+          <option>Sensuelle</option>
+          <option>Révoltée</option>
+          <option>Sereine</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Structure</span>
+        <select id="structure">
+          <option>Couplet / Refrain / Couplet / Refrain / Pont / Refrain</option>
+          <option>Couplet / Refrain (x2)</option>
+          <option>Couplet / Pré-refrain / Refrain</option>
+          <option>16 mesures de rap + refrain</option>
+          <option>Vers libres (sans refrain)</option>
+          <option>Structure libre (au choix de l'IA)</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="champ">
+      <span>Consignes supplémentaires (optionnel)</span>
+      <textarea id="extra" placeholder="Rimes riches, un mot à inclure, une référence, un point de vue, une longueur…"></textarea>
+    </label>
+
+    <button class="bouton" id="generer">Composer les paroles</button>
+
+    <details class="cle">
+      <summary>Clé API Claude &nbsp;·&nbsp; configuration</summary>
+      <p class="aide">
+        Cet atelier interroge le modèle <strong>Claude&nbsp;(Opus&nbsp;4.8)</strong> d'Anthropic depuis votre navigateur.
+        Collez votre clé API pour l'activer. Elle est enregistrée <strong>uniquement dans ce navigateur</strong>
+        (localStorage) et n'est jamais transmise ailleurs qu'à l'API d'Anthropic.
+        Obtenir une clé : <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+      </p>
+      <input type="text" id="cle" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+      <div class="etat-cle non" id="etatCle">Aucune clé enregistrée.</div>
+    </details>
+  </div>
+
+  <!-- Colonne de sortie -->
+  <div class="panneau">
+    <div class="sortie-tete">
+      <h2>Les paroles</h2>
+      <div class="actions">
+        <button class="mini" id="copier" disabled>Copier</button>
+        <button class="mini" id="vider" disabled>Effacer</button>
+      </div>
+    </div>
+    <div id="paroles"><span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span></div>
+    <div class="erreur" id="erreur"></div>
+  </div>
+
+</main>
+
+<footer>
+  <b>RYSAO</b> — Atelier de Paroles &nbsp;·&nbsp; Le temps a la même valeur pour tous.
+</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const CLE_STOCK = "rysao_cle_api";
+
+/* --- Puces de suggestion --- */
+document.querySelectorAll(".puces").forEach((groupe) => {
+  const cible = $("#" + groupe.dataset.cible);
+  groupe.querySelectorAll(".puce").forEach((b) => {
+    b.addEventListener("click", () => { cible.value = b.textContent.trim(); });
+  });
+});
+
+/* --- Gestion de la clé API --- */
+const champCle = $("#cle");
+const etatCle = $("#etatCle");
+function majEtatCle() {
+  const k = (champCle.value || "").trim();
+  if (k.length > 10) { etatCle.textContent = "Clé enregistrée dans ce navigateur."; etatCle.className = "etat-cle ok"; }
+  else { etatCle.textContent = "Aucune clé enregistrée."; etatCle.className = "etat-cle non"; }
+}
+champCle.value = localStorage.getItem(CLE_STOCK) || "";
+majEtatCle();
+champCle.addEventListener("input", () => {
+  localStorage.setItem(CLE_STOCK, champCle.value.trim());
+  majEtatCle();
+});
+
+/* --- Construction de la requête --- */
+function construirePrompt() {
+  const langue = $("#langue").value.trim() || "Français";
+  const style = $("#style").value.trim() || "libre";
+  const theme = $("#theme").value.trim() || "au choix de l'auteur";
+  const ambiance = $("#ambiance").value;
+  const structure = $("#structure").value;
+  const extra = $("#extra").value.trim();
+
+  let p = `Écris les paroles d'une chanson originale.\n\n` +
+    `• Langue : ${langue}\n` +
+    `• Style / genre musical : ${style}\n` +
+    `• Thème : ${theme}\n` +
+    `• Ambiance : ${ambiance}\n` +
+    `• Structure souhaitée : ${structure}\n`;
+  if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
+  p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
+    `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
+    `Soigne les images, le rythme et les rimes propres au style. ` +
+    `Ne donne que les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
+  return p;
+}
+
+const SYSTEME =
+  "Tu es un parolier virtuose, capable d'écrire des chansons dans absolument n'importe quelle langue " +
+  "(y compris les langues régionales, créoles et dialectes) et dans n'importe quel style ou genre musical. " +
+  "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
+  "Tu écris des textes originaux, singuliers et chantables. Tu réponds toujours dans la langue demandée par l'utilisateur, " +
+  "sans jamais ajouter de préambule ni de conclusion en dehors des paroles.";
+
+/* --- Appel de l'API Claude (streaming SSE) --- */
+const boutonGen = $("#generer");
+const sortie = $("#paroles");
+const boiteErreur = $("#erreur");
+const boutonCopier = $("#copier");
+const boutonVider = $("#vider");
+let enCours = false;
+
+function erreur(msg) {
+  boiteErreur.style.display = "block";
+  boiteErreur.textContent = msg;
+}
+function effacerErreur(){ boiteErreur.style.display = "none"; boiteErreur.textContent = ""; }
+
+async function generer() {
+  if (enCours) return;
+  const cle = (champCle.value || "").trim();
+  effacerErreur();
+
+  if (!cle) {
+    erreur("Aucune clé API Claude n'est configurée. Ouvrez « Clé API Claude · configuration » plus bas et collez votre clé.");
+    return;
+  }
+
+  enCours = true;
+  boutonGen.disabled = true;
+  boutonGen.textContent = "Composition en cours…";
+  boutonCopier.disabled = true;
+  boutonVider.disabled = false;
+  sortie.innerHTML = '<span class="curseur"></span>';
+  let texte = "";
+
+  try {
+    const reponse = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": cle,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-8",
+        max_tokens: 4000,
+        stream: true,
+        system: SYSTEME,
+        messages: [{ role: "user", content: construirePrompt() }],
+      }),
+    });
+
+    if (!reponse.ok || !reponse.body) {
+      let détail = "";
+      try { const j = await reponse.json(); détail = j.error?.message || JSON.stringify(j); } catch(e){}
+      if (reponse.status === 401) throw new Error("Clé API refusée (401). Vérifiez qu'elle est valide et active.");
+      if (reponse.status === 429) throw new Error("Limite de requêtes atteinte (429). Patientez un instant puis réessayez.");
+      throw new Error("Erreur de l'API (" + reponse.status + ") " + détail);
+    }
+
+    const lecteur = reponse.body.getReader();
+    const decodeur = new TextDecoder();
+    let tampon = "";
+
+    const rendre = () => { sortie.innerHTML = ""; sortie.append(document.createTextNode(texte));
+      const c = document.createElement("span"); c.className = "curseur"; sortie.append(c); };
+
+    while (true) {
+      const { value, done } = await lecteur.read();
+      if (done) break;
+      tampon += decodeur.decode(value, { stream: true });
+      const lignes = tampon.split("\n");
+      tampon = lignes.pop();
+      for (const ligne of lignes) {
+        if (!ligne.startsWith("data:")) continue;
+        const data = ligne.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+            texte += evt.delta.text; rendre();
+          } else if (evt.type === "error") {
+            throw new Error(evt.error?.message || "Erreur de flux.");
+          }
+        } catch (e) { if (e instanceof SyntaxError) continue; throw e; }
+      }
+    }
+
+    if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
+    sortie.textContent = texte.trim();
+    boutonCopier.disabled = false;
+
+  } catch (e) {
+    if (e.name === "TypeError") {
+      erreur("Impossible de contacter l'API. Vérifiez votre connexion. (Note : certains navigateurs bloquent les appels directs ; l'en-tête d'accès navigateur est bien envoyé.)");
+    } else {
+      erreur(e.message || String(e));
+    }
+    if (!texte.trim()) sortie.innerHTML = '<span class="vide">La composition n\'a pas abouti. Consultez le message ci-dessous.</span>';
+    else sortie.textContent = texte.trim();
+  } finally {
+    enCours = false;
+    boutonGen.disabled = false;
+    boutonGen.textContent = "Composer les paroles";
+  }
+}
+
+boutonGen.addEventListener("click", generer);
+
+boutonCopier.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(sortie.textContent);
+    boutonCopier.textContent = "Copié ✓";
+    setTimeout(() => (boutonCopier.textContent = "Copier"), 1600);
+  } catch(e){ erreur("Copie impossible dans ce navigateur."); }
+});
+
+boutonVider.addEventListener("click", () => {
+  sortie.innerHTML = '<span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span>';
+  boutonCopier.disabled = true;
+  boutonVider.disabled = true;
+  effacerErreur();
+});
+</script>
+</body>
+</html>
