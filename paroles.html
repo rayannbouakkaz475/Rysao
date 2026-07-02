@@ -290,6 +290,25 @@
       </label>
     </div>
 
+    <div class="rangee">
+      <label class="champ">
+        <span>Format de sortie</span>
+        <select id="format">
+          <option>Paroles seules</option>
+          <option>Prompt Suno (style + paroles)</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Version de Suno</span>
+        <select id="versionSuno">
+          <option>Suno v5</option>
+          <option>Suno v4.5</option>
+          <option>Suno v4</option>
+          <option>Suno v3.5</option>
+        </select>
+      </label>
+    </div>
+
     <label class="bascule">
       <input type="checkbox" id="explicite" checked>
       <span class="txt">Paroles explicites — langage cru, sans censure
@@ -404,9 +423,14 @@ function construirePrompt() {
   const argot = $("#argot").value;
   const region = $("#region").value.trim();
   const explicite = $("#explicite").checked;
+  const format = $("#format").value;
+  const versionSuno = $("#versionSuno").value;
+  const modeSuno = format.startsWith("Prompt Suno");
   const extra = $("#extra").value.trim();
 
-  let p = `Écris les paroles d'une chanson originale.\n\n` +
+  let p = (modeSuno
+      ? `Crée un prompt de chanson prêt à l'emploi pour Suno (${versionSuno}).\n\n`
+      : `Écris les paroles d'une chanson originale.\n\n`) +
     `• Langue : ${langue}\n` +
     `• Style / genre musical : ${style}\n`;
   if (artistes) p += `• Artistes de référence (t'inspirer de leur flow, énergie, imagerie et argot — SANS copier ni reprendre leurs paroles existantes) : ${artistes}\n`;
@@ -421,12 +445,28 @@ function construirePrompt() {
     `de façon naturelle et crédible, jamais caricaturale. Emploie l'argot NATIF de cette langue, jamais une transposition de l'argot français.\n`;
   if (region) p += `• Région / accent à refléter dans le vocabulaire et les expressions : ${region}\n`;
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
-  p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
-    `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
-    `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
-    `mais produis des paroles 100% originales. ` +
-    `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
-    `Ne donne que les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
+
+  if (modeSuno) {
+    p += `\nProduis un prompt prêt à coller dans Suno (${versionSuno}), en DEUX blocs clairement séparés et étiquetés :\n\n` +
+      `🎚️ STYLE — une description à coller dans le champ « Style » de Suno : genres, ambiance, instrumentation, ` +
+      `type de voix, tempo (BPM approximatif) et éléments de production. Concise, efficace, et adaptée aux ` +
+      `conventions et à la longueur acceptée par la version ${versionSuno}.\n\n` +
+      `🎤 PAROLES — les paroles à coller dans le champ « Lyrics », structurées avec les balises de section ` +
+      `standard de Suno, en anglais et entre crochets ([Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], ` +
+      `[Outro], [Hook]) ; ajoute au besoin des balises de production ou de voix entre crochets ` +
+      `(ex. [male vocal], [ad-libs], [beat drop]). Le TEXTE des paroles reste dans la langue demandée ` +
+      `(${langue}) ; seules les balises sont en anglais.\n\n` +
+      `Adapte le style et les balises aux spécificités de la version ${versionSuno} de Suno. ` +
+      `Capte le flow et le vocabulaire du style et des artistes cités, en paroles 100% originales. ` +
+      `N'édulcore rien, n'ajoute aucune morale ni avertissement, et ne mets aucun texte en dehors de ces deux blocs.`;
+  } else {
+    p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
+      `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
+      `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
+      `mais produis des paroles 100% originales. ` +
+      `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
+      `Ne donne que les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
+  }
   return p;
 }
 
@@ -441,7 +481,9 @@ const SYSTEME =
   "régional, ses expressions de rue actuelles — de manière naturelle et crédible plutôt que caricaturale, " +
   "et jamais en transposant l'argot d'une autre langue. Lorsqu'on te cite des artistes en référence, " +
   "tu captes leur flow, leur énergie, leurs images et leur vocabulaire tout en écrivant des paroles " +
-  "entièrement originales — jamais de reprise de leurs textes existants. Tu réponds toujours dans la langue " +
+  "entièrement originales — jamais de reprise de leurs textes existants. Tu sais aussi produire des prompts " +
+  "prêts à l'emploi pour Suno (un bloc Style + des paroles balisées avec les tags de section), adaptés à la " +
+  "version de Suno demandée. Tu réponds toujours dans la langue " +
   "demandée par l'utilisateur, sans préambule ni conclusion en dehors des paroles.";
 
 /* --- Appel de l'API Claude (streaming SSE) --- */
