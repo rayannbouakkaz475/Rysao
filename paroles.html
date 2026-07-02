@@ -331,6 +331,14 @@
         <button class="puce" type="button">Soolking</button>
         <button class="puce" type="button">Gims</button>
         <button class="puce" type="button">Bigflo &amp; Oli</button>
+        <button class="puce" type="button">Kalash</button>
+        <button class="puce" type="button">Shay</button>
+        <button class="puce" type="button">RK</button>
+        <button class="puce" type="button">Genezio</button>
+        <button class="puce" type="button">Keblack</button>
+        <button class="puce" type="button">Meryl</button>
+        <button class="puce" type="button">Gambi</button>
+        <button class="puce" type="button">SDM</button>
       </div>
       <div class="puces-titre">🌍 International</div>
       <div class="puces" data-cible="artistes" data-mode="ajout">
@@ -482,6 +490,8 @@
           <button class="puce" type="button">Marseille</button>
           <button class="puce" type="button">Lyon</button>
           <button class="puce" type="button">Bruxelles</button>
+          <button class="puce" type="button">Martinique</button>
+          <button class="puce" type="button">Guadeloupe</button>
           <button class="puce" type="button">Abidjan</button>
           <button class="puce" type="button">Kinshasa</button>
           <button class="puce" type="button">London (UK drill)</button>
@@ -549,6 +559,34 @@
           <option>Basses rondes / warm</option>
           <option>Wobble / dubstep</option>
           <option>Basses minimales</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="rangee">
+      <label class="champ">
+        <span>Voix (interprète)</span>
+        <select id="voix">
+          <option>Au choix de l'IA</option>
+          <option>Homme</option>
+          <option>Femme</option>
+          <option>Duo homme + femme</option>
+          <option>Groupe / chœur</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Sonorité de la voix</span>
+        <select id="timbre">
+          <option>Au choix</option>
+          <option>Grave / rauque</option>
+          <option>Aiguë</option>
+          <option>Douce / suave</option>
+          <option>Puissante / criée</option>
+          <option>Autotune</option>
+          <option>Nasillarde</option>
+          <option>Éraillée</option>
+          <option>Chuchotée</option>
+          <option>Mélodieuse</option>
         </select>
       </label>
     </div>
@@ -721,6 +759,8 @@ function construirePrompt() {
   const argot = $("#argot").value;
   const region = $("#region").value.trim();
   const vulgarite = $("#vulgarite").value;
+  const voix = $("#voix").value;
+  const timbre = $("#timbre").value;
   const format = $("#format").value;
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
@@ -743,6 +783,8 @@ function construirePrompt() {
     `• Nombre de couplets : ${longueur}\n` +
     `• Longueur du refrain : ${refrain} (respecte ce nombre de lignes pour chaque refrain)\n` +
     `• Niveau de basse / low-end : ${basse}\n` +
+    `• Voix (interprète) : ${voix}\n` +
+    `• Sonorité / timbre de la voix : ${timbre}\n` +
     `• Niveau de vulgarité : ${REGISTRE_MAP[vulgarite] || vulgarite}\n` +
     `• Argot / langage de quartier : ${argot}. Intègre le langage des jeunes et de la rue PROPRE À LA LANGUE choisie (${langue}) : ` +
     `son argot courant, ses expressions actuelles, son verlan ou slang régional, le vocabulaire de quartier — ` +
@@ -1194,7 +1236,7 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","longueur","refrain","basse","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","longueur","refrain","basse","format","versionSuno","extra"];
 
 function sauverReglages() {
   const o = {};
@@ -1240,7 +1282,7 @@ $("#reinit").addEventListener("click", () => {
   $("#theme").value = "";
   $("#region").value = "";
   $("#extra").value = "";
-  ["ambiance", "structure", "vulgarite", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
+  ["ambiance", "structure", "vulgarite", "voix", "timbre", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
     $("#" + id).selectedIndex = 0;
   });
   $("#titre").checked = true;
