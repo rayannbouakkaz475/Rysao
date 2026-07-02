@@ -150,6 +150,8 @@
   #paroles .vide{color:var(--gris); font-family:var(--sans); font-size:.95rem; font-style:italic}
   #paroles .curseur{display:inline-block; width:2px; height:1.1em; background:var(--or);
     vertical-align:text-bottom; animation:clign 1s steps(2) infinite}
+  #paroles .tag{color:var(--or); font-weight:500}
+  #paroles .tag.refrain{background:rgba(201,167,113,.16); border-radius:4px; padding:0 .32em}
   @keyframes clign{0%{opacity:1}50%{opacity:0}}
 
   .erreur{color:#e0918a; font-family:var(--sans); font-size:.9rem;
@@ -507,17 +509,52 @@ function resetActions() {
   dernierStyle = ""; dernierParoles = "";
 }
 
-// Sépare un prompt Suno en bloc Style / bloc Paroles (repères 🎚️ et 🎤).
+// Mots de section reconnus (FR + EN), pour les repères et la mise en valeur.
+const MOTS_SECTION = "intro|couplet|verse|refrain|chorus|hook|pont|bridge|outro|pré[- ]?refrain|pre[- ]?chorus|pré[- ]?chorus|ad[- ]?libs?";
+const REGEX_REFRAIN = /refrain|chorus|hook/i;
+
+// Sépare un prompt Suno en bloc Style / bloc Paroles.
+// Repère principal : 🎚️ / 🎤. Repli tolérant : si 🎤 manque, on prend la
+// première balise de section entre crochets ([Verse], [Intro], [Chorus]…).
 function decouperSuno(texte) {
   const iStyle = texte.indexOf("🎚️") !== -1 ? texte.indexOf("🎚️") : texte.indexOf("🎚");
-  const iParoles = texte.indexOf("🎤");
+  let iParoles = texte.indexOf("🎤");
+  let couperEtiquette = true;
+
+  if (iParoles === -1) {
+    const m = texte.match(new RegExp("(^|\\n)\\s*\\[(?:" + MOTS_SECTION + ")\\b[^\\]]*\\]", "i"));
+    if (m && (iStyle === -1 || m.index >= iStyle)) { iParoles = m.index; couperEtiquette = false; }
+  }
   if (iStyle === -1 || iParoles === -1 || iParoles < iStyle) return null;
+
   let style = texte.slice(iStyle, iParoles);
   let paroles = texte.slice(iParoles);
   style = style.replace(/^\s*🎚️?\s*STYLE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
-  paroles = paroles.replace(/^\s*🎤\s*PAROLES\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+  if (couperEtiquette) paroles = paroles.replace(/^\s*🎤\s*PAROLES\b[ \t]*[—:\-]?[ \t]*/i, "");
+  paroles = paroles.replace(/^\n+/, "").trim();
   if (!style || !paroles) return null;
   return { style, paroles };
+}
+
+function echapHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Met en valeur les intitulés de section ; surligne les refrains.
+function baliserSections(texte) {
+  const enTete = new RegExp("^(\\s*)((?:\\[[^\\]\\n]{1,48}\\])|(?:(?:" + MOTS_SECTION + ")(?:\\s*\\d+)?\\s*:?))(\\s*)$", "i");
+  const crochet = /\[([^\]\n]{1,48})\]/g;
+  return echapHtml(texte).split("\n").map((ligne) => {
+    const m = ligne.match(enTete);
+    if (m) {
+      const cls = REGEX_REFRAIN.test(m[2]) ? "tag refrain" : "tag";
+      return m[1] + '<span class="' + cls + '">' + m[2].trim() + "</span>" + m[3];
+    }
+    return ligne.replace(crochet, (t, inner) => {
+      const cls = REGEX_REFRAIN.test(inner) ? "tag refrain" : "tag";
+      return '<span class="' + cls + '">[' + inner + "]</span>";
+    });
+  }).join("\n");
 }
 
 function erreur(msg) {
@@ -614,7 +651,7 @@ async function generer() {
 
     if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
     const propre = texte.trim();
-    sortie.textContent = propre;
+    sortie.innerHTML = baliserSections(propre);
     const suno = decouperSuno(propre);
     if (suno) {
       dernierStyle = suno.style;
