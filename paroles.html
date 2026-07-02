@@ -123,6 +123,11 @@
   }
   .bouton:hover{filter:brightness(1.08)}
   .bouton:disabled{opacity:.5; cursor:not-allowed; filter:none}
+  .bouton-sec{width:100%; margin-top:.6rem; background:transparent; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:8px; padding:.7rem;
+    font-family:var(--sans); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+    cursor:pointer; transition:.2s}
+  .bouton-sec:hover{color:var(--or); border-color:var(--or)}
 
   /* --- Clé API --- */
   details.cle{margin-top:1.4rem; border-top:1px solid var(--bordure); padding-top:1rem}
@@ -291,6 +296,9 @@
         <button class="puce" type="button">Leto</button>
         <button class="puce" type="button">Alpha Wann</button>
         <button class="puce" type="button">Josman</button>
+        <button class="puce" type="button">Soolking</button>
+        <button class="puce" type="button">Gims</button>
+        <button class="puce" type="button">Bigflo &amp; Oli</button>
       </div>
       <div class="puces-titre">🌍 International</div>
       <div class="puces" data-cible="artistes" data-mode="ajout">
@@ -500,6 +508,7 @@
     </label>
 
     <button class="bouton" id="generer">Composer les paroles</button>
+    <button class="bouton-sec" id="reinit" type="button">Réinitialiser les choix</button>
 
     <details class="cle">
       <summary>Accès privé &nbsp;·&nbsp; optionnel</summary>
@@ -1144,6 +1153,23 @@ $("#resetDepenses").addEventListener("click", () => {
   majCredit();
 });
 majCredit();
+
+/* --- Réinitialiser les choix du formulaire (garde clé, historique, crédit) --- */
+$("#reinit").addEventListener("click", () => {
+  if (!confirm("Réinitialiser tous les choix ? (ta clé, ton historique et ton crédit sont conservés)")) return;
+  $("#langue").value = "Français";
+  $("#style").value = "Chanson française";
+  $("#artistes").value = "";
+  $("#theme").value = "";
+  $("#region").value = "";
+  $("#extra").value = "";
+  ["ambiance", "structure", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
+    $("#" + id).selectedIndex = 0;
+  });
+  $("#explicite").checked = true;
+  $("#titre").checked = true;
+  sauverReglages();
+});
 </script>
 </body>
 </html>
