@@ -509,9 +509,18 @@ function resetActions() {
   dernierStyle = ""; dernierParoles = "";
 }
 
-// Mots de section reconnus (FR + EN), pour les repères et la mise en valeur.
-const MOTS_SECTION = "intro|couplet|verse|refrain|chorus|hook|pont|bridge|outro|pré[- ]?refrain|pre[- ]?chorus|pré[- ]?chorus|ad[- ]?libs?";
-const REGEX_REFRAIN = /refrain|chorus|hook/i;
+// Mots de section reconnus (multilingue), pour les repères et la mise en valeur.
+// MOTS_REFRAIN = intitulés de refrain (surlignés) ; MOTS_AUTRES = autres sections.
+const MOTS_REFRAIN =
+  "refrain|chorus|hook|estribillo|coro|refr[ãa]o|ritornello|refrein|nakarat|" +
+  "pripev|припев|refren|refr[äa]ng|ρεφρέν|επωδός|لازمة|كورس|サビ|コーラス|후렴|코러스";
+const MOTS_AUTRES =
+  "intro|outro|couplet|verse|vers|verso|estrofa|estrofe|strofa|strophe|zwrotka|strof[ăa]|" +
+  "στροφή|куплет|kuplet|مقطع|バース|벌스|k[ıi]ta|pont|puente|ponte|br[üu]cke|brug|k[öo]pr[üu]|" +
+  "ブリッジ|브릿지|bridge|solo|drop|beat[- ]?drop|instrumental|pré[- ]?refrain|pré[- ]?chorus|" +
+  "pre[- ]?chorus|pre[- ]?estribillo|ad[- ]?libs?";
+const MOTS_SECTION = MOTS_REFRAIN + "|" + MOTS_AUTRES;
+const REGEX_REFRAIN = new RegExp(MOTS_REFRAIN, "i");
 
 // Sépare un prompt Suno en bloc Style / bloc Paroles.
 // Repère principal : 🎚️ / 🎤. Repli tolérant : si 🎤 manque, on prend la
