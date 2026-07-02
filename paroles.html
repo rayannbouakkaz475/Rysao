@@ -551,11 +551,15 @@
       </label>
     </div>
 
-    <label class="bascule">
-      <input type="checkbox" id="explicite" checked>
-      <span class="txt">Paroles explicites — langage cru, sans censure
-        <small>Argot, gros mots et thèmes adultes assumés selon le style, sans mots masqués.</small>
-      </span>
+    <label class="champ">
+      <span>Niveau de vulgarité</span>
+      <select id="vulgarite">
+        <option>Modérée (vulgaire mais pas trop)</option>
+        <option>Aucune (tout public)</option>
+        <option>Légère</option>
+        <option>Élevée (très cru)</option>
+        <option>Sans limite</option>
+      </select>
     </label>
 
     <label class="bascule">
@@ -695,6 +699,14 @@ champAcces.addEventListener("input", () => {
 });
 
 /* --- Construction de la requête --- */
+const REGISTRE_MAP = {
+  "Aucune (tout public)": "tout public, aucune vulgarité ni gros mot",
+  "Légère": "légèrement familier — quelques gros mots légers, ton globalement correct, sans excès",
+  "Modérée (vulgaire mais pas trop)": "vulgaire de façon MODÉRÉE — argot cru et gros mots présents mais DOSÉS, sans surenchère ni provocation gratuite",
+  "Élevée (très cru)": "très cru et explicite — argot, gros mots et thèmes adultes pleinement assumés selon le genre, sans mots masqués (pas d'astérisques ni de bips)",
+  "Sans limite": "explicite au maximum, sans aucune censure ni retenue — argot et gros mots à volonté selon le style, sans jamais masquer un mot",
+};
+
 function construirePrompt() {
   const langue = $("#langue").value.trim() || "Français";
   const style = $("#style").value.trim() || "libre";
@@ -704,7 +716,7 @@ function construirePrompt() {
   const structure = $("#structure").value;
   const argot = $("#argot").value;
   const region = $("#region").value.trim();
-  const explicite = $("#explicite").checked;
+  const vulgarite = $("#vulgarite").value;
   const format = $("#format").value;
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
@@ -727,9 +739,7 @@ function construirePrompt() {
     `• Nombre de couplets : ${longueur}\n` +
     `• Longueur du refrain : ${refrain} (respecte ce nombre de lignes pour chaque refrain)\n` +
     `• Niveau de basse / low-end : ${basse}\n` +
-    `• Registre : ${explicite
-      ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
-      : "tout public, sans langage vulgaire"}\n` +
+    `• Niveau de vulgarité : ${REGISTRE_MAP[vulgarite] || vulgarite}\n` +
     `• Argot / langage de quartier : ${argot}. Intègre le langage des jeunes et de la rue PROPRE À LA LANGUE choisie (${langue}) : ` +
     `son argot courant, ses expressions actuelles, son verlan ou slang régional, le vocabulaire de quartier — ` +
     `de façon naturelle et crédible, jamais caricaturale. Emploie l'argot NATIF de cette langue, jamais une transposition de l'argot français.\n`;
@@ -767,9 +777,11 @@ const SYSTEME =
   "Tu es un parolier virtuose, capable d'écrire des chansons dans absolument n'importe quelle langue " +
   "(y compris les langues régionales, créoles et dialectes) et dans n'importe quel style ou genre musical. " +
   "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
-  "Tu écris des paroles authentiques et sans autocensure : quand le style l'exige (rap, drill, trap, etc.), " +
-  "tu emploies un langage cru, de l'argot, des gros mots et des thèmes adultes, sans jamais les masquer, " +
-  "les édulcorer, ni ajouter de morale ou d'avertissement. Dans chaque langue, tu écris avec le langage " +
+  "Tu écris des paroles authentiques et tu adaptes le NIVEAU DE VULGARITÉ exactement à la demande " +
+  "(de tout public à très cru) : quand un registre explicite est demandé, tu emploies un langage cru, de l'argot, " +
+  "des gros mots et des thèmes adultes sans les masquer ; quand un niveau modéré est demandé, tu doses et n'en " +
+  "fais pas trop ; quand c'est tout public, tu restes propre. Tu n'ajoutes jamais de morale ni d'avertissement. " +
+  "Dans chaque langue, tu écris avec le langage " +
   "authentique des jeunes et des quartiers PROPRE À CETTE LANGUE — son argot courant, son verlan ou slang " +
   "régional, ses expressions de rue actuelles — de manière naturelle et crédible plutôt que caricaturale, " +
   "et jamais en transposant l'argot d'une autre langue. Lorsqu'on te cite des artistes en référence, " +
@@ -1178,12 +1190,11 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","refrain","basse","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","longueur","refrain","basse","format","versionSuno","extra"];
 
 function sauverReglages() {
   const o = {};
   CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el) o[id] = el.value; });
-  o.explicite = $("#explicite").checked;
   o.titre = $("#titre").checked;
   try { localStorage.setItem(REG_STOCK, JSON.stringify(o)); } catch (e) {}
 }
@@ -1192,12 +1203,11 @@ function chargerReglages() {
   let o; try { o = JSON.parse(localStorage.getItem(REG_STOCK)); } catch (e) {}
   if (!o) return;
   CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el && o[id] != null) el.value = o[id]; });
-  if (typeof o.explicite === "boolean") $("#explicite").checked = o.explicite;
   if (typeof o.titre === "boolean") $("#titre").checked = o.titre;
 }
 
 chargerReglages();
-CHAMPS_REGLAGES.concat(["explicite", "titre"]).forEach((id) => {
+CHAMPS_REGLAGES.concat(["titre"]).forEach((id) => {
   const el = $("#" + id);
   if (el) { el.addEventListener("input", sauverReglages); el.addEventListener("change", sauverReglages); }
 });
@@ -1226,10 +1236,9 @@ $("#reinit").addEventListener("click", () => {
   $("#theme").value = "";
   $("#region").value = "";
   $("#extra").value = "";
-  ["ambiance", "structure", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
+  ["ambiance", "structure", "vulgarite", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
     $("#" + id).selectedIndex = 0;
   });
-  $("#explicite").checked = true;
   $("#titre").checked = true;
   sauverReglages();
 });
