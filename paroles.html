@@ -253,6 +253,16 @@
     <button class="bouton" id="generer">Composer les paroles</button>
 
     <details class="cle">
+      <summary>Accès privé &nbsp;·&nbsp; optionnel</summary>
+      <p class="aide">
+        Outil à usage personnel. Si vous avez protégé votre serveur avec un code
+        (variable <strong>ACCESS_CODE</strong>), saisissez-le ici : il est mémorisé
+        <strong>uniquement dans ce navigateur</strong>. En usage local, laissez vide.
+      </p>
+      <input type="text" id="acces" placeholder="Code d'accès (laisser vide en local)" autocomplete="off" spellcheck="false">
+    </details>
+
+    <details class="cle">
       <summary>Mode direct (sans serveur) &nbsp;·&nbsp; optionnel</summary>
       <p class="aide">
         Par défaut, l'atelier passe par le <strong>serveur</strong> du site : la clé API reste
@@ -312,6 +322,14 @@ majEtatCle();
 champCle.addEventListener("input", () => {
   localStorage.setItem(CLE_STOCK, champCle.value.trim());
   majEtatCle();
+});
+
+/* --- Code d'accès privé (optionnel) --- */
+const ACCES_STOCK = "rysao_acces";
+const champAcces = $("#acces");
+champAcces.value = localStorage.getItem(ACCES_STOCK) || "";
+champAcces.addEventListener("input", () => {
+  localStorage.setItem(ACCES_STOCK, champAcces.value.trim());
 });
 
 /* --- Construction de la requête --- */
@@ -379,9 +397,12 @@ function envoyerRequete() {
       }),
     });
   }
+  const enTetes = { "content-type": "application/json" };
+  const acces = (champAcces.value || "").trim();
+  if (acces) enTetes["x-acces"] = acces;
   return fetch(ENDPOINT_BACKEND, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: enTetes,
     body: JSON.stringify({ systeme: SYSTEME, prompt: prompt }),
   });
 }
@@ -406,6 +427,7 @@ async function generer() {
       try { const j = await reponse.json(); détail = j.error?.message || JSON.stringify(j); }
       catch (e) { try { détail = await reponse.text(); } catch (_) {} }
       if (reponse.status === 401) throw new Error("Clé API refusée (401). Vérifiez qu'elle est valide et active.");
+      if (reponse.status === 403) throw new Error("Code d'accès requis ou invalide. Renseignez-le dans « Accès privé » ci-dessous.");
       if (reponse.status === 429) throw new Error("Limite de requêtes atteinte (429). Patientez un instant puis réessayez.");
       if (reponse.status === 501) throw new Error("Le serveur n'a pas de clé configurée (ANTHROPIC_API_KEY). Configurez-la côté serveur, ou saisissez une clé en « mode direct » ci-dessous.");
       if (reponse.status === 404) throw new Error("Serveur introuvable (/api/paroles). Lancez le serveur (npm start), ou saisissez une clé en « mode direct » ci-dessous.");

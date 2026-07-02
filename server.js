@@ -61,6 +61,18 @@ function envoyerJson(res, code, obj) {
 
 /* --- Proxy vers l'API Claude (streaming) --- */
 async function relayerParoles(req, res) {
+  // Accès privé (optionnel) : si ACCESS_CODE est défini, le client doit fournir
+  // l'en-tête x-acces correspondant. Sinon, aucune restriction (usage local).
+  const codeAttendu = process.env.ACCESS_CODE;
+  if (codeAttendu) {
+    const fourni = req.headers["x-acces"] || "";
+    if (fourni !== codeAttendu) {
+      return envoyerJson(res, 403, {
+        error: { message: "Code d'accès requis ou invalide." },
+      });
+    }
+  }
+
   const cle = process.env.ANTHROPIC_API_KEY;
   if (!cle) {
     return envoyerJson(res, 501, {

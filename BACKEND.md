@@ -1,8 +1,13 @@
-# Atelier de Paroles RYSAO — version backend
+# Atelier de Paroles RYSAO — version backend (usage personnel)
 
 Ce petit serveur sert le site **et** relaie les requêtes de l'Atelier de Paroles
 vers l'API Claude (Anthropic). La clé API reste **côté serveur** : elle n'est
 jamais exposée dans le navigateur.
+
+> **Outil privé.** L'Atelier n'est pas lié depuis le site public : la page
+> `paroles.html` n'est accessible que si vous ouvrez son adresse vous-même.
+> Pour un usage local (localhost), c'est déjà privé. Si vous hébergez le serveur,
+> protégez-le avec un **code d'accès** (voir plus bas).
 
 Aucune dépendance à installer — uniquement **Node.js 18 ou plus récent**.
 
@@ -44,6 +49,21 @@ ANTHROPIC_API_KEY=sk-ant-... node server.js
 - La page `paroles.html` appelle `/api/paroles` par défaut. Si vous ouvrez le
   fichier **sans serveur**, un « mode direct » optionnel permet de coller une
   clé dans le navigateur (repli pratique pour tester en local).
+
+## Accès privé (recommandé si vous hébergez le serveur)
+
+En local (localhost), le serveur n'est accessible que depuis votre machine :
+aucune protection supplémentaire n'est nécessaire.
+
+Si vous mettez le serveur en ligne, définissez un code d'accès. La génération de
+paroles exigera alors ce code (à saisir une fois dans la page, section
+« Accès privé ») :
+
+```bash
+ACCESS_CODE=mon-code-secret ANTHROPIC_API_KEY=sk-ant-... node server.js
+```
+
+Sans `ACCESS_CODE`, l'endpoint reste ouvert — à réserver au strict usage local.
 
 ## Déploiement
 
