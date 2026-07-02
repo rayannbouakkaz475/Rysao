@@ -448,13 +448,25 @@
       </label>
     </div>
 
-    <div class="rangee">
+    <div class="rangee-3">
       <label class="champ">
-        <span>Longueur</span>
+        <span>Couplets (nombre)</span>
         <select id="longueur">
-          <option>Standard</option>
-          <option>Courte</option>
-          <option>Longue</option>
+          <option>2 couplets</option>
+          <option>1 couplet</option>
+          <option>3 couplets</option>
+          <option>4 couplets</option>
+          <option>5 couplets</option>
+          <option>6 couplets</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Refrain (lignes)</span>
+        <select id="refrain">
+          <option>4 lignes</option>
+          <option>2 lignes</option>
+          <option>6 lignes</option>
+          <option>8 lignes</option>
         </select>
       </label>
       <label class="champ">
@@ -532,7 +544,23 @@
     <div id="paroles"><span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span></div>
     <textarea id="edit"></textarea>
     <div class="cout" id="cout"></div>
+    <div class="cout" id="creditLigne"></div>
     <div class="erreur" id="erreur"></div>
+
+    <details class="hist">
+      <summary>Crédit (estimation locale)</summary>
+      <p style="font-size:.82rem; color:var(--gris); margin:.6rem 0">
+        Estimation calculée uniquement à partir des chansons générées dans cette app, sur cet appareil
+        (elle ne connaît pas ton solde réel chez Anthropic). Indique le crédit que tu as chargé pour voir ce qu'il te reste.
+      </p>
+      <label class="champ" style="max-width:220px">
+        <span>Crédit chargé ($)</span>
+        <input type="number" id="creditDepart" placeholder="ex : 20" min="0" step="1">
+      </label>
+      <div class="hist-actions">
+        <button class="mini" id="resetDepenses">Remettre la dépense à zéro</button>
+      </div>
+    </details>
 
     <details class="hist">
       <summary id="sommaireHist">Historique</summary>
@@ -609,6 +637,7 @@ function construirePrompt() {
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
   const longueur = $("#longueur").value;
+  const refrain = $("#refrain").value;
   const basse = $("#basse").value;
   const titre = $("#titre").checked;
   const extra = $("#extra").value.trim();
@@ -623,7 +652,8 @@ function construirePrompt() {
   p += `• Thème : ${theme}\n` +
     `• Ambiance : ${ambiance}\n` +
     `• Structure souhaitée : ${structure}\n` +
-    `• Longueur : ${longueur} (Courte ≈ 1 couplet + refrain ; Standard ≈ 2 couplets + refrain + pont ; Longue ≈ 3 couplets ou plus)\n` +
+    `• Nombre de couplets : ${longueur}\n` +
+    `• Longueur du refrain : ${refrain} (respecte ce nombre de lignes pour chaque refrain)\n` +
     `• Niveau de basse / low-end : ${basse}\n` +
     `• Registre : ${explicite
       ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
@@ -740,6 +770,28 @@ function afficherCout() {
   const eur = usd * 0.92;
   elemCout.innerHTML = "Coût de cette génération : <span>≈ " + usd.toFixed(3) + " $ (~" +
     eur.toFixed(3) + " €)</span> · " + (usageIn + usageOut) + " tokens";
+  if (usageOut) {
+    depenseCumul += usd;
+    try { localStorage.setItem("rysao_depense", String(depenseCumul)); } catch (e) {}
+    majCredit();
+  }
+}
+
+/* --- Crédit estimé (local, sur cet appareil) --- */
+let depenseCumul = parseFloat(localStorage.getItem("rysao_depense") || "0") || 0;
+function majCredit() {
+  const elem = document.getElementById("creditLigne");
+  if (!elem) return;
+  const brut = (document.getElementById("creditDepart").value || "").replace(",", ".");
+  const depart = parseFloat(brut);
+  const spent = depenseCumul;
+  if (!isNaN(depart) && depart > 0) {
+    const reste = Math.max(0, depart - spent);
+    elem.innerHTML = "Crédit estimé restant : <span>≈ " + reste.toFixed(2) + " $</span> " +
+      "(sur " + depart.toFixed(2) + " $ · dépensé ≈ " + spent.toFixed(2) + " $ sur cet appareil)";
+  } else {
+    elem.innerHTML = spent > 0 ? ("Dépensé sur cet appareil : <span>≈ " + spent.toFixed(2) + " $</span>") : "";
+  }
 }
 
 // Mots de section reconnus (multilingue), pour les repères et la mise en valeur.
@@ -1054,7 +1106,7 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","basse","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","refrain","basse","format","versionSuno","extra"];
 
 function sauverReglages() {
   const o = {};
@@ -1077,6 +1129,21 @@ CHAMPS_REGLAGES.concat(["explicite", "titre"]).forEach((id) => {
   const el = $("#" + id);
   if (el) { el.addEventListener("input", sauverReglages); el.addEventListener("change", sauverReglages); }
 });
+
+/* --- Crédit : chargement, écoute, remise à zéro --- */
+const champCredit = $("#creditDepart");
+champCredit.value = localStorage.getItem("rysao_credit_depart") || "";
+champCredit.addEventListener("input", () => {
+  localStorage.setItem("rysao_credit_depart", champCredit.value);
+  majCredit();
+});
+$("#resetDepenses").addEventListener("click", () => {
+  if (!confirm("Remettre à zéro le total dépensé sur cet appareil ?")) return;
+  depenseCumul = 0;
+  localStorage.setItem("rysao_depense", "0");
+  majCredit();
+});
+majCredit();
 </script>
 </body>
 </html>
