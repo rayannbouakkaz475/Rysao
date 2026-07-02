@@ -100,6 +100,12 @@
   .rangee{display:grid; grid-template-columns:1fr 1fr; gap:1rem}
   @media(max-width:480px){ .rangee{grid-template-columns:1fr} }
 
+  .bascule{display:flex; align-items:flex-start; gap:.65rem; margin-bottom:1.15rem; cursor:pointer;
+    background:var(--noir-2); border:1px solid var(--bordure); border-radius:8px; padding:.75rem .85rem}
+  .bascule input{width:auto; margin-top:.15rem; accent-color:var(--or); flex:none}
+  .bascule .txt{font-size:.9rem; color:var(--texte)}
+  .bascule .txt small{display:block; color:var(--gris); font-size:.78rem; margin-top:.15rem}
+
   .bouton{
     width:100%; margin-top:.4rem;
     background:linear-gradient(135deg,var(--or),var(--or-clair));
@@ -211,6 +217,29 @@
     </label>
 
     <label class="champ">
+      <span>Artistes de référence (style)</span>
+      <input type="text" id="artistes" placeholder="Ex : Ninho, Damso, Travis Scott, Aya Nakamura…">
+      <div class="puces" data-cible="artistes" data-mode="ajout">
+        <button class="puce" type="button">Ninho</button>
+        <button class="puce" type="button">Damso</button>
+        <button class="puce" type="button">SCH</button>
+        <button class="puce" type="button">PNL</button>
+        <button class="puce" type="button">Jul</button>
+        <button class="puce" type="button">Gazo</button>
+        <button class="puce" type="button">Tiakola</button>
+        <button class="puce" type="button">Werenoi</button>
+        <button class="puce" type="button">Aya Nakamura</button>
+        <button class="puce" type="button">Drake</button>
+        <button class="puce" type="button">Kendrick Lamar</button>
+        <button class="puce" type="button">Travis Scott</button>
+        <button class="puce" type="button">The Weeknd</button>
+        <button class="puce" type="button">Central Cee</button>
+        <button class="puce" type="button">Bad Bunny</button>
+        <button class="puce" type="button">Burna Boy</button>
+      </div>
+    </label>
+
+    <label class="champ">
       <span>Thème / Sujet</span>
       <textarea id="theme" placeholder="De quoi parle la chanson ? Une histoire, une émotion, une personne, un lieu…">Le temps qui passe et la valeur d'un instant partagé.</textarea>
     </label>
@@ -244,6 +273,13 @@
         </select>
       </label>
     </div>
+
+    <label class="bascule">
+      <input type="checkbox" id="explicite" checked>
+      <span class="txt">Paroles explicites — langage cru, sans censure
+        <small>Argot, gros mots et thèmes adultes assumés selon le style, sans mots masqués.</small>
+      </span>
+    </label>
 
     <label class="champ">
       <span>Consignes supplémentaires (optionnel)</span>
@@ -305,7 +341,16 @@ const CLE_STOCK = "rysao_cle_api";
 document.querySelectorAll(".puces").forEach((groupe) => {
   const cible = $("#" + groupe.dataset.cible);
   groupe.querySelectorAll(".puce").forEach((b) => {
-    b.addEventListener("click", () => { cible.value = b.textContent.trim(); });
+    b.addEventListener("click", () => {
+      const val = b.textContent.trim();
+      if (groupe.dataset.mode === "ajout") {
+        const actuels = cible.value.split(",").map((s) => s.trim()).filter(Boolean);
+        if (!actuels.includes(val)) actuels.push(val);
+        cible.value = actuels.join(", ");
+      } else {
+        cible.value = val;
+      }
+    });
   });
 });
 
@@ -336,21 +381,29 @@ champAcces.addEventListener("input", () => {
 function construirePrompt() {
   const langue = $("#langue").value.trim() || "Français";
   const style = $("#style").value.trim() || "libre";
+  const artistes = $("#artistes").value.trim();
   const theme = $("#theme").value.trim() || "au choix de l'auteur";
   const ambiance = $("#ambiance").value;
   const structure = $("#structure").value;
+  const explicite = $("#explicite").checked;
   const extra = $("#extra").value.trim();
 
   let p = `Écris les paroles d'une chanson originale.\n\n` +
     `• Langue : ${langue}\n` +
-    `• Style / genre musical : ${style}\n` +
-    `• Thème : ${theme}\n` +
+    `• Style / genre musical : ${style}\n`;
+  if (artistes) p += `• Artistes de référence (t'inspirer de leur flow, énergie, imagerie et argot — SANS copier ni reprendre leurs paroles existantes) : ${artistes}\n`;
+  p += `• Thème : ${theme}\n` +
     `• Ambiance : ${ambiance}\n` +
-    `• Structure souhaitée : ${structure}\n`;
+    `• Structure souhaitée : ${structure}\n` +
+    `• Registre : ${explicite
+      ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
+      : "tout public, sans langage vulgaire"}\n`;
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
   p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
     `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
-    `Soigne les images, le rythme et les rimes propres au style. ` +
+    `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
+    `mais produis des paroles 100% originales. ` +
+    `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
     `Ne donne que les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
   return p;
 }
@@ -359,8 +412,12 @@ const SYSTEME =
   "Tu es un parolier virtuose, capable d'écrire des chansons dans absolument n'importe quelle langue " +
   "(y compris les langues régionales, créoles et dialectes) et dans n'importe quel style ou genre musical. " +
   "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
-  "Tu écris des textes originaux, singuliers et chantables. Tu réponds toujours dans la langue demandée par l'utilisateur, " +
-  "sans jamais ajouter de préambule ni de conclusion en dehors des paroles.";
+  "Tu écris des paroles authentiques et sans autocensure : quand le style l'exige (rap, drill, trap, etc.), " +
+  "tu emploies un langage cru, de l'argot, des gros mots et des thèmes adultes, sans jamais les masquer, " +
+  "les édulcorer, ni ajouter de morale ou d'avertissement. Lorsqu'on te cite des artistes en référence, " +
+  "tu captes leur flow, leur énergie, leurs images et leur vocabulaire tout en écrivant des paroles " +
+  "entièrement originales — jamais de reprise de leurs textes existants. Tu réponds toujours dans la langue " +
+  "demandée par l'utilisateur, sans préambule ni conclusion en dehors des paroles.";
 
 /* --- Appel de l'API Claude (streaming SSE) --- */
 const boutonGen = $("#generer");
