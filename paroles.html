@@ -90,6 +90,7 @@
     background-repeat:no-repeat; background-position:right .9rem center; padding-right:2.2rem;}
 
   .puces{display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.6rem}
+  .puces-titre{font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gris); margin:.85rem 0 .15rem}
   .puce{
     font-size:.78rem; letter-spacing:.04em; color:var(--gris);
     border:1px solid var(--bordure); border-radius:999px; padding:.32rem .8rem;
@@ -226,6 +227,7 @@
     <label class="champ">
       <span>Artistes de référence (style)</span>
       <input type="text" id="artistes" placeholder="Ex : Ninho, Damso, Travis Scott, Aya Nakamura…">
+      <div class="puces-titre">🇫🇷 France</div>
       <div class="puces" data-cible="artistes" data-mode="ajout">
         <button class="puce" type="button">Ninho</button>
         <button class="puce" type="button">Damso</button>
@@ -236,6 +238,9 @@
         <button class="puce" type="button">Tiakola</button>
         <button class="puce" type="button">Werenoi</button>
         <button class="puce" type="button">Aya Nakamura</button>
+      </div>
+      <div class="puces-titre">🌍 International</div>
+      <div class="puces" data-cible="artistes" data-mode="ajout">
         <button class="puce" type="button">Drake</button>
         <button class="puce" type="button">Kendrick Lamar</button>
         <button class="puce" type="button">Travis Scott</button>
@@ -243,6 +248,9 @@
         <button class="puce" type="button">Central Cee</button>
         <button class="puce" type="button">Bad Bunny</button>
         <button class="puce" type="button">Burna Boy</button>
+      </div>
+      <div class="puces-titre">🇧🇷 Brésil — funk / favela</div>
+      <div class="puces" data-cible="artistes" data-mode="ajout">
         <button class="puce" type="button">MC Poze do Rodo</button>
         <button class="puce" type="button">MC Kevin o Chris</button>
         <button class="puce" type="button">MC Ryan SP</button>
