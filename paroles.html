@@ -190,7 +190,8 @@
         <button class="puce" type="button">English</button>
         <button class="puce" type="button">Español</button>
         <button class="puce" type="button">Italiano</button>
-        <button class="puce" type="button">Português</button>
+        <button class="puce" type="button">Português (BR)</button>
+        <button class="puce" type="button">Português (PT)</button>
         <button class="puce" type="button">Deutsch</button>
         <button class="puce" type="button">العربية</button>
         <button class="puce" type="button">日本語</button>
@@ -518,9 +519,14 @@ const MOTS_AUTRES =
   "intro|outro|couplet|verse|vers|verso|estrofa|estrofe|strofa|strophe|zwrotka|strof[ăa]|" +
   "στροφή|куплет|kuplet|مقطع|バース|벌스|k[ıi]ta|pont|puente|ponte|br[üu]cke|brug|k[öo]pr[üu]|" +
   "ブリッジ|브릿지|bridge|solo|drop|beat[- ]?drop|instrumental|pré[- ]?refrain|pré[- ]?chorus|" +
-  "pre[- ]?chorus|pre[- ]?estribillo|ad[- ]?libs?";
+  "pre[- ]?chorus|pre[- ]?estribillo|pré[- ]?refr[ãa]o|pre[- ]?refr[ãa]o|introdu[çc][ãa]o|ad[- ]?libs?";
 const MOTS_SECTION = MOTS_REFRAIN + "|" + MOTS_AUTRES;
 const REGEX_REFRAIN = new RegExp(MOTS_REFRAIN, "i");
+
+// Un « pré-refrain / pre-chorus » n'est pas le refrain : on ne le surligne pas.
+function estRefrain(tok) {
+  return REGEX_REFRAIN.test(tok) && !/pr[ée][- ]?(?:refr|chor|estrib)/i.test(tok);
+}
 
 // Sépare un prompt Suno en bloc Style / bloc Paroles.
 // Repère principal : 🎚️ / 🎤. Repli tolérant : si 🎤 manque, on prend la
@@ -556,11 +562,11 @@ function baliserSections(texte) {
   return echapHtml(texte).split("\n").map((ligne) => {
     const m = ligne.match(enTete);
     if (m) {
-      const cls = REGEX_REFRAIN.test(m[2]) ? "tag refrain" : "tag";
+      const cls = estRefrain(m[2]) ? "tag refrain" : "tag";
       return m[1] + '<span class="' + cls + '">' + m[2].trim() + "</span>" + m[3];
     }
     return ligne.replace(crochet, (t, inner) => {
-      const cls = REGEX_REFRAIN.test(inner) ? "tag refrain" : "tag";
+      const cls = estRefrain(inner) ? "tag refrain" : "tag";
       return '<span class="' + cls + '">[' + inner + "]</span>";
     });
   }).join("\n");
