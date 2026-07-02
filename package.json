@@ -1,0 +1,12 @@
+{
+  "name": "rysao-atelier-paroles",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serveur de l'Atelier de Paroles RYSAO — sert le site et relaie les requetes vers l'API Claude (streaming). Aucune dependance externe.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

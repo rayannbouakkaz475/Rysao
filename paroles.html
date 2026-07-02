@@ -253,15 +253,18 @@
     <button class="bouton" id="generer">Composer les paroles</button>
 
     <details class="cle">
-      <summary>Clé API Claude &nbsp;·&nbsp; configuration</summary>
+      <summary>Mode direct (sans serveur) &nbsp;·&nbsp; optionnel</summary>
       <p class="aide">
-        Cet atelier interroge le modèle <strong>Claude&nbsp;(Opus&nbsp;4.8)</strong> d'Anthropic depuis votre navigateur.
-        Collez votre clé API pour l'activer. Elle est enregistrée <strong>uniquement dans ce navigateur</strong>
-        (localStorage) et n'est jamais transmise ailleurs qu'à l'API d'Anthropic.
+        Par défaut, l'atelier passe par le <strong>serveur</strong> du site : la clé API reste
+        côté serveur et n'est jamais exposée. Vous n'avez rien à renseigner ici.<br><br>
+        Si vous ouvrez ce fichier <strong>seul, sans serveur</strong> (double-clic), collez une clé
+        API <strong>Claude&nbsp;(Opus&nbsp;4.8)</strong> ci-dessous pour activer le mode direct : elle est
+        alors enregistrée <strong>uniquement dans ce navigateur</strong> (localStorage) et envoyée
+        directement à l'API d'Anthropic.
         Obtenir une clé : <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
       </p>
-      <input type="text" id="cle" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
-      <div class="etat-cle non" id="etatCle">Aucune clé enregistrée.</div>
+      <input type="text" id="cle" placeholder="sk-ant-… (laisser vide en mode serveur)" autocomplete="off" spellcheck="false">
+      <div class="etat-cle non" id="etatCle">Mode serveur — aucune clé nécessaire.</div>
     </details>
   </div>
 
@@ -301,8 +304,8 @@ const champCle = $("#cle");
 const etatCle = $("#etatCle");
 function majEtatCle() {
   const k = (champCle.value || "").trim();
-  if (k.length > 10) { etatCle.textContent = "Clé enregistrée dans ce navigateur."; etatCle.className = "etat-cle ok"; }
-  else { etatCle.textContent = "Aucune clé enregistrée."; etatCle.className = "etat-cle non"; }
+  if (k.length > 10) { etatCle.textContent = "Mode direct actif — clé enregistrée dans ce navigateur."; etatCle.className = "etat-cle ok"; }
+  else { etatCle.textContent = "Mode serveur — aucune clé nécessaire."; etatCle.className = "etat-cle non"; }
 }
 champCle.value = localStorage.getItem(CLE_STOCK) || "";
 majEtatCle();
@@ -355,15 +358,37 @@ function erreur(msg) {
 }
 function effacerErreur(){ boiteErreur.style.display = "none"; boiteErreur.textContent = ""; }
 
+const ENDPOINT_BACKEND = "/api/paroles";
+
+// Mode direct (navigateur) si une clé est saisie ; sinon relais via le serveur.
+function envoyerRequete() {
+  const cle = (champCle.value || "").trim();
+  const prompt = construirePrompt();
+  if (cle) {
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": cle,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-8", max_tokens: 4000, stream: true,
+        system: SYSTEME, messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  }
+  return fetch(ENDPOINT_BACKEND, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ systeme: SYSTEME, prompt: prompt }),
+  });
+}
+
 async function generer() {
   if (enCours) return;
-  const cle = (champCle.value || "").trim();
   effacerErreur();
-
-  if (!cle) {
-    erreur("Aucune clé API Claude n'est configurée. Ouvrez « Clé API Claude · configuration » plus bas et collez votre clé.");
-    return;
-  }
 
   enCours = true;
   boutonGen.disabled = true;
@@ -374,29 +399,17 @@ async function generer() {
   let texte = "";
 
   try {
-    const reponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": cle,
-        "anthropic-version": "2023-06-01",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: "claude-opus-4-8",
-        max_tokens: 4000,
-        stream: true,
-        system: SYSTEME,
-        messages: [{ role: "user", content: construirePrompt() }],
-      }),
-    });
+    const reponse = await envoyerRequete();
 
     if (!reponse.ok || !reponse.body) {
       let détail = "";
-      try { const j = await reponse.json(); détail = j.error?.message || JSON.stringify(j); } catch(e){}
+      try { const j = await reponse.json(); détail = j.error?.message || JSON.stringify(j); }
+      catch (e) { try { détail = await reponse.text(); } catch (_) {} }
       if (reponse.status === 401) throw new Error("Clé API refusée (401). Vérifiez qu'elle est valide et active.");
       if (reponse.status === 429) throw new Error("Limite de requêtes atteinte (429). Patientez un instant puis réessayez.");
-      throw new Error("Erreur de l'API (" + reponse.status + ") " + détail);
+      if (reponse.status === 501) throw new Error("Le serveur n'a pas de clé configurée (ANTHROPIC_API_KEY). Configurez-la côté serveur, ou saisissez une clé en « mode direct » ci-dessous.");
+      if (reponse.status === 404) throw new Error("Serveur introuvable (/api/paroles). Lancez le serveur (npm start), ou saisissez une clé en « mode direct » ci-dessous.");
+      throw new Error("Erreur (" + reponse.status + ") " + (détail || ""));
     }
 
     const lecteur = reponse.body.getReader();
@@ -433,7 +446,7 @@ async function generer() {
 
   } catch (e) {
     if (e.name === "TypeError") {
-      erreur("Impossible de contacter l'API. Vérifiez votre connexion. (Note : certains navigateurs bloquent les appels directs ; l'en-tête d'accès navigateur est bien envoyé.)");
+      erreur("Impossible de contacter le service. Si vous avez ouvert le fichier sans serveur, saisissez une clé API en « mode direct » ci-dessous ; sinon vérifiez que le serveur est bien lancé.");
     } else {
       erreur(e.message || String(e));
     }
