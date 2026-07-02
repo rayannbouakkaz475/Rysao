@@ -212,8 +212,8 @@
 
     <label class="champ">
       <span>Langue</span>
-      <input type="text" id="langue" placeholder="Français, English, Español, 日本語, العربية, wolof…" value="Français">
-      <div class="puces" data-cible="langue">
+      <input type="text" id="langue" placeholder="Ex : Français, ou « Français + English » pour mélanger…" value="Français">
+      <div class="puces" data-cible="langue" data-mode="ajout">
         <button class="puce" type="button">Français</button>
         <button class="puce" type="button">English</button>
         <button class="puce" type="button">Español</button>
@@ -265,6 +265,26 @@
         <button class="puce" type="button">Tiakola</button>
         <button class="puce" type="button">Werenoi</button>
         <button class="puce" type="button">Aya Nakamura</button>
+        <button class="puce" type="button">Booba</button>
+        <button class="puce" type="button">Kaaris</button>
+        <button class="puce" type="button">Niska</button>
+        <button class="puce" type="button">Naps</button>
+        <button class="puce" type="button">Rohff</button>
+        <button class="puce" type="button">Lacrim</button>
+        <button class="puce" type="button">Maes</button>
+        <button class="puce" type="button">Freeze Corleone</button>
+        <button class="puce" type="button">Nekfeu</button>
+        <button class="puce" type="button">Orelsan</button>
+        <button class="puce" type="button">Vald</button>
+        <button class="puce" type="button">Laylow</button>
+        <button class="puce" type="button">Hamza</button>
+        <button class="puce" type="button">Dinos</button>
+        <button class="puce" type="button">Zola</button>
+        <button class="puce" type="button">Koba LaD</button>
+        <button class="puce" type="button">Ziak</button>
+        <button class="puce" type="button">Leto</button>
+        <button class="puce" type="button">Alpha Wann</button>
+        <button class="puce" type="button">Josman</button>
       </div>
       <div class="puces-titre">🌍 International</div>
       <div class="puces" data-cible="artistes" data-mode="ajout">
@@ -275,6 +295,26 @@
         <button class="puce" type="button">Central Cee</button>
         <button class="puce" type="button">Bad Bunny</button>
         <button class="puce" type="button">Burna Boy</button>
+        <button class="puce" type="button">Eminem</button>
+        <button class="puce" type="button">50 Cent</button>
+        <button class="puce" type="button">Jay-Z</button>
+        <button class="puce" type="button">Nas</button>
+        <button class="puce" type="button">Snoop Dogg</button>
+        <button class="puce" type="button">2Pac</button>
+        <button class="puce" type="button">The Notorious B.I.G.</button>
+        <button class="puce" type="button">Lil Wayne</button>
+        <button class="puce" type="button">J. Cole</button>
+        <button class="puce" type="button">Future</button>
+        <button class="puce" type="button">21 Savage</button>
+        <button class="puce" type="button">Nicki Minaj</button>
+        <button class="puce" type="button">Post Malone</button>
+        <button class="puce" type="button">Tyler, the Creator</button>
+        <button class="puce" type="button">A$AP Rocky</button>
+        <button class="puce" type="button">Playboi Carti</button>
+        <button class="puce" type="button">Lil Baby</button>
+        <button class="puce" type="button">Dave</button>
+        <button class="puce" type="button">Stormzy</button>
+        <button class="puce" type="button">Skepta</button>
       </div>
       <div class="puces-titre">🇧🇷 Brésil — funk / favela</div>
       <div class="puces" data-cible="artistes" data-mode="ajout">
@@ -382,7 +422,7 @@
       </label>
     </div>
 
-    <div class="rangee-3">
+    <div class="rangee">
       <label class="champ">
         <span>Format de sortie</span>
         <select id="format">
@@ -400,12 +440,24 @@
           <option>Suno v3.5</option>
         </select>
       </label>
+    </div>
+
+    <div class="rangee">
       <label class="champ">
         <span>Longueur</span>
         <select id="longueur">
           <option>Standard</option>
           <option>Courte</option>
           <option>Longue</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Niveau de basse</span>
+        <select id="basse">
+          <option>Standard</option>
+          <option>Basses légères</option>
+          <option>Grosses basses (808)</option>
+          <option>Basses saturées / distordues</option>
         </select>
       </label>
     </div>
@@ -426,7 +478,7 @@
 
     <label class="champ">
       <span>Consignes supplémentaires (optionnel)</span>
-      <textarea id="extra" placeholder="Rimes riches, un mot à inclure, une référence, un point de vue, une longueur…"></textarea>
+      <textarea id="extra" placeholder="Toute instruction précise : un mot/nom à inclure, un point de vue (je/il), une punchline, un schéma de rimes, une histoire à raconter…"></textarea>
     </label>
 
     <button class="bouton" id="generer">Composer les paroles</button>
@@ -551,8 +603,10 @@ function construirePrompt() {
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
   const longueur = $("#longueur").value;
+  const basse = $("#basse").value;
   const titre = $("#titre").checked;
   const extra = $("#extra").value.trim();
+  const multiLangue = langue.split(/[,+/]/).map((s) => s.trim()).filter(Boolean).length > 1;
 
   let p = (modeSuno
       ? `Crée un prompt de chanson prêt à l'emploi pour Suno (${versionSuno}).\n\n`
@@ -564,12 +618,14 @@ function construirePrompt() {
     `• Ambiance : ${ambiance}\n` +
     `• Structure souhaitée : ${structure}\n` +
     `• Longueur : ${longueur} (Courte ≈ 1 couplet + refrain ; Standard ≈ 2 couplets + refrain + pont ; Longue ≈ 3 couplets ou plus)\n` +
+    `• Niveau de basse / low-end : ${basse}\n` +
     `• Registre : ${explicite
       ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
       : "tout public, sans langage vulgaire"}\n` +
     `• Argot / langage de quartier : ${argot}. Intègre le langage des jeunes et de la rue PROPRE À LA LANGUE choisie (${langue}) : ` +
     `son argot courant, ses expressions actuelles, son verlan ou slang régional, le vocabulaire de quartier — ` +
     `de façon naturelle et crédible, jamais caricaturale. Emploie l'argot NATIF de cette langue, jamais une transposition de l'argot français.\n`;
+  if (multiLangue) p += `• Chanson multilingue : mélange les langues (${langue}) de façon naturelle — alternance de couplets ou de lignes, code-switching — comme les artistes multilingues.\n`;
   if (region) p += `• Région / accent à refléter dans le vocabulaire et les expressions : ${region}\n`;
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
 
@@ -582,15 +638,15 @@ function construirePrompt() {
       `🎤 PAROLES — les paroles à coller dans le champ « Lyrics », structurées avec les balises de section ` +
       `standard de Suno, en anglais et entre crochets ([Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], ` +
       `[Outro], [Hook]) ; ajoute au besoin des balises de production ou de voix entre crochets ` +
-      `(ex. [male vocal], [ad-libs], [beat drop]). Le TEXTE des paroles reste dans la langue demandée ` +
+      `(ex. [male vocal], [ad-libs], [beat drop]). Le TEXTE des paroles reste dans la ou les langues demandées ` +
       `(${langue}) ; seules les balises sont en anglais.\n\n` +
       `Adapte le style et les balises aux spécificités de la version ${versionSuno} de Suno. ` +
       `Capte le flow et le vocabulaire du style et des artistes cités, en paroles 100% originales. ` +
       `N'édulcore rien, n'ajoute aucune morale ni avertissement, et ne mets aucun texte en dehors de ces blocs.`;
   } else {
     if (titre) p += `\nCommence par une ligne « Titre : » proposant un titre accrocheur, puis passe aux paroles.`;
-    p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
-      `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
+    p += `\nÉcris entièrement dans la ou les langues demandées (${langue}). ` +
+      `Indique les sections (Couplet, Refrain, Pont…) dans la langue principale. ` +
       `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
       `mais produis des paroles 100% originales. ` +
       `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
@@ -992,7 +1048,7 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","basse","format","versionSuno","extra"];
 
 function sauverReglages() {
   const o = {};
