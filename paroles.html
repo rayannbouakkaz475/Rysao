@@ -274,6 +274,22 @@
       </label>
     </div>
 
+    <div class="rangee">
+      <label class="champ">
+        <span>Argot / langage de quartier</span>
+        <select id="argot">
+          <option>Très marqué (rue / quartier)</option>
+          <option>Marqué</option>
+          <option>Modéré</option>
+          <option>Léger</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Région / accent (optionnel)</span>
+        <input type="text" id="region" placeholder="Ex : banlieue parisienne, Marseille, UK drill, Atlanta…">
+      </label>
+    </div>
+
     <label class="bascule">
       <input type="checkbox" id="explicite" checked>
       <span class="txt">Paroles explicites — langage cru, sans censure
@@ -385,6 +401,8 @@ function construirePrompt() {
   const theme = $("#theme").value.trim() || "au choix de l'auteur";
   const ambiance = $("#ambiance").value;
   const structure = $("#structure").value;
+  const argot = $("#argot").value;
+  const region = $("#region").value.trim();
   const explicite = $("#explicite").checked;
   const extra = $("#extra").value.trim();
 
@@ -397,7 +415,11 @@ function construirePrompt() {
     `• Structure souhaitée : ${structure}\n` +
     `• Registre : ${explicite
       ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
-      : "tout public, sans langage vulgaire"}\n`;
+      : "tout public, sans langage vulgaire"}\n` +
+    `• Argot / langage de quartier : ${argot}. Intègre le langage des jeunes et de la rue PROPRE À LA LANGUE choisie (${langue}) : ` +
+    `son argot courant, ses expressions actuelles, son verlan ou slang régional, le vocabulaire de quartier — ` +
+    `de façon naturelle et crédible, jamais caricaturale. Emploie l'argot NATIF de cette langue, jamais une transposition de l'argot français.\n`;
+  if (region) p += `• Région / accent à refléter dans le vocabulaire et les expressions : ${region}\n`;
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
   p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
     `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
@@ -414,7 +436,10 @@ const SYSTEME =
   "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
   "Tu écris des paroles authentiques et sans autocensure : quand le style l'exige (rap, drill, trap, etc.), " +
   "tu emploies un langage cru, de l'argot, des gros mots et des thèmes adultes, sans jamais les masquer, " +
-  "les édulcorer, ni ajouter de morale ou d'avertissement. Lorsqu'on te cite des artistes en référence, " +
+  "les édulcorer, ni ajouter de morale ou d'avertissement. Dans chaque langue, tu écris avec le langage " +
+  "authentique des jeunes et des quartiers PROPRE À CETTE LANGUE — son argot courant, son verlan ou slang " +
+  "régional, ses expressions de rue actuelles — de manière naturelle et crédible plutôt que caricaturale, " +
+  "et jamais en transposant l'argot d'une autre langue. Lorsqu'on te cite des artistes en référence, " +
   "tu captes leur flow, leur énergie, leurs images et leur vocabulaire tout en écrivant des paroles " +
   "entièrement originales — jamais de reprise de leurs textes existants. Tu réponds toujours dans la langue " +
   "demandée par l'utilisateur, sans préambule ni conclusion en dehors des paroles.";
