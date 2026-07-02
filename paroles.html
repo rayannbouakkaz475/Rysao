@@ -135,7 +135,7 @@
   .sortie-tete{display:flex; align-items:center; justify-content:space-between; gap:1rem;
     padding-bottom:.9rem; margin-bottom:1.1rem; border-bottom:1px solid var(--bordure)}
   .sortie-tete h2{border:none; padding:0; margin:0}
-  .actions{display:flex; gap:.5rem}
+  .actions{display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end}
   .mini{
     font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
     border:1px solid var(--bordure); border-radius:6px; padding:.4rem .7rem;
@@ -158,6 +158,33 @@
   .erreur{color:#e0918a; font-family:var(--sans); font-size:.9rem;
     background:rgba(224,145,138,.08); border:1px solid rgba(224,145,138,.25);
     border-radius:8px; padding:.8rem 1rem; margin-top:1rem; display:none}
+
+  .rangee-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem}
+  @media(max-width:640px){ .rangee-3{grid-template-columns:1fr} }
+
+  #edit{width:100%; min-height:340px; display:none; background:var(--noir-2); color:var(--texte);
+    border:1px solid var(--bordure); border-radius:8px; padding:.9rem;
+    font-family:var(--serif); font-size:1.1rem; line-height:1.7; resize:vertical}
+  .cout{font-size:.75rem; color:var(--gris); margin-top:.9rem; letter-spacing:.03em}
+  .cout span{color:var(--or-clair)}
+
+  .hist{margin-top:1.5rem; border-top:1px solid var(--bordure); padding-top:1rem}
+  .hist summary{cursor:pointer; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris); list-style:none}
+  .hist summary::-webkit-details-marker{display:none}
+  .hist summary:hover{color:var(--or)}
+  .hist-actions{margin:.8rem 0 .2rem}
+  .hist-liste{display:flex; flex-direction:column; gap:.4rem; margin-top:.5rem}
+  .hist-item{display:flex; gap:.35rem}
+  .hist-item button{background:transparent; border:1px solid var(--bordure); border-radius:6px;
+    color:var(--texte); font-family:var(--sans); cursor:pointer; transition:.15s}
+  .hist-charger{flex:1; min-width:0; text-align:left; padding:.5rem .6rem; font-size:.82rem;
+    color:var(--gris); overflow:hidden; white-space:nowrap; text-overflow:ellipsis}
+  .hist-charger:hover{color:var(--or); border-color:var(--or)}
+  .hist-date{color:var(--or); font-size:.68rem; margin-right:.5rem; letter-spacing:.04em}
+  .hist-fav, .hist-suppr{flex:none; width:2.2rem; font-size:.9rem}
+  .hist-fav:hover{color:var(--or); border-color:var(--or)}
+  .hist-suppr:hover{color:#e0918a; border-color:rgba(224,145,138,.4)}
+  .hist-vide{color:var(--gris); font-size:.85rem; font-style:italic}
 
   footer{text-align:center; padding:2rem 1.2rem 3rem; color:var(--gris); font-size:.78rem;
     letter-spacing:.06em; border-top:1px solid var(--bordure)}
@@ -336,10 +363,26 @@
       <label class="champ">
         <span>Région / accent (optionnel)</span>
         <input type="text" id="region" placeholder="Ex : banlieue parisienne, Marseille, UK drill, Atlanta…">
+        <div class="puces" data-cible="region">
+          <button class="puce" type="button">Rio de Janeiro</button>
+          <button class="puce" type="button">São Paulo</button>
+          <button class="puce" type="button">Favela (Brésil)</button>
+          <button class="puce" type="button">Banlieue parisienne</button>
+          <button class="puce" type="button">Marseille</button>
+          <button class="puce" type="button">Lyon</button>
+          <button class="puce" type="button">Bruxelles</button>
+          <button class="puce" type="button">Abidjan</button>
+          <button class="puce" type="button">Kinshasa</button>
+          <button class="puce" type="button">London (UK drill)</button>
+          <button class="puce" type="button">Atlanta</button>
+          <button class="puce" type="button">Los Angeles</button>
+          <button class="puce" type="button">New York</button>
+          <button class="puce" type="button">Lagos</button>
+        </div>
       </label>
     </div>
 
-    <div class="rangee">
+    <div class="rangee-3">
       <label class="champ">
         <span>Format de sortie</span>
         <select id="format">
@@ -357,12 +400,27 @@
           <option>Suno v3.5</option>
         </select>
       </label>
+      <label class="champ">
+        <span>Longueur</span>
+        <select id="longueur">
+          <option>Standard</option>
+          <option>Courte</option>
+          <option>Longue</option>
+        </select>
+      </label>
     </div>
 
     <label class="bascule">
       <input type="checkbox" id="explicite" checked>
       <span class="txt">Paroles explicites — langage cru, sans censure
         <small>Argot, gros mots et thèmes adultes assumés selon le style, sans mots masqués.</small>
+      </span>
+    </label>
+
+    <label class="bascule">
+      <input type="checkbox" id="titre" checked>
+      <span class="txt">Proposer un titre de chanson
+        <small>Ajoute un titre accrocheur (en tête des paroles, ou bloc 🏷️ Titre en mode Suno).</small>
       </span>
     </label>
 
@@ -404,14 +462,27 @@
     <div class="sortie-tete">
       <h2>Les paroles</h2>
       <div class="actions">
+        <button class="mini" id="copierTitre" style="display:none">Copier le Titre</button>
         <button class="mini" id="copier" disabled>Copier</button>
         <button class="mini" id="copierStyle" style="display:none">Copier le Style</button>
         <button class="mini" id="copierParoles" style="display:none">Copier les Paroles</button>
+        <button class="mini" id="regenerer" disabled>Régénérer</button>
+        <button class="mini" id="editer" disabled>Éditer</button>
         <button class="mini" id="vider" disabled>Effacer</button>
       </div>
     </div>
     <div id="paroles"><span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span></div>
+    <textarea id="edit"></textarea>
+    <div class="cout" id="cout"></div>
     <div class="erreur" id="erreur"></div>
+
+    <details class="hist">
+      <summary id="sommaireHist">Historique</summary>
+      <div class="hist-actions">
+        <button class="mini" id="viderHist">Effacer l'historique (garde les favoris)</button>
+      </div>
+      <div class="hist-liste" id="listeHist"></div>
+    </details>
   </div>
 
 </main>
@@ -437,6 +508,7 @@ document.querySelectorAll(".puces").forEach((groupe) => {
       } else {
         cible.value = val;
       }
+      sauverReglages();
     });
   });
 });
@@ -478,6 +550,8 @@ function construirePrompt() {
   const format = $("#format").value;
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
+  const longueur = $("#longueur").value;
+  const titre = $("#titre").checked;
   const extra = $("#extra").value.trim();
 
   let p = (modeSuno
@@ -489,6 +563,7 @@ function construirePrompt() {
   p += `• Thème : ${theme}\n` +
     `• Ambiance : ${ambiance}\n` +
     `• Structure souhaitée : ${structure}\n` +
+    `• Longueur : ${longueur} (Courte ≈ 1 couplet + refrain ; Standard ≈ 2 couplets + refrain + pont ; Longue ≈ 3 couplets ou plus)\n` +
     `• Registre : ${explicite
       ? "explicite et sans aucune censure — argot, gros mots et thèmes adultes assumés selon le genre, sans jamais masquer un mot (pas d'astérisques ni de bips)"
       : "tout public, sans langage vulgaire"}\n` +
@@ -499,8 +574,9 @@ function construirePrompt() {
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
 
   if (modeSuno) {
-    p += `\nProduis un prompt prêt à coller dans Suno (${versionSuno}), en DEUX blocs clairement séparés et étiquetés :\n\n` +
-      `🎚️ STYLE — une description à coller dans le champ « Style » de Suno : genres, ambiance, instrumentation, ` +
+    p += `\nProduis un prompt prêt à coller dans Suno (${versionSuno}), en blocs clairement séparés et étiquetés :\n\n`;
+    if (titre) p += `🏷️ TITRE — un titre court et accrocheur pour la chanson, sur une seule ligne.\n\n`;
+    p += `🎚️ STYLE — une description à coller dans le champ « Style » de Suno : genres, ambiance, instrumentation, ` +
       `type de voix, tempo (BPM approximatif) et éléments de production. Concise, efficace, et adaptée aux ` +
       `conventions et à la longueur acceptée par la version ${versionSuno}.\n\n` +
       `🎤 PAROLES — les paroles à coller dans le champ « Lyrics », structurées avec les balises de section ` +
@@ -510,14 +586,15 @@ function construirePrompt() {
       `(${langue}) ; seules les balises sont en anglais.\n\n` +
       `Adapte le style et les balises aux spécificités de la version ${versionSuno} de Suno. ` +
       `Capte le flow et le vocabulaire du style et des artistes cités, en paroles 100% originales. ` +
-      `N'édulcore rien, n'ajoute aucune morale ni avertissement, et ne mets aucun texte en dehors de ces deux blocs.`;
+      `N'édulcore rien, n'ajoute aucune morale ni avertissement, et ne mets aucun texte en dehors de ces blocs.`;
   } else {
+    if (titre) p += `\nCommence par une ligne « Titre : » proposant un titre accrocheur, puis passe aux paroles.`;
     p += `\nÉcris entièrement dans la langue demandée (${langue}). ` +
       `Indique les sections (Couplet, Refrain, Pont…) dans cette même langue. ` +
       `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
       `mais produis des paroles 100% originales. ` +
       `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
-      `Ne donne que les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
+      `Ne donne que ${titre ? "le titre, " : ""}les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
   }
   return p;
 }
@@ -543,18 +620,64 @@ const boutonGen = $("#generer");
 const sortie = $("#paroles");
 const boiteErreur = $("#erreur");
 const boutonCopier = $("#copier");
+const boutonCopierTitre = $("#copierTitre");
 const boutonCopierStyle = $("#copierStyle");
 const boutonCopierParoles = $("#copierParoles");
+const boutonRegenerer = $("#regenerer");
+const boutonEditer = $("#editer");
 const boutonVider = $("#vider");
+const champEdit = $("#edit");
+const elemCout = $("#cout");
 let enCours = false;
-let dernierStyle = "", dernierParoles = "";
+let enEdition = false;
+let dernierTexte = "", dernierTitre = "", dernierStyle = "", dernierParoles = "";
+let usageIn = 0, usageOut = 0;
 
 function resetActions() {
   boutonCopier.style.display = "";
   boutonCopier.disabled = true;
+  boutonCopierTitre.style.display = "none";
   boutonCopierStyle.style.display = "none";
   boutonCopierParoles.style.display = "none";
-  dernierStyle = ""; dernierParoles = "";
+  boutonEditer.disabled = true;
+  boutonRegenerer.disabled = true;
+  dernierTitre = ""; dernierStyle = ""; dernierParoles = "";
+}
+
+// Affiche les bons boutons de copie selon la présence d'un prompt Suno.
+function majBoutons(suno) {
+  boutonCopier.style.display = "none";
+  boutonCopierTitre.style.display = "none";
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  if (suno) {
+    if (suno.titre) boutonCopierTitre.style.display = "";
+    boutonCopierStyle.style.display = "";
+    boutonCopierParoles.style.display = "";
+  } else {
+    boutonCopier.style.display = "";
+    boutonCopier.disabled = false;
+  }
+}
+
+// Rend le texte (sections/refrains mis en valeur) et prépare les copies.
+function appliquerSortie(texte) {
+  sortie.innerHTML = baliserSections(texte);
+  const suno = decouperSuno(texte);
+  dernierTitre = suno && suno.titre ? suno.titre : "";
+  dernierStyle = suno ? suno.style : "";
+  dernierParoles = suno ? suno.paroles : "";
+  majBoutons(suno);
+  boutonEditer.disabled = false;
+  boutonRegenerer.disabled = false;
+}
+
+function afficherCout() {
+  if (!usageIn && !usageOut) { elemCout.textContent = ""; return; }
+  const usd = usageIn * 5 / 1e6 + usageOut * 25 / 1e6;
+  const eur = usd * 0.92;
+  elemCout.innerHTML = "Coût de cette génération : <span>≈ " + usd.toFixed(3) + " $ (~" +
+    eur.toFixed(3) + " €)</span> · " + (usageIn + usageOut) + " tokens";
 }
 
 // Mots de section reconnus (multilingue), pour les repères et la mise en valeur.
@@ -589,13 +712,21 @@ function decouperSuno(texte) {
   }
   if (iStyle === -1 || iParoles === -1 || iParoles < iStyle) return null;
 
+  let titre = "";
+  const iTitre = texte.indexOf("🏷️") !== -1 ? texte.indexOf("🏷️") : texte.indexOf("🏷");
+  if (iTitre !== -1 && iTitre < iStyle) {
+    titre = texte.slice(iTitre, iStyle)
+      .replace(/^\s*🏷️?\s*TITRE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+    titre = titre.split("\n")[0].trim();
+  }
+
   let style = texte.slice(iStyle, iParoles);
   let paroles = texte.slice(iParoles);
   style = style.replace(/^\s*🎚️?\s*STYLE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
   if (couperEtiquette) paroles = paroles.replace(/^\s*🎤\s*PAROLES\b[ \t]*[—:\-]?[ \t]*/i, "");
   paroles = paroles.replace(/^\n+/, "").trim();
   if (!style || !paroles) return null;
-  return { style, paroles };
+  return { titre, style, paroles };
 }
 
 function echapHtml(s) {
@@ -663,6 +794,9 @@ async function generer() {
   enCours = true;
   boutonGen.disabled = true;
   boutonGen.textContent = "Composition en cours…";
+  usageIn = 0; usageOut = 0; elemCout.textContent = "";
+  dernierTexte = "";
+  if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
   resetActions();
   boutonVider.disabled = false;
   sortie.innerHTML = '<span class="curseur"></span>';
@@ -704,6 +838,10 @@ async function generer() {
           const evt = JSON.parse(data);
           if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
             texte += evt.delta.text; rendre();
+          } else if (evt.type === "message_start") {
+            usageIn = evt.message?.usage?.input_tokens || usageIn;
+          } else if (evt.type === "message_delta") {
+            if (evt.usage?.output_tokens != null) usageOut = evt.usage.output_tokens;
           } else if (evt.type === "error") {
             throw new Error(evt.error?.message || "Erreur de flux.");
           }
@@ -713,17 +851,10 @@ async function generer() {
 
     if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
     const propre = texte.trim();
-    sortie.innerHTML = baliserSections(propre);
-    const suno = decouperSuno(propre);
-    if (suno) {
-      dernierStyle = suno.style;
-      dernierParoles = suno.paroles;
-      boutonCopier.style.display = "none";
-      boutonCopierStyle.style.display = "";
-      boutonCopierParoles.style.display = "";
-    } else {
-      boutonCopier.disabled = false;
-    }
+    dernierTexte = propre;
+    appliquerSortie(propre);
+    afficherCout();
+    ajouterHistorique(propre);
 
   } catch (e) {
     if (e.name === "TypeError") {
@@ -751,15 +882,138 @@ async function copier(bouton, texte, libelle) {
   } catch (e) { erreur("Copie impossible dans ce navigateur."); }
 }
 
-boutonCopier.addEventListener("click", () => copier(boutonCopier, sortie.textContent, "Copier"));
+boutonCopier.addEventListener("click", () => copier(boutonCopier, enEdition ? champEdit.value : dernierTexte, "Copier"));
+boutonCopierTitre.addEventListener("click", () => copier(boutonCopierTitre, dernierTitre, "Copier le Titre"));
 boutonCopierStyle.addEventListener("click", () => copier(boutonCopierStyle, dernierStyle, "Copier le Style"));
 boutonCopierParoles.addEventListener("click", () => copier(boutonCopierParoles, dernierParoles, "Copier les Paroles"));
 
+boutonRegenerer.addEventListener("click", () => { if (!boutonRegenerer.disabled) generer(); });
+
+boutonEditer.addEventListener("click", () => {
+  if (boutonEditer.disabled) return;
+  if (!enEdition) {
+    champEdit.value = dernierTexte;
+    sortie.style.display = "none";
+    champEdit.style.display = "";
+    boutonEditer.textContent = "Terminer";
+    majBoutons(null);           // pendant l'édition, « Copier » copie le texte modifié
+    enEdition = true;
+    champEdit.focus();
+  } else {
+    dernierTexte = champEdit.value;
+    champEdit.style.display = "none";
+    sortie.style.display = "";
+    boutonEditer.textContent = "Éditer";
+    appliquerSortie(dernierTexte);
+    enEdition = false;
+  }
+});
+
 boutonVider.addEventListener("click", () => {
+  if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
   sortie.innerHTML = '<span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span>';
   resetActions();
   boutonVider.disabled = true;
+  elemCout.textContent = "";
+  dernierTexte = "";
   effacerErreur();
+});
+
+/* --- Historique (localStorage) --- */
+const HIST_STOCK = "rysao_historique";
+const sommaireHist = $("#sommaireHist");
+const listeHist = $("#listeHist");
+let historique = [];
+
+function persistHist() { try { localStorage.setItem(HIST_STOCK, JSON.stringify(historique)); } catch (e) {} }
+
+function rendreHistorique() {
+  sommaireHist.textContent = "Historique (" + historique.length + ")";
+  if (!historique.length) {
+    listeHist.innerHTML = '<div class="hist-vide">Aucune chanson enregistrée pour l\'instant.</div>';
+    return;
+  }
+  listeHist.innerHTML = historique.map((e) =>
+    '<div class="hist-item">' +
+      '<button class="hist-fav" data-action="fav" data-id="' + e.id + '" title="Favori">' + (e.fav ? "★" : "☆") + '</button>' +
+      '<button class="hist-charger" data-action="charger" data-id="' + e.id + '">' +
+        '<span class="hist-date">' + e.date + '</span>' + echapHtml(e.apercu) + '…</button>' +
+      '<button class="hist-suppr" data-action="suppr" data-id="' + e.id + '" title="Supprimer">🗑</button>' +
+    '</div>'
+  ).join("");
+}
+
+function chargerHistorique() {
+  try { historique = JSON.parse(localStorage.getItem(HIST_STOCK)) || []; } catch (e) { historique = []; }
+  rendreHistorique();
+}
+
+function ajouterHistorique(texte) {
+  const e = {
+    id: String(Date.now()),
+    date: new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    apercu: texte.replace(/\s+/g, " ").trim().slice(0, 70),
+    texte: texte,
+    fav: false,
+  };
+  historique.unshift(e);
+  let n = 0;
+  historique = historique.filter((x) => x.fav || ++n <= 40);  // garde tous les favoris + 40 récents
+  persistHist();
+  rendreHistorique();
+}
+
+listeHist.addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-action]");
+  if (!b) return;
+  const e = historique.find((x) => x.id === b.dataset.id);
+  if (!e) return;
+  if (b.dataset.action === "fav") { e.fav = !e.fav; persistHist(); rendreHistorique(); }
+  else if (b.dataset.action === "suppr") { historique = historique.filter((x) => x.id !== e.id); persistHist(); rendreHistorique(); }
+  else if (b.dataset.action === "charger") {
+    if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
+    dernierTexte = e.texte;
+    appliquerSortie(e.texte);
+    boutonVider.disabled = false;
+    elemCout.textContent = "";
+    effacerErreur();
+    sortie.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+});
+
+$("#viderHist").addEventListener("click", () => {
+  if (!confirm("Effacer l'historique ? Les favoris (★) seront conservés.")) return;
+  historique = historique.filter((x) => x.fav);
+  persistHist();
+  rendreHistorique();
+});
+
+chargerHistorique();
+
+/* --- Mémorisation des réglages du formulaire --- */
+const REG_STOCK = "rysao_reglages";
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","longueur","format","versionSuno","extra"];
+
+function sauverReglages() {
+  const o = {};
+  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el) o[id] = el.value; });
+  o.explicite = $("#explicite").checked;
+  o.titre = $("#titre").checked;
+  try { localStorage.setItem(REG_STOCK, JSON.stringify(o)); } catch (e) {}
+}
+
+function chargerReglages() {
+  let o; try { o = JSON.parse(localStorage.getItem(REG_STOCK)); } catch (e) {}
+  if (!o) return;
+  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el && o[id] != null) el.value = o[id]; });
+  if (typeof o.explicite === "boolean") $("#explicite").checked = o.explicite;
+  if (typeof o.titre === "boolean") $("#titre").checked = o.titre;
+}
+
+chargerReglages();
+CHAMPS_REGLAGES.concat(["explicite", "titre"]).forEach((id) => {
+  const el = $("#" + id);
+  if (el) { el.addEventListener("input", sauverReglages); el.addEventListener("change", sauverReglages); }
 });
 </script>
 </body>
