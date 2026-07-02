@@ -355,6 +355,8 @@
       <h2>Les paroles</h2>
       <div class="actions">
         <button class="mini" id="copier" disabled>Copier</button>
+        <button class="mini" id="copierStyle" style="display:none">Copier le Style</button>
+        <button class="mini" id="copierParoles" style="display:none">Copier les Paroles</button>
         <button class="mini" id="vider" disabled>Effacer</button>
       </div>
     </div>
@@ -491,8 +493,32 @@ const boutonGen = $("#generer");
 const sortie = $("#paroles");
 const boiteErreur = $("#erreur");
 const boutonCopier = $("#copier");
+const boutonCopierStyle = $("#copierStyle");
+const boutonCopierParoles = $("#copierParoles");
 const boutonVider = $("#vider");
 let enCours = false;
+let dernierStyle = "", dernierParoles = "";
+
+function resetActions() {
+  boutonCopier.style.display = "";
+  boutonCopier.disabled = true;
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  dernierStyle = ""; dernierParoles = "";
+}
+
+// Sépare un prompt Suno en bloc Style / bloc Paroles (repères 🎚️ et 🎤).
+function decouperSuno(texte) {
+  const iStyle = texte.indexOf("🎚️") !== -1 ? texte.indexOf("🎚️") : texte.indexOf("🎚");
+  const iParoles = texte.indexOf("🎤");
+  if (iStyle === -1 || iParoles === -1 || iParoles < iStyle) return null;
+  let style = texte.slice(iStyle, iParoles);
+  let paroles = texte.slice(iParoles);
+  style = style.replace(/^\s*🎚️?\s*STYLE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+  paroles = paroles.replace(/^\s*🎤\s*PAROLES\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+  if (!style || !paroles) return null;
+  return { style, paroles };
+}
 
 function erreur(msg) {
   boiteErreur.style.display = "block";
@@ -538,7 +564,7 @@ async function generer() {
   enCours = true;
   boutonGen.disabled = true;
   boutonGen.textContent = "Composition en cours…";
-  boutonCopier.disabled = true;
+  resetActions();
   boutonVider.disabled = false;
   sortie.innerHTML = '<span class="curseur"></span>';
   let texte = "";
@@ -587,8 +613,18 @@ async function generer() {
     }
 
     if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
-    sortie.textContent = texte.trim();
-    boutonCopier.disabled = false;
+    const propre = texte.trim();
+    sortie.textContent = propre;
+    const suno = decouperSuno(propre);
+    if (suno) {
+      dernierStyle = suno.style;
+      dernierParoles = suno.paroles;
+      boutonCopier.style.display = "none";
+      boutonCopierStyle.style.display = "";
+      boutonCopierParoles.style.display = "";
+    } else {
+      boutonCopier.disabled = false;
+    }
 
   } catch (e) {
     if (e.name === "TypeError") {
@@ -607,17 +643,22 @@ async function generer() {
 
 boutonGen.addEventListener("click", generer);
 
-boutonCopier.addEventListener("click", async () => {
+async function copier(bouton, texte, libelle) {
+  if (!texte) return;
   try {
-    await navigator.clipboard.writeText(sortie.textContent);
-    boutonCopier.textContent = "Copié ✓";
-    setTimeout(() => (boutonCopier.textContent = "Copier"), 1600);
-  } catch(e){ erreur("Copie impossible dans ce navigateur."); }
-});
+    await navigator.clipboard.writeText(texte);
+    bouton.textContent = "Copié ✓";
+    setTimeout(() => (bouton.textContent = libelle), 1600);
+  } catch (e) { erreur("Copie impossible dans ce navigateur."); }
+}
+
+boutonCopier.addEventListener("click", () => copier(boutonCopier, sortie.textContent, "Copier"));
+boutonCopierStyle.addEventListener("click", () => copier(boutonCopierStyle, dernierStyle, "Copier le Style"));
+boutonCopierParoles.addEventListener("click", () => copier(boutonCopierParoles, dernierParoles, "Copier les Paroles"));
 
 boutonVider.addEventListener("click", () => {
   sortie.innerHTML = '<span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span>';
-  boutonCopier.disabled = true;
+  resetActions();
   boutonVider.disabled = true;
   effacerErreur();
 });
