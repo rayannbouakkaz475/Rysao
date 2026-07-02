@@ -557,6 +557,7 @@
         <option>Modérée (vulgaire mais pas trop)</option>
         <option>Aucune (tout public)</option>
         <option>Légère</option>
+        <option>Marquée (bien crue)</option>
         <option>Élevée (très cru)</option>
         <option>Sans limite</option>
       </select>
@@ -700,10 +701,11 @@ champAcces.addEventListener("input", () => {
 
 /* --- Construction de la requête --- */
 const REGISTRE_MAP = {
-  "Aucune (tout public)": "tout public, aucune vulgarité ni gros mot",
-  "Légère": "légèrement familier — quelques gros mots légers, ton globalement correct, sans excès",
-  "Modérée (vulgaire mais pas trop)": "vulgaire de façon MODÉRÉE — argot cru et gros mots présents mais DOSÉS, sans surenchère ni provocation gratuite",
-  "Élevée (très cru)": "très cru et explicite — argot, gros mots et thèmes adultes pleinement assumés selon le genre, sans mots masqués (pas d'astérisques ni de bips)",
+  "Aucune (tout public)": "tout public — aucune vulgarité ni gros mot, aucun contenu sexuel ou choquant",
+  "Légère": "familier et léger — quelques gros mots doux tout au plus (ex. « putain », « merde »), rien de vulgaire ni de sexuel",
+  "Modérée (vulgaire mais pas trop)": "vulgaire mais MESURÉ — de l'argot cru et des gros mots pour l'authenticité, sans en abuser ni tomber dans la provocation gratuite ; en moyenne 1 à 2 gros mots par couplet",
+  "Marquée (bien crue)": "franchement crue — argot de rue et gros mots présents dans la plupart des passages, sans mots masqués, mais le propos reste au service du texte (pas de vulgarité gratuite à chaque ligne)",
+  "Élevée (très cru)": "très cru et explicite — argot, gros mots et thèmes adultes pleinement assumés selon le genre, sans aucun mot masqué (pas d'astérisques ni de bips)",
   "Sans limite": "explicite au maximum, sans aucune censure ni retenue — argot et gros mots à volonté selon le style, sans jamais masquer un mot",
 };
 
