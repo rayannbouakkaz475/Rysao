@@ -97,6 +97,7 @@
 
   .puces{display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.6rem}
   .puces-titre{font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gris); margin:.85rem 0 .15rem}
+  .picker{margin-top:.6rem}
   .puce{
     font-size:.78rem; letter-spacing:.04em; color:var(--gris);
     border:1px solid var(--bordure); border-radius:999px; padding:.32rem .8rem;
@@ -243,173 +244,176 @@
     <label class="champ">
       <span>Style / Genre</span>
       <input type="text" id="style" placeholder="Rap, pop, chanson française, jazz, opéra…" value="Chanson française">
-      <div class="puces" data-cible="style">
-        <button class="puce" type="button">Rap</button>
-        <button class="puce" type="button">Pop</button>
-        <button class="puce" type="button">Chanson française</button>
-        <button class="puce" type="button">Rock</button>
-        <button class="puce" type="button">R&B / Soul</button>
-        <button class="puce" type="button">Reggaeton</button>
-        <button class="puce" type="button">K-pop</button>
-        <button class="puce" type="button">Jazz</button>
-        <button class="puce" type="button">Folk</button>
-        <button class="puce" type="button">Metal</button>
-        <button class="puce" type="button">Slam / Poésie</button>
-        <button class="puce" type="button">Afrobeat</button>
-        <button class="puce" type="button">Shatta</button>
-        <button class="puce" type="button">Bouyon</button>
-        <button class="puce" type="button">Funk carioca</button>
-        <button class="puce" type="button">Baile funk</button>
-        <button class="puce" type="button">Funk dançante (150 BPM)</button>
-        <button class="puce" type="button">Funk mandelão</button>
-        <button class="puce" type="button">Trap</button>
-        <button class="puce" type="button">Drill</button>
-        <button class="puce" type="button">Boom bap</button>
-        <button class="puce" type="button">Cloud rap</button>
-        <button class="puce" type="button">Phonk</button>
-        <button class="puce" type="button">Afro trap</button>
-        <button class="puce" type="button">Amapiano</button>
-        <button class="puce" type="button">Dancehall</button>
-        <button class="puce" type="button">Ragga</button>
-        <button class="puce" type="button">Reggae</button>
-        <button class="puce" type="button">Zouk</button>
-        <button class="puce" type="button">Kompa</button>
-        <button class="puce" type="button">Kizomba</button>
-        <button class="puce" type="button">Raï</button>
-        <button class="puce" type="button">Salsa</button>
-        <button class="puce" type="button">Bachata</button>
-        <button class="puce" type="button">Cumbia</button>
-        <button class="puce" type="button">Electro / EDM</button>
-        <button class="puce" type="button">House</button>
-        <button class="puce" type="button">Techno</button>
-        <button class="puce" type="button">Disco</button>
-        <button class="puce" type="button">Gospel</button>
-        <button class="puce" type="button">Blues</button>
-        <button class="puce" type="button">Country</button>
-        <button class="puce" type="button">Grime</button>
-        <button class="puce" type="button">Lo-fi</button>
-        <button class="puce" type="button">Hyperpop</button>
-        <button class="puce" type="button">Sertanejo</button>
-        <button class="puce" type="button">Pagode</button>
-        <button class="puce" type="button">Samba</button>
-        <button class="puce" type="button">Bossa nova</button>
-      </div>
+      <select class="picker" data-cible="style" data-mode="set">
+          <option value="">— Choisir un style —</option>
+          <option>Rap</option>
+          <option>Pop</option>
+          <option>Chanson française</option>
+          <option>Rock</option>
+          <option>R&B / Soul</option>
+          <option>Reggaeton</option>
+          <option>K-pop</option>
+          <option>Jazz</option>
+          <option>Folk</option>
+          <option>Metal</option>
+          <option>Slam / Poésie</option>
+          <option>Afrobeat</option>
+          <option>Shatta</option>
+          <option>Bouyon</option>
+          <option>Funk carioca</option>
+          <option>Baile funk</option>
+          <option>Funk dançante (150 BPM)</option>
+          <option>Funk mandelão</option>
+          <option>Trap</option>
+          <option>Drill</option>
+          <option>Boom bap</option>
+          <option>Cloud rap</option>
+          <option>Phonk</option>
+          <option>Afro trap</option>
+          <option>Amapiano</option>
+          <option>Dancehall</option>
+          <option>Ragga</option>
+          <option>Reggae</option>
+          <option>Zouk</option>
+          <option>Kompa</option>
+          <option>Kizomba</option>
+          <option>Raï</option>
+          <option>Salsa</option>
+          <option>Bachata</option>
+          <option>Cumbia</option>
+          <option>Electro / EDM</option>
+          <option>House</option>
+          <option>Techno</option>
+          <option>Disco</option>
+          <option>Gospel</option>
+          <option>Blues</option>
+          <option>Country</option>
+          <option>Grime</option>
+          <option>Lo-fi</option>
+          <option>Hyperpop</option>
+          <option>Sertanejo</option>
+          <option>Pagode</option>
+          <option>Samba</option>
+          <option>Bossa nova</option>
+        </select>
     </label>
 
     <label class="champ">
       <span>Artistes de référence (style)</span>
       <input type="text" id="artistes" placeholder="Ex : Ninho, Damso, Travis Scott, Aya Nakamura…">
-      <div class="puces-titre">🇫🇷 France</div>
-      <div class="puces" data-cible="artistes" data-mode="ajout">
-        <button class="puce" type="button">Ninho</button>
-        <button class="puce" type="button">Damso</button>
-        <button class="puce" type="button">SCH</button>
-        <button class="puce" type="button">PNL</button>
-        <button class="puce" type="button">Jul</button>
-        <button class="puce" type="button">Gazo</button>
-        <button class="puce" type="button">Tiakola</button>
-        <button class="puce" type="button">Werenoi</button>
-        <button class="puce" type="button">Aya Nakamura</button>
-        <button class="puce" type="button">Booba</button>
-        <button class="puce" type="button">Kaaris</button>
-        <button class="puce" type="button">Niska</button>
-        <button class="puce" type="button">Naps</button>
-        <button class="puce" type="button">Rohff</button>
-        <button class="puce" type="button">Lacrim</button>
-        <button class="puce" type="button">Maes</button>
-        <button class="puce" type="button">Freeze Corleone</button>
-        <button class="puce" type="button">Nekfeu</button>
-        <button class="puce" type="button">Orelsan</button>
-        <button class="puce" type="button">Vald</button>
-        <button class="puce" type="button">Laylow</button>
-        <button class="puce" type="button">Hamza</button>
-        <button class="puce" type="button">Dinos</button>
-        <button class="puce" type="button">Zola</button>
-        <button class="puce" type="button">Koba LaD</button>
-        <button class="puce" type="button">Ziak</button>
-        <button class="puce" type="button">Leto</button>
-        <button class="puce" type="button">Alpha Wann</button>
-        <button class="puce" type="button">Josman</button>
-        <button class="puce" type="button">Soolking</button>
-        <button class="puce" type="button">Gims</button>
-        <button class="puce" type="button">Bigflo &amp; Oli</button>
-        <button class="puce" type="button">Kalash</button>
-        <button class="puce" type="button">Shay</button>
-        <button class="puce" type="button">RK</button>
-        <button class="puce" type="button">Genezio</button>
-        <button class="puce" type="button">Keblack</button>
-        <button class="puce" type="button">Meryl</button>
-        <button class="puce" type="button">Gambi</button>
-        <button class="puce" type="button">SDM</button>
-        <button class="puce" type="button">Maureen</button>
-      </div>
-      <div class="puces-titre">🌍 International</div>
-      <div class="puces" data-cible="artistes" data-mode="ajout">
-        <button class="puce" type="button">Drake</button>
-        <button class="puce" type="button">Kendrick Lamar</button>
-        <button class="puce" type="button">Travis Scott</button>
-        <button class="puce" type="button">The Weeknd</button>
-        <button class="puce" type="button">Central Cee</button>
-        <button class="puce" type="button">Bad Bunny</button>
-        <button class="puce" type="button">Burna Boy</button>
-        <button class="puce" type="button">Eminem</button>
-        <button class="puce" type="button">50 Cent</button>
-        <button class="puce" type="button">Jay-Z</button>
-        <button class="puce" type="button">Nas</button>
-        <button class="puce" type="button">Snoop Dogg</button>
-        <button class="puce" type="button">2Pac</button>
-        <button class="puce" type="button">The Notorious B.I.G.</button>
-        <button class="puce" type="button">Lil Wayne</button>
-        <button class="puce" type="button">J. Cole</button>
-        <button class="puce" type="button">Future</button>
-        <button class="puce" type="button">21 Savage</button>
-        <button class="puce" type="button">Nicki Minaj</button>
-        <button class="puce" type="button">Post Malone</button>
-        <button class="puce" type="button">Tyler, the Creator</button>
-        <button class="puce" type="button">A$AP Rocky</button>
-        <button class="puce" type="button">Playboi Carti</button>
-        <button class="puce" type="button">Lil Baby</button>
-        <button class="puce" type="button">Dave</button>
-        <button class="puce" type="button">Stormzy</button>
-        <button class="puce" type="button">Skepta</button>
-      </div>
-      <div class="puces-titre">🇧🇷 Brésil — funk / favela</div>
-      <div class="puces" data-cible="artistes" data-mode="ajout">
-        <button class="puce" type="button">MC Poze do Rodo</button>
-        <button class="puce" type="button">MC Kevin o Chris</button>
-        <button class="puce" type="button">MC Ryan SP</button>
-        <button class="puce" type="button">MC Hariel</button>
-        <button class="puce" type="button">MC IG</button>
-        <button class="puce" type="button">MC Cabelinho</button>
-        <button class="puce" type="button">MC Livinho</button>
-        <button class="puce" type="button">MC Don Juan</button>
-        <button class="puce" type="button">MC Kevinho</button>
-        <button class="puce" type="button">MC WM</button>
-        <button class="puce" type="button">MC Lan</button>
-        <button class="puce" type="button">MC GW</button>
-        <button class="puce" type="button">MC Menor da VG</button>
-        <button class="puce" type="button">MC Pedrinho</button>
-        <button class="puce" type="button">MC Th</button>
-        <button class="puce" type="button">MC Paiva</button>
-        <button class="puce" type="button">MC Daniel</button>
-        <button class="puce" type="button">MC Rebecca</button>
-        <button class="puce" type="button">MC Marcinho</button>
-        <button class="puce" type="button">L7NNON</button>
-        <button class="puce" type="button">Oruam</button>
-        <button class="puce" type="button">Matuê</button>
-        <button class="puce" type="button">Veigh</button>
-        <button class="puce" type="button">Anitta</button>
-        <button class="puce" type="button">Ludmilla</button>
-        <button class="puce" type="button">Zaac</button>
-        <button class="puce" type="button">Pedro Sampaio</button>
-        <button class="puce" type="button">Dennis DJ</button>
-        <button class="puce" type="button">Nego do Borel</button>
-        <button class="puce" type="button">Tati Quebra Barraco</button>
-        <button class="puce" type="button">Valesca Popozuda</button>
-        <button class="puce" type="button">Bonde do Tigrão</button>
-        <button class="puce" type="button">DJ Rennan da Penha</button>
-        <button class="puce" type="button">Furacão 2000</button>
-      </div>
+      <select class="picker" data-cible="artistes" data-mode="ajout">
+          <option value="">— Ajouter un artiste —</option>
+          <optgroup label="🇫🇷 France">
+            <option>Ninho</option>
+            <option>Damso</option>
+            <option>SCH</option>
+            <option>PNL</option>
+            <option>Jul</option>
+            <option>Gazo</option>
+            <option>Tiakola</option>
+            <option>Werenoi</option>
+            <option>Aya Nakamura</option>
+            <option>Booba</option>
+            <option>Kaaris</option>
+            <option>Niska</option>
+            <option>Naps</option>
+            <option>Rohff</option>
+            <option>Lacrim</option>
+            <option>Maes</option>
+            <option>Freeze Corleone</option>
+            <option>Nekfeu</option>
+            <option>Orelsan</option>
+            <option>Vald</option>
+            <option>Laylow</option>
+            <option>Hamza</option>
+            <option>Dinos</option>
+            <option>Zola</option>
+            <option>Koba LaD</option>
+            <option>Ziak</option>
+            <option>Leto</option>
+            <option>Alpha Wann</option>
+            <option>Josman</option>
+            <option>Soolking</option>
+            <option>Gims</option>
+            <option>Bigflo &amp; Oli</option>
+            <option>Kalash</option>
+            <option>Shay</option>
+            <option>RK</option>
+            <option>Genezio</option>
+            <option>Keblack</option>
+            <option>Meryl</option>
+            <option>Gambi</option>
+            <option>SDM</option>
+            <option>Maureen</option>
+            <option>MHD</option>
+            <option>Dystinct</option>
+          </optgroup>
+          <optgroup label="🌍 International">
+            <option>Drake</option>
+            <option>Kendrick Lamar</option>
+            <option>Travis Scott</option>
+            <option>The Weeknd</option>
+            <option>Central Cee</option>
+            <option>Bad Bunny</option>
+            <option>Burna Boy</option>
+            <option>Eminem</option>
+            <option>50 Cent</option>
+            <option>Jay-Z</option>
+            <option>Nas</option>
+            <option>Snoop Dogg</option>
+            <option>2Pac</option>
+            <option>The Notorious B.I.G.</option>
+            <option>Lil Wayne</option>
+            <option>J. Cole</option>
+            <option>Future</option>
+            <option>21 Savage</option>
+            <option>Nicki Minaj</option>
+            <option>Post Malone</option>
+            <option>Tyler, the Creator</option>
+            <option>A$AP Rocky</option>
+            <option>Playboi Carti</option>
+            <option>Lil Baby</option>
+            <option>Dave</option>
+            <option>Stormzy</option>
+            <option>Skepta</option>
+          </optgroup>
+          <optgroup label="🇧🇷 Brésil — funk / favela">
+            <option>MC Poze do Rodo</option>
+            <option>MC Kevin o Chris</option>
+            <option>MC Ryan SP</option>
+            <option>MC Hariel</option>
+            <option>MC IG</option>
+            <option>MC Cabelinho</option>
+            <option>MC Livinho</option>
+            <option>MC Don Juan</option>
+            <option>MC Kevinho</option>
+            <option>MC WM</option>
+            <option>MC Lan</option>
+            <option>MC GW</option>
+            <option>MC Menor da VG</option>
+            <option>MC Pedrinho</option>
+            <option>MC Th</option>
+            <option>MC Paiva</option>
+            <option>MC Daniel</option>
+            <option>MC Rebecca</option>
+            <option>MC Marcinho</option>
+            <option>L7NNON</option>
+            <option>Oruam</option>
+            <option>Matuê</option>
+            <option>Veigh</option>
+            <option>Anitta</option>
+            <option>Ludmilla</option>
+            <option>Zaac</option>
+            <option>Pedro Sampaio</option>
+            <option>Dennis DJ</option>
+            <option>Nego do Borel</option>
+            <option>Tati Quebra Barraco</option>
+            <option>Valesca Popozuda</option>
+            <option>Bonde do Tigrão</option>
+            <option>DJ Rennan da Penha</option>
+            <option>Furacão 2000</option>
+          </optgroup>
+        </select>
     </label>
 
     <label class="champ">
@@ -486,24 +490,25 @@
       <label class="champ">
         <span>Région / accent (optionnel)</span>
         <input type="text" id="region" placeholder="Ex : banlieue parisienne, Marseille, UK drill, Atlanta…">
-        <div class="puces" data-cible="region">
-          <button class="puce" type="button">Rio de Janeiro</button>
-          <button class="puce" type="button">São Paulo</button>
-          <button class="puce" type="button">Favela (Brésil)</button>
-          <button class="puce" type="button">Banlieue parisienne</button>
-          <button class="puce" type="button">Marseille</button>
-          <button class="puce" type="button">Lyon</button>
-          <button class="puce" type="button">Bruxelles</button>
-          <button class="puce" type="button">Martinique</button>
-          <button class="puce" type="button">Guadeloupe</button>
-          <button class="puce" type="button">Abidjan</button>
-          <button class="puce" type="button">Kinshasa</button>
-          <button class="puce" type="button">London (UK drill)</button>
-          <button class="puce" type="button">Atlanta</button>
-          <button class="puce" type="button">Los Angeles</button>
-          <button class="puce" type="button">New York</button>
-          <button class="puce" type="button">Lagos</button>
-        </div>
+        <select class="picker" data-cible="region" data-mode="set">
+          <option value="">— Choisir un lieu —</option>
+          <option>Rio de Janeiro</option>
+          <option>São Paulo</option>
+          <option>Favela (Brésil)</option>
+          <option>Banlieue parisienne</option>
+          <option>Marseille</option>
+          <option>Lyon</option>
+          <option>Bruxelles</option>
+          <option>Martinique</option>
+          <option>Guadeloupe</option>
+          <option>Abidjan</option>
+          <option>Kinshasa</option>
+          <option>London (UK drill)</option>
+          <option>Atlanta</option>
+          <option>Los Angeles</option>
+          <option>New York</option>
+          <option>Lagos</option>
+        </select>
       </label>
     </div>
 
@@ -587,8 +592,6 @@
           <option>Douce / suave</option>
           <option>Puissante / criée</option>
           <option>Autotune</option>
-          <option>Nasillarde</option>
-          <option>Éraillée</option>
           <option>Chuchotée</option>
           <option>Mélodieuse</option>
         </select>
@@ -734,6 +737,24 @@ document.querySelectorAll(".puces").forEach((groupe) => {
       }
       sauverReglages();
     });
+  });
+});
+
+// Listes déroulantes (Style / Lieu / Artistes) : au choix, on remplit le champ.
+document.querySelectorAll("select.picker").forEach((sel) => {
+  const cible = $("#" + sel.dataset.cible);
+  sel.addEventListener("change", () => {
+    const val = sel.value;
+    if (!val) return;
+    if (sel.dataset.mode === "ajout") {
+      const actuels = cible.value.split(",").map((s) => s.trim()).filter(Boolean);
+      if (!actuels.includes(val)) actuels.push(val);
+      cible.value = actuels.join(", ");
+    } else {
+      cible.value = val;
+    }
+    sel.selectedIndex = 0;
+    sauverReglages();
   });
 });
 
