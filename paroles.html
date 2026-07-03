@@ -449,6 +449,7 @@
           <option>Rue / gangsta</option>
           <option>Amoureuse</option>
           <option>Fêtarde</option>
+          <option>Vibe été</option>
         </select>
       </label>
       <label class="champ">
@@ -566,7 +567,7 @@
       </label>
     </div>
 
-    <div class="rangee">
+    <div class="rangee-3">
       <label class="champ">
         <span>Voix (interprète)</span>
         <select id="voix">
@@ -590,6 +591,23 @@
           <option>Éraillée</option>
           <option>Chuchotée</option>
           <option>Mélodieuse</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Tempo (BPM)</span>
+        <select id="bpm">
+          <option>Au choix</option>
+          <option>70 (lent / ballade)</option>
+          <option>80</option>
+          <option>90 (boom bap)</option>
+          <option>100</option>
+          <option>110</option>
+          <option>120 (pop / house)</option>
+          <option>130 (trap / reggaeton)</option>
+          <option>140 (drill / UK)</option>
+          <option>150 (funk dançante)</option>
+          <option>160</option>
+          <option>170 (DnB)</option>
         </select>
       </label>
     </div>
@@ -764,6 +782,7 @@ function construirePrompt() {
   const vulgarite = $("#vulgarite").value;
   const voix = $("#voix").value;
   const timbre = $("#timbre").value;
+  const bpm = $("#bpm").value;
   const format = $("#format").value;
   const versionSuno = $("#versionSuno").value;
   const modeSuno = format.startsWith("Prompt Suno");
@@ -786,6 +805,7 @@ function construirePrompt() {
     `• Nombre de couplets : ${longueur}\n` +
     `• Longueur du refrain : ${refrain} (respecte ce nombre de lignes pour chaque refrain)\n` +
     `• Niveau de basse / low-end : ${basse}\n` +
+    `• Tempo (BPM) : ${bpm}\n` +
     `• Voix (interprète) : ${voix}\n` +
     `• Sonorité / timbre de la voix : ${timbre}\n` +
     `• Niveau de vulgarité : ${REGISTRE_MAP[vulgarite] || vulgarite}\n` +
@@ -1239,7 +1259,7 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","longueur","refrain","basse","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","bpm","longueur","refrain","basse","format","versionSuno","extra"];
 
 function sauverReglages() {
   const o = {};
@@ -1285,7 +1305,7 @@ $("#reinit").addEventListener("click", () => {
   $("#theme").value = "";
   $("#region").value = "";
   $("#extra").value = "";
-  ["ambiance", "structure", "vulgarite", "voix", "timbre", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
+  ["ambiance", "structure", "vulgarite", "voix", "timbre", "bpm", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
     $("#" + id).selectedIndex = 0;
   });
   $("#titre").checked = true;
