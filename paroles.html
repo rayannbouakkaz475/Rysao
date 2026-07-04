@@ -303,7 +303,7 @@
       <input type="text" id="artistes" placeholder="Ex : Ninho, Damso, Travis Scott, Aya Nakamura…">
       <select class="picker" data-cible="artistes" data-mode="ajout">
           <option value="">— Ajouter un artiste —</option>
-          <optgroup label="🇫🇷 France">
+          <optgroup label="🇫🇷 France — rap">
             <option>Ninho</option>
             <option>Damso</option>
             <option>SCH</option>
@@ -347,6 +347,34 @@
             <option>Maureen</option>
             <option>MHD</option>
             <option>Dystinct</option>
+            <option>Soprano</option>
+            <option>PLK</option>
+          </optgroup>
+          <optgroup label="🎙️ France — chant / variété">
+            <option>Stromae</option>
+            <option>Angèle</option>
+            <option>Clara Luciani</option>
+            <option>Julien Doré</option>
+            <option>Vianney</option>
+            <option>Louane</option>
+            <option>-M- (Matthieu Chedid)</option>
+            <option>Zaz</option>
+            <option>Christine and the Queens</option>
+            <option>Juliette Armanet</option>
+            <option>Benjamin Biolay</option>
+            <option>Vitaa</option>
+            <option>Slimane</option>
+            <option>Kendji Girac</option>
+            <option>Amir</option>
+            <option>Hoshi</option>
+            <option>Pierre Garnier</option>
+            <option>Yseult</option>
+            <option>Eddy de Pretto</option>
+            <option>Barbara Pravi</option>
+            <option>Calogero</option>
+            <option>Pomme</option>
+            <option>Santa</option>
+            <option>Zaho</option>
           </optgroup>
           <optgroup label="🌍 International">
             <option>Drake</option>
@@ -837,6 +865,15 @@ function construirePrompt() {
   if (region) p += `• Région / accent à refléter dans le vocabulaire et les expressions : ${region}\n`;
   if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
 
+  p += `\nSOIGNE PARTICULIÈREMENT :\n`;
+  if (titre) {
+    p += `- LE TITRE : original, court et percutant, qui capte l'essence de la chanson et donne envie de l'écouter. ` +
+      `Évite les titres plats ou génériques (ne te contente pas de répéter le thème) ; cherche une image, un mot fort ou une expression du refrain.\n`;
+  }
+  p += `- LE REFRAIN : c'est le sommet de la chanson, un vrai « hook » qui doit rester en tête. ` +
+    `Construis-le autour d'une phrase-clé forte et facile à chanter, qui revient à l'identique à chaque refrain ; ` +
+    `mise sur des répétitions efficaces, un rythme accrocheur et une mélodie implicite. C'est la partie qu'on doit retenir dès la première écoute.\n`;
+
   if (modeSuno) {
     p += `\nProduis un prompt prêt à coller dans Suno (${versionSuno}), en blocs clairement séparés et étiquetés :\n\n`;
     if (titre) p += `🏷️ TITRE — un titre court et accrocheur pour la chanson, sur une seule ligne.\n\n`;
@@ -867,6 +904,8 @@ const SYSTEME =
   "Tu es un parolier virtuose, capable d'écrire des chansons dans absolument n'importe quelle langue " +
   "(y compris les langues régionales, créoles et dialectes) et dans n'importe quel style ou genre musical. " +
   "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
+  "Tu excelles particulièrement à écrire des REFRAINS accrocheurs — des « hooks » mémorables qui restent " +
+  "en tête dès la première écoute — et des TITRES percutants et originaux. " +
   "Tu écris des paroles authentiques et tu adaptes le NIVEAU DE VULGARITÉ exactement à la demande " +
   "(de tout public à très cru) : quand un registre explicite est demandé, tu emploies un langage cru, de l'argot, " +
   "des gros mots et des thèmes adultes sans les masquer ; quand un niveau modéré est demandé, tu doses et n'en " +
