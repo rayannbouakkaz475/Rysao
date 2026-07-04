@@ -171,6 +171,12 @@
     background:rgba(224,145,138,.08); border:1px solid rgba(224,145,138,.25);
     border-radius:8px; padding:.8rem 1rem; margin-top:1rem; display:none}
 
+  .variante{border:1px solid var(--bordure); border-radius:10px; padding:1rem 1.1rem; margin-bottom:1.1rem}
+  .variante-tete{display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    margin-bottom:.7rem; padding-bottom:.55rem; border-bottom:1px solid var(--bordure)}
+  .variante-tete span{font-family:var(--serif); font-size:1.15rem; color:var(--or)}
+  .variante-corps{white-space:pre-wrap; word-wrap:break-word}
+
   .rangee-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem}
   @media(max-width:640px){ .rangee-3{grid-template-columns:1fr} }
 
@@ -608,7 +614,7 @@
       </label>
     </div>
 
-    <div class="rangee">
+    <div class="rangee-3">
       <label class="champ">
         <span>Format de sortie</span>
         <select id="format">
@@ -624,6 +630,14 @@
           <option>Suno v4.5</option>
           <option>Suno v4</option>
           <option>Suno v3.5</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Variantes</span>
+        <select id="variantes">
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
         </select>
       </label>
     </div>
@@ -976,6 +990,14 @@ function construirePrompt() {
       `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
       `Ne donne que ${titre ? "le titre, " : ""}les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
   }
+
+  const nbVar = parseInt($("#variantes").value, 10) || 1;
+  if (nbVar > 1) {
+    p += `\n\nIMPORTANT — VARIANTES : propose ${nbVar} variantes DISTINCTES de cette chanson, en respectant toutes les consignes ci-dessus. ` +
+      `Elles doivent être VRAIMENT différentes les unes des autres — angle, images, structure et phrase-clé du refrain, flow et punchlines — surtout PAS de simples reformulations d'une même version. ` +
+      `Sépare chaque variante par une ligne seule EXACTEMENT de la forme « === VARIANTE 1 === », puis « === VARIANTE 2 === », etc., et ne mets rien d'autre entre les variantes.`;
+    if (modeSuno) p += ` Chaque variante contient ses propres blocs 🏷️ TITRE (si demandé), 🎚️ STYLE et 🎤 PAROLES.`;
+  }
   return p;
 }
 
@@ -1055,6 +1077,42 @@ function appliquerSortie(texte) {
   boutonEditer.disabled = false;
   boutonRegenerer.disabled = false;
 }
+
+// Découpe une sortie multi-variantes sur les lignes « === VARIANTE N === ».
+let variantesTextes = [];
+function decouperVariantes(texte) {
+  return texte.split(/^[=\-—\s]*VARIANTE\s*\d+[=\-—\s]*$/im).map((s) => s.trim()).filter(Boolean);
+}
+
+// Affiche plusieurs variantes en cartes séparées, chacune avec son bouton Copier.
+function appliquerVariantes(texte) {
+  variantesTextes = decouperVariantes(texte);
+  if (variantesTextes.length < 2) { appliquerSortie(texte); return; }
+  sortie.innerHTML = variantesTextes.map((p, i) =>
+    '<div class="variante"><div class="variante-tete"><span>Variante ' + (i + 1) + '</span>' +
+    '<button class="mini copie-var" data-i="' + i + '">Copier</button></div>' +
+    '<div class="variante-corps">' + baliserSections(p) + '</div></div>'
+  ).join("");
+  boutonCopier.style.display = "none";
+  boutonCopierTitre.style.display = "none";
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  boutonEditer.disabled = false;
+  boutonRegenerer.disabled = false;
+}
+
+// Choisit l'affichage selon la présence de variantes.
+function afficher(texte) {
+  if (/^[=\-—\s]*VARIANTE\s*\d+/im.test(texte) && decouperVariantes(texte).length >= 2) appliquerVariantes(texte);
+  else appliquerSortie(texte);
+}
+
+// Copie d'une variante (délégation sur la zone de sortie).
+sortie.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".copie-var");
+  if (!b) return;
+  copier(b, variantesTextes[parseInt(b.dataset.i, 10)] || "", "Copier");
+});
 
 function afficherCout() {
   if (!usageIn && !usageOut) { elemCout.textContent = ""; return; }
@@ -1258,7 +1316,7 @@ async function generer() {
     if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
     const propre = texte.trim();
     dernierTexte = propre;
-    appliquerSortie(propre);
+    afficher(propre);
     afficherCout();
     ajouterHistorique(propre);
 
@@ -1310,7 +1368,7 @@ boutonEditer.addEventListener("click", () => {
     champEdit.style.display = "none";
     sortie.style.display = "";
     boutonEditer.textContent = "Éditer";
-    appliquerSortie(dernierTexte);
+    afficher(dernierTexte);
     enEdition = false;
   }
 });
@@ -1379,7 +1437,7 @@ listeHist.addEventListener("click", (ev) => {
   else if (b.dataset.action === "charger") {
     if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
     dernierTexte = e.texte;
-    appliquerSortie(e.texte);
+    afficher(e.texte);
     boutonVider.disabled = false;
     elemCout.textContent = "";
     effacerErreur();
@@ -1398,7 +1456,7 @@ chargerHistorique();
 
 /* --- Mémorisation des réglages du formulaire --- */
 const REG_STOCK = "rysao_reglages";
-const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","bpm","longueur","refrain","basse","format","versionSuno","extra"];
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","bpm","longueur","refrain","basse","format","versionSuno","variantes","extra"];
 
 function sauverReglages() {
   const o = {};
@@ -1444,7 +1502,7 @@ $("#reinit").addEventListener("click", () => {
   $("#theme").value = "";
   $("#region").value = "";
   $("#extra").value = "";
-  ["ambiance", "structure", "vulgarite", "voix", "timbre", "bpm", "longueur", "refrain", "basse", "argot", "format", "versionSuno"].forEach((id) => {
+  ["ambiance", "structure", "vulgarite", "voix", "timbre", "bpm", "longueur", "refrain", "basse", "argot", "format", "versionSuno", "variantes"].forEach((id) => {
     $("#" + id).selectedIndex = 0;
   });
   $("#titre").checked = true;
