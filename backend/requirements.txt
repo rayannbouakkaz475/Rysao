@@ -1,0 +1,17 @@
+# RYSAO Studio — backend (API + DSP)
+# Cœur : aucune dépendance à ffmpeg, tout en numpy/scipy.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+numpy>=1.24
+scipy>=1.10
+soundfile>=0.12        # décodage WAV/FLAC/OGG/MP3 via libsndfile
+
+# ---------------------------------------------------------------------------
+# OPTIONNEL — séparation de pistes par IA (voix / batterie / basse / autres).
+# Décommentez puis « pip install -r requirements.txt » sur une machine avec
+# quelques Go de RAM (un GPU accélère fortement). Le 1er appel télécharge le
+# modèle (~2 Go).
+#
+# demucs>=4.0
+# torch>=2.0
