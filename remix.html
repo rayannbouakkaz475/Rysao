@@ -293,6 +293,72 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
   </div>
 </section>
 
+<!-- CRÉATION IA (visible si serveur connecté) -->
+<section class="block" id="createBlock" style="display:none">
+  <div class="wrap">
+    <div class="step">
+      <div class="num" style="font-size:18px">✦</div>
+      <div><h2>Créer une musique (IA générative)</h2><div class="sub">Sans importer de fichier : l'IA compose un morceau original.</div></div>
+    </div>
+    <div class="grid">
+      <div class="ctrl">
+        <label>Ambiance</label>
+        <select id="genMood">
+          <option value="lofi">Lo-fi (chill)</option>
+          <option value="cinematique">Cinématique</option>
+          <option value="house">House</option>
+          <option value="trap">Trap</option>
+          <option value="ambient">Ambient</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Tonalité</label>
+        <select id="genKey">
+          <option>Do</option><option>Do#</option><option>Ré</option><option>Ré#</option>
+          <option>Mi</option><option>Fa</option><option>Fa#</option><option>Sol</option>
+          <option>Sol#</option><option selected>La</option><option>La#</option><option>Si</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Gamme</label>
+        <select id="genScale">
+          <option value="min">Mineure</option>
+          <option value="maj">Majeure</option>
+          <option value="dorien">Dorien</option>
+          <option value="penta">Pentatonique</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Durée <b><span id="vGenDur">30</span> s</b></label>
+        <input type="range" id="genDur" min="10" max="120" step="5" value="30">
+      </div>
+      <div class="ctrl">
+        <label>Intensité <b><span id="vGenInt">équilibré</span></b></label>
+        <input type="range" id="genInt" min="0" max="100" step="1" value="55">
+      </div>
+    </div>
+
+    <div id="neuralBox" class="hide" style="margin-top:20px">
+      <div class="ctrl">
+        <label>Description (IA neuronale — MusicGen)</label>
+        <select id="genEngine" style="max-width:280px;margin-bottom:10px">
+          <option value="algo">Moteur algorithmique (instantané)</option>
+          <option value="neural">Neuronal texte→musique (MusicGen)</option>
+        </select>
+        <input type="text" id="genPrompt" placeholder="ex : lofi hip hop piano mélancolique, pluie"
+          style="width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:14px">
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn solid" id="genMusic">✦ Composer</button>
+      <button class="btn ghost" id="genSurprise">🎲 Surprise</button>
+    </div>
+    <div class="bar-load" id="loadbar2"><i></i></div>
+    <div class="status" id="createStatus"></div>
+  </div>
+</section>
+
 <!-- 3. RESULT -->
 <section class="block" id="resultBlock" style="display:none">
   <div class="wrap">
@@ -387,10 +453,54 @@ async function initBackend(){
     const extra=backend.caps.stem_separation?" · séparation IA":"";
     txt.textContent="Serveur connecté"+extra;
     $("engineBox").classList.add("show");
+    if(backend.caps.music_generation){
+      $("createBlock").style.display="block";
+      if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
+    }
   }else{
     txt.textContent="Mode navigateur (serveur hors ligne)";
   }
 }
+
+/* ---------- Génération de musique (backend) ---------- */
+async function generateMusic(reseed){
+  if(reseed) genState.seed=Math.floor(Math.random()*1e9);
+  else if(genState.seed==null) genState.seed=Math.floor(Math.random()*1e9);
+  const engine=($("genEngine")&&$("genEngine").value)||"algo";
+  const spec = engine==="neural"
+    ? {engine:"neural", prompt:$("genPrompt").value||"calm melodic lofi", duration:+$("genDur").value}
+    : {mood:$("genMood").value, key:$("genKey").value, scale:$("genScale").value,
+       duration:+$("genDur").value, intensity:+$("genInt").value/100, seed:genState.seed};
+  loading2(true); setStatus("createStatus","L'IA compose un morceau…");
+  $("genMusic").disabled=$("genSurprise").disabled=true;
+  try{
+    const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
+    const r=await fetch(backend.base+"/api/generate",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("generate "+r.status);
+    const out=await r.json();
+    if(out.error){ setStatus("createStatus",out.error+" "+(out.how_to||""),"err"); return; }
+    const blob=await (await fetch(backend.fileUrl(out.id))).blob();
+    state.serverBlob=blob; state.serverName=out.file; state.lastKind="music";
+    const ctx=new AC(); state.result=await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
+    state._seed=genState.seed;
+    stopPlayback();
+    $("resultBlock").style.display="block";
+    $("rTitle").textContent = engine==="neural" ? "Création IA — MusicGen" : `Création IA — ${$("genMood").value}`;
+    $("rRecipe").innerHTML = engine==="neural"
+      ? `Modèle neuronal · « ${escapeHtml($("genPrompt").value||"")} »`
+      : `Ambiance <b>${$("genMood").value}</b> · tonalité <b>${$("genKey").value} ${$("genScale").value}</b> · durée <b>${$("genDur").value}s</b> · graine <b>#${genState.seed}</b>`;
+    $("tTot").textContent=fmtTime(state.result.duration);
+    $("tCur").textContent="0:00"; $("seekFill").style.width="0%";
+    $("resultBlock").scrollIntoView({behavior:"smooth"});
+    setStatus("createStatus","Morceau prêt ✦","ok");
+  }catch(e){
+    setStatus("createStatus","Erreur : "+e.message,"err");
+  }finally{
+    loading2(false); $("genMusic").disabled=$("genSurprise").disabled=false;
+  }
+}
+const genState={seed:null};
+function loading2(on){const b=$("loadbar2");b.classList.toggle("show",on);b.querySelector("i").style.width=on?"85%":"100%";if(!on)setTimeout(()=>{b.querySelector("i").style.width="0%"},300)}
 
 /* ============================================================
    IMPORT + DÉCODAGE
@@ -565,7 +675,14 @@ document.querySelectorAll("#engineBox .switch button").forEach(b=>b.onclick=()=>
 
 $("gen").onclick=()=>generate();
 $("regen").onclick=()=>generate(true);
-$("regen2").onclick=()=>generate(true);
+$("regen2").onclick=()=>{ state.lastKind==="music"?generateMusic(true):generate(true); };
+
+// Contrôles de création
+bind("genDur","vGenDur");
+$("genInt").oninput=e=>{const v=+e.target.value;$("vGenInt").textContent=v<33?"doux":v<66?"équilibré":"intense"};
+$("genMusic").onclick=()=>generateMusic(false);
+$("genSurprise").onclick=()=>generateMusic(true);
+if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.target.value==="neural"?1:.5;
 
 /* ============================================================
    CONSTRUCTION DE LA RECETTE (le "cerveau")
@@ -725,7 +842,7 @@ async function generate(reseed){
   const sel=state.tracks.filter(t=>t.sel);
   if(!sel.length){setStatus("genStatus","Sélectionnez au moins un morceau.","err");return}
   stopPlayback();
-  state.serverBlob=null; state.serverName=null;
+  state.serverBlob=null; state.serverName=null; state.lastKind="remix";
   loading(true);
   const server = backend.on && backend.engine==="server";
   setStatus("genStatus", server?"Rendu haute qualité sur le serveur…":"L'IA compose votre remix…");

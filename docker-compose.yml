@@ -1,0 +1,32 @@
+# RYSAO Studio — lancement complet (studio + séparation de pistes IA).
+#
+#   docker compose up --build
+#
+# Puis ouvrez http://localhost:8000
+#
+# La première séparation télécharge le modèle Demucs (~80 Mo) ; il est
+# conservé dans le volume « model-cache » pour les fois suivantes.
+services:
+  studio:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.demucs
+    image: rysao-studio:full
+    ports:
+      - "8000:8000"
+    volumes:
+      - model-cache:/root/.cache          # modèles Demucs / MusicGen persistés
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/outputs:/app/backend/outputs
+    restart: unless-stopped
+    # Pour la séparation sur GPU NVIDIA, décommentez (nécessite nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  model-cache:

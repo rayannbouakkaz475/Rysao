@@ -11,8 +11,11 @@ peut pas** offrir :
 | **Pitch-shift indépendant** | ❌ | ✅ |
 | Beatmatch pro pour les mashups | approx. | ✅ |
 | **Séparation de pistes IA** (voix / batterie / basse / autres) | ❌ | ✅* |
+| **Création de musique** (compose un morceau original) | ❌ | ✅ |
+| **Génération neuronale texte→musique** (MusicGen) | ❌ | ✅** |
 
-\* nécessite l'installation optionnelle de Demucs (voir plus bas).
+\* nécessite Demucs (inclus dans l'image Docker « full », voir plus bas).
+\** nécessite l'installation optionnelle d'audiocraft.
 
 Le studio fonctionne **sans** le backend (mode 100 % navigateur). Quand le
 serveur est présent, l'interface le détecte automatiquement et débloque les
@@ -39,12 +42,24 @@ pip install -r requirements.txt
 uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-### Docker
+### Docker — image légère (sans séparation IA)
 
 ```bash
 docker build -t rysao-studio -f backend/Dockerfile .
 docker run -p 8000:8000 rysao-studio
 ```
+
+### Docker Compose — tout inclus (avec séparation de pistes IA) ⭐
+
+Recommandé : la séparation Demucs fonctionne sans rien installer à la main.
+
+```bash
+docker compose up --build
+```
+
+Puis ouvrez **http://localhost:8000**. La première séparation télécharge le
+modèle Demucs (~80 Mo), conservé ensuite dans le volume `model-cache`. Pour
+un GPU NVIDIA, décommentez la section `deploy` de `docker-compose.yml`.
 
 ---
 
@@ -71,6 +86,22 @@ uniquement la voix, faire un instrumental, etc.
 
 ---
 
+## Créer une musique (IA générative)
+
+Deux moteurs, exposés dans la section « Créer une musique » du studio :
+
+- **Algorithmique** (par défaut, instantané, sans GPU) : compose un vrai
+  morceau original — gamme + accords, basse, nappes, mélodie et batterie
+  synthétisés, puis mixés avec reverb/delay. Ambiances : lo-fi, cinématique,
+  house, trap, ambient. Réglages : tonalité, gamme, durée, intensité, graine.
+- **Neuronal texte→musique** (optionnel) : [MusicGen](https://github.com/facebookresearch/audiocraft).
+
+  ```bash
+  pip install audiocraft   # gros modèle, GPU conseillé
+  ```
+
+  ou décommentez la ligne `audiocraft` dans `backend/Dockerfile.demucs`.
+
 ## API
 
 | Méthode | Route | Rôle |
@@ -80,6 +111,7 @@ uniquement la voix, faire un instrumental, etc.
 | `POST` | `/api/separate` | `id` → pistes séparées (Demucs) |
 | `POST` | `/api/process` | `id`, `stretch`, `semitones` → WAV traité |
 | `POST` | `/api/remix` | `spec` (JSON) → remix rendu, WAV |
+| `POST` | `/api/generate` | `spec` (JSON) → musique générée, WAV |
 | `GET`  | `/api/file/{id}` | récupère un fichier généré |
 | `GET`  | `/` | le studio (`remix.html`) |
 

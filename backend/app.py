@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 import audio_engine as ae
 import stems as stemmod
+import music_gen as mg
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)                       # dépôt (contient remix.html)
@@ -61,9 +62,12 @@ def health():
             "time_stretch_keep_pitch": True,
             "pitch_shift": True,
             "server_remix": True,
+            "music_generation": True,
+            "neural_music": mg.neural_available(),
             "stem_separation": stemmod.AVAILABLE,
             "ffmpeg": stemmod.has_ffmpeg(),
         },
+        "moods": mg.MOODS,
     }
 
 
@@ -155,6 +159,40 @@ async def api_remix(spec: str = Form(...)):
     ae.write_wav(dest, mix)
     fid = _register(dest)
     return {"id": fid, "file": name, "duration": round(len(mix) / ae.SR, 2),
+            "url": f"/api/file/{fid}"}
+
+
+# ------------------------------------------------ génération de musique
+@app.post("/api/generate")
+async def api_generate(spec: str = Form(...)):
+    """
+    spec (JSON) :
+      { "mood": "lofi", "key": "La", "scale": "min", "bpm": 78,
+        "duration": 30, "intensity": 0.6, "seed": 7 }
+      ou pour le neuronal : { "engine": "neural", "prompt": "...", "duration": 12 }
+    """
+    try:
+        p = json.loads(spec)
+    except Exception:
+        raise HTTPException(400, "spec JSON invalide")
+
+    if p.get("engine") == "neural":
+        if not mg.neural_available():
+            return JSONResponse({
+                "error": "MusicGen n'est pas installé sur ce serveur.",
+                "how_to": "Installez-le avec : pip install audiocraft — "
+                          "puis redémarrez. Gros modèle, GPU conseillé.",
+            }, status_code=200)
+        x = mg.generate_neural(p.get("prompt", "calm melodic music"),
+                               float(p.get("duration", 12)))
+    else:
+        x = mg.generate(p)
+
+    name = f"gen_{uuid.uuid4().hex[:10]}.wav"
+    dest = os.path.join(OUT, name)
+    ae.write_wav(dest, x)
+    fid = _register(dest)
+    return {"id": fid, "file": name, "duration": round(len(x) / ae.SR, 2),
             "url": f"/api/file/{fid}"}
 
 
