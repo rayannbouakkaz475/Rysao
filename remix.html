@@ -141,6 +141,14 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
 .engine.show{display:block}
 .chkline{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ivoire-doux);cursor:pointer;margin-top:10px}
 .chkline input{accent-color:var(--or);width:16px;height:16px}
+.track .mix{display:flex;align-items:center;gap:8px;flex:0 0 132px}
+.track .mix input[type=range]{width:86px;height:3px}
+.track .mute{width:30px;height:30px;border-radius:50%;border:1px solid var(--ligne);background:transparent;color:var(--gris);cursor:pointer;font-size:13px;flex:0 0 auto;display:grid;place-items:center;transition:.15s}
+.track .mute:hover{border-color:var(--or);color:var(--or)}
+.track .mute.on{background:#3a1d1d;border-color:#c96b5a;color:#e08a76}
+.track .vval{font-size:11px;color:var(--gris);width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.track.muted{opacity:.5}
+@media(max-width:720px){.track .wave,.track .mix .vval{display:none}}
 </style>
 </head>
 <body>
@@ -414,13 +422,13 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
    BACKEND — détection & appels API (optionnel)
    ============================================================ */
 const backend = {
-  on:false, base:"", caps:{}, engine:"browser",
+  on:false, base:"", caps:{}, engine:"browser", moods:[],
   async detect(){
     const bases = location.protocol==="file:" ? ["http://127.0.0.1:8000"] : ["", "http://127.0.0.1:8000"];
     for(const b of bases){
       try{
         const r=await fetch(b+"/api/health",{signal:AbortSignal.timeout(2500)});
-        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};return true}
+        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};this.moods=j.moods||[];return true}
       }catch(e){}
     }
     return false;
@@ -455,11 +463,23 @@ async function initBackend(){
     $("engineBox").classList.add("show");
     if(backend.caps.music_generation){
       $("createBlock").style.display="block";
+      populateMoods();
       if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
     }
   }else{
     txt.textContent="Mode navigateur (serveur hors ligne)";
   }
+}
+
+/* ---------- Ambiances (peuplées depuis le serveur) ---------- */
+const MOOD_LABELS={lofi:"Lo-fi (chill)",cinematique:"Cinématique",house:"House",
+  trap:"Trap",ambient:"Ambient",synthwave:"Synthwave",boombap:"Boom-bap",
+  dnb:"Drum & Bass",afro:"Afrobeat",reggaeton:"Reggaeton"};
+function populateMoods(){
+  const sel=$("genMood"); if(!sel||!backend.moods.length)return;
+  const prev=sel.value;
+  sel.innerHTML=backend.moods.map(m=>`<option value="${m}">${MOOD_LABELS[m]||m}</option>`).join("");
+  if(backend.moods.includes(prev))sel.value=prev;
 }
 
 /* ---------- Génération de musique (backend) ---------- */
@@ -527,7 +547,7 @@ async function addFiles(list){
       }
       state.tracks.push({
         name:f.name.replace(/\.[^.]+$/,""), buffer:buf, revBuffer:reverseBuffer(ctx,buf),
-        bpm, key, id, stem:null, sel:true, role:"auto", peaks:peaksOf(buf,120)
+        bpm, key, id, stem:null, sel:true, role:"auto", gain:1, mute:false, peaks:peaksOf(buf,120)
       });
     }catch(err){ setStatus("importStatus",`Impossible de lire « ${f.name} ».`,"err"); }
   }
@@ -567,7 +587,7 @@ async function separateTrack(i){
         name:t.name, buffer:buf, revBuffer:reverseBuffer(ctx,buf),
         bpm:s.bpm||t.bpm, key:s.key||t.key, id:s.id,
         stem:(res.labels&&res.labels[name])||name,
-        sel:false, role:"auto", peaks:peaksOf(buf,120)
+        sel:false, role:"auto", gain:1, mute:false, peaks:peaksOf(buf,120)
       });
     }
     ctx.close();
@@ -615,7 +635,7 @@ function renderTracks(){
   const el=$("tracks"); el.innerHTML="";
   state.tracks.forEach((t,i)=>{
     const row=document.createElement("div");
-    row.className="track"+(t.sel?" sel":"");
+    row.className="track"+(t.sel?" sel":"")+(t.mute?" muted":"");
     const wave=t.peaks.map(p=>`<i style="height:${Math.max(8,p*100)}%"></i>`).join("");
     row.innerHTML=`
       <div class="chk" data-i="${i}"></div>
@@ -624,6 +644,11 @@ function renderTracks(){
         <div class="info">${fmtTime(t.buffer.duration)} · ~${t.bpm} BPM${t.key?" · "+escapeHtml(t.key):""} · ${t.buffer.numberOfChannels>1?"stéréo":"mono"}</div>
       </div>
       <div class="wave">${wave}</div>
+      <div class="mix">
+        <button class="mute${t.mute?" on":""}" data-m="${i}" title="Muet">${t.mute?"🔇":"🔊"}</button>
+        <input type="range" class="vol" data-v="${i}" min="0" max="150" step="1" value="${Math.round((t.gain??1)*100)}">
+        <span class="vval" data-vv="${i}">${Math.round((t.gain??1)*100)}</span>
+      </div>
       ${t.stem?`<span class="badge">${escapeHtml(t.stem)}</span>`:""}
       ${(backend.on && backend.caps.stem_separation && t.id && !t.stem)
         ?`<button class="stem" data-s="${i}">⃝ Séparer IA</button>`:""}
@@ -635,6 +660,8 @@ function renderTracks(){
   el.querySelectorAll(".del").forEach(c=>c.onclick=()=>{state.tracks.splice(+c.dataset.d,1);renderTracks();refreshUI()});
   el.querySelectorAll(".role").forEach(c=>c.onclick=()=>{cycleRole(+c.dataset.r);renderTracks()});
   el.querySelectorAll(".stem").forEach(c=>c.onclick=()=>separateTrack(+c.dataset.s));
+  el.querySelectorAll(".mute").forEach(c=>c.onclick=()=>{const i=+c.dataset.m;state.tracks[i].mute=!state.tracks[i].mute;renderTracks()});
+  el.querySelectorAll(".vol").forEach(c=>c.oninput=()=>{const i=+c.dataset.v;state.tracks[i].gain=(+c.value)/100;el.querySelector(`[data-vv="${i}"]`).textContent=c.value});
 }
 function roleLabel(r){return {auto:"rôle auto",rythme:"rythme",melodie:"mélodie",accent:"accents"}[r]}
 function cycleRole(i){const o=["auto","rythme","melodie","accent"];const t=state.tracks[i];t.role=o[(o.indexOf(t.role)+1)%o.length]}
@@ -688,7 +715,7 @@ if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.tar
    CONSTRUCTION DE LA RECETTE (le "cerveau")
    ============================================================ */
 function buildRecipe(reseed){
-  const sel=state.tracks.filter(t=>t.sel);
+  const sel=state.tracks.filter(t=>t.sel && !t.mute);
   const seed=reseed?Math.floor(Math.random()*1e9):(state._seed??Math.floor(Math.random()*1e9));
   state._seed=seed;
   const rnd=mulberry32(seed);
@@ -733,7 +760,7 @@ function buildRecipe(reseed){
       if(sel.length===1)role="rythme";
       else role=i===0?"rythme":(i===1?"melodie":"accent");
     }
-    const gain={rythme:1,melodie:0.85,accent:0.6}[role];
+    const gain={rythme:1,melodie:0.85,accent:0.6}[role]*(t.gain??1);
     const speed=(bpm/t.bpm)*r.speed;   // beatmatch auto
     return {track:t,role,gain,speed};
   });
@@ -839,8 +866,12 @@ function makeImpulse(ctx,dur,decay){
    GÉNÉRATION (orchestration)
    ============================================================ */
 async function generate(reseed){
-  const sel=state.tracks.filter(t=>t.sel);
-  if(!sel.length){setStatus("genStatus","Sélectionnez au moins un morceau.","err");return}
+  const sel=state.tracks.filter(t=>t.sel && !t.mute);
+  if(!sel.length){
+    const anySel=state.tracks.some(t=>t.sel);
+    setStatus("genStatus", anySel?"Toutes les pistes sélectionnées sont muettes 🔇.":"Sélectionnez au moins un morceau.","err");
+    return;
+  }
   stopPlayback();
   state.serverBlob=null; state.serverName=null; state.lastKind="remix";
   loading(true);

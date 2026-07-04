@@ -38,6 +38,16 @@ _MOODS = {
                     swing=0.06, drums="trap", reverb=0.22, delay=0.14, lead=0.5),
     "ambient": dict(scale="dorien", bpm=70, progs=[[0,4,5,3]],
                     swing=0.0, drums="none", reverb=0.6, delay=0.3, lead=0.3),
+    "synthwave": dict(scale="min", bpm=100, progs=[[0,5,3,4],[0,6,5,4]],
+                    swing=0.0, drums="synth", reverb=0.3, delay=0.24, lead=0.6),
+    "boombap": dict(scale="dorien", bpm=90, progs=[[0,3,4,5],[0,5,3,4]],
+                    swing=0.16, drums="boombap", reverb=0.2, delay=0.12, lead=0.45),
+    "dnb":     dict(scale="min", bpm=174, progs=[[0,5,3,4],[0,3,5,5]],
+                    swing=0.0, drums="dnb", reverb=0.22, delay=0.14, lead=0.5),
+    "afro":    dict(scale="maj", bpm=110, progs=[[0,4,5,3],[0,3,4,4]],
+                    swing=0.05, drums="afro", reverb=0.2, delay=0.16, lead=0.5),
+    "reggaeton": dict(scale="min", bpm=95, progs=[[0,5,3,4],[0,4,5,3]],
+                    swing=0.0, drums="dembow", reverb=0.18, delay=0.12, lead=0.5),
 }
 
 _KEY_MIDI = {"Do":60,"Do#":61,"Ré":62,"Ré#":63,"Mi":64,"Fa":65,"Fa#":66,
@@ -112,30 +122,54 @@ def _place(track, sig, at):
         track[i:j] += sig[:j-i]
 
 
-def _drum_track(pattern, bars, beat, total_n, rng):
+# Grooves sur une grille de 16 pas (double-croches) : kick / snare / hats.
+# hats : "8" = croches (pas pairs), "16" = doubles-croches, "off" = contretemps.
+_GROOVES = {
+    "four":    dict(kick=[0,4,8,12],      snare=[4,12],          hats="off"),
+    "soft":    dict(kick=[0,8],           snare=[4,12],          hats="8"),
+    "trap":    dict(kick=[0,7,10],        snare=[8],             hats="16"),
+    "boombap": dict(kick=[0,10],          snare=[4,12],          hats="8"),
+    "dnb":     dict(kick=[0,10],          snare=[4,12],          hats="16"),
+    "afro":    dict(kick=[0,6,10],        snare=[4,12],          hats="afro"),
+    "dembow":  dict(kick=[0,8],           snare=[3,6,11,14],     hats="8"),
+    "synth":   dict(kick=[0,4,8,12],      snare=[4,12],          hats="off"),
+    "none":    dict(kick=[],              snare=[],              hats="none"),
+}
+
+
+def _drum_track(pattern, bars, beat, total_n, rng, swing=0.0):
     L = np.zeros(total_n, dtype=np.float32)
     R = np.zeros(total_n, dtype=np.float32)
-    step = beat/2  # croches
+    g = _GROOVES.get(pattern, _GROOVES["soft"])
+    stp = beat/4                                   # 16 pas par mesure
+    sw = swing*stp                                 # décalage de swing
+    def at_of(s):
+        t = s*stp
+        return t + (sw if (s % 2) else 0)          # swing sur les pas impairs
     for bar in range(bars):
         base = bar*4*beat
-        for b in range(4):
-            tb = base + b*beat
-            if pattern in ("four",):
-                _place(L, _kick(), tb); _place(R, _kick(), tb)
-            if pattern in ("soft","trap"):
-                if b in (0,2): _place(L,_kick(),tb); _place(R,_kick(),tb)
-            if pattern != "none" and b in (1,3):
-                s=_snare(rng=rng); _place(L,s,tb); _place(R,s,tb)
-            # charleys
-            if pattern in ("soft","four","trap"):
-                for k in range(2):
-                    th=tb+k*step
-                    h=_hat(rng=rng)
-                    _place(L,h*0.8,th); _place(R,h,th)
-            if pattern=="trap" and rng.random_sample()<0.35:
-                for k in range(4):
-                    h=_hat(dur=0.03,rng=rng)*0.5
-                    _place(L,h,tb+k*beat/4)
+        for s in g["kick"]:
+            _place(L,_kick(),base+at_of(s)); _place(R,_kick(),base+at_of(s))
+        for s in g["snare"]:
+            sn=_snare(rng=rng); _place(L,sn,base+at_of(s)); _place(R,sn,base+at_of(s))
+        mode=g["hats"]
+        if mode=="none": continue
+        if mode=="8":    steps=range(0,16,2)
+        elif mode=="16": steps=range(0,16)
+        elif mode=="off":steps=range(2,16,4)
+        elif mode=="afro":steps=[0,3,4,6,9,10,12,15]
+        else:            steps=range(0,16,2)
+        for s in steps:
+            gain=0.4 if mode=="16" else (0.9 if s%4==0 else 0.6)
+            h=_hat(dur=0.03 if mode=="16" else 0.05, rng=rng)
+            _place(L,h*gain*0.85,base+at_of(s)); _place(R,h*gain,base+at_of(s))
+        # roulements de charleys façon trap
+        if pattern=="trap" and rng.random_sample()<0.4:
+            k0=int(rng.choice([12,14])); reps=int(rng.choice([3,4,6]))
+            for k in range(reps):
+                h=_hat(dur=0.02,rng=rng)*0.4
+                _place(L,h,base+k0*stp+k*(2*stp/reps))
+                _place(R,h,base+k0*stp+k*(2*stp/reps))
     return np.stack([L,R],axis=1)
 
 
@@ -199,7 +233,7 @@ def generate(params: dict) -> np.ndarray:
                        adsr=(0.005,0.06,0.6,0.12), gain=0.12*cfg["lead"])
             _place(lead[:,0], nl, at); _place(lead[:,1], nl, at)
 
-    drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng)
+    drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng, cfg.get("swing",0.0))
 
     mix = pads + bass*1.0 + lead + drums*(0.7+0.3*intensity)
 

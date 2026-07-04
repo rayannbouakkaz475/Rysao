@@ -6,6 +6,7 @@ peut pas** offrir :
 | Capacité | Navigateur seul | Avec backend |
 |---|:---:|:---:|
 | Import multi-morceaux, remix, effets, export WAV | ✅ | ✅ |
+| Mixage par piste (volume + mute) | ✅ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |
 | **Time-stretch en conservant la hauteur** (vrai) | ❌ | ✅ |
 | **Pitch-shift indépendant** | ❌ | ✅ |
@@ -92,8 +93,10 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 
 - **Algorithmique** (par défaut, instantané, sans GPU) : compose un vrai
   morceau original — gamme + accords, basse, nappes, mélodie et batterie
-  synthétisés, puis mixés avec reverb/delay. Ambiances : lo-fi, cinématique,
-  house, trap, ambient. Réglages : tonalité, gamme, durée, intensité, graine.
+  synthétisés (grooves sur grille 16 pas), puis mixés avec reverb/delay.
+  10 ambiances : lo-fi, cinématique, house, trap, ambient, synthwave,
+  boom-bap, drum & bass, afrobeat, reggaeton. Réglages : tonalité, gamme,
+  durée, intensité, graine.
 - **Neuronal texte→musique** (optionnel) : [MusicGen](https://github.com/facebookresearch/audiocraft).
 
   ```bash
