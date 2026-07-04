@@ -235,6 +235,48 @@ def apply_delay(x: np.ndarray, amount: float, bpm: float) -> np.ndarray:
     return x + echo
 
 
+def _biquad_sos(kind: str, f0: float, gain_db: float, Q: float = 1.0):
+    """Coefficients biquad RBJ (cookbook) -> sos, pour shelf/peaking."""
+    A = 10 ** (gain_db / 40.0)
+    w0 = 2 * np.pi * f0 / SR
+    cw, sw = np.cos(w0), np.sin(w0)
+    alpha = sw / (2 * Q)
+    if kind == "peaking":
+        b0 = 1 + alpha * A; b1 = -2 * cw; b2 = 1 - alpha * A
+        a0 = 1 + alpha / A; a1 = -2 * cw; a2 = 1 - alpha / A
+    elif kind == "lowshelf":
+        s = 2 * np.sqrt(A) * alpha
+        b0 = A * ((A + 1) - (A - 1) * cw + s)
+        b1 = 2 * A * ((A - 1) - (A + 1) * cw)
+        b2 = A * ((A + 1) - (A - 1) * cw - s)
+        a0 = (A + 1) + (A - 1) * cw + s
+        a1 = -2 * ((A - 1) + (A + 1) * cw)
+        a2 = (A + 1) + (A - 1) * cw - s
+    else:  # highshelf
+        s = 2 * np.sqrt(A) * alpha
+        b0 = A * ((A + 1) + (A - 1) * cw + s)
+        b1 = -2 * A * ((A - 1) + (A + 1) * cw)
+        b2 = A * ((A + 1) + (A - 1) * cw - s)
+        a0 = (A + 1) - (A - 1) * cw + s
+        a1 = 2 * ((A - 1) - (A + 1) * cw)
+        a2 = (A + 1) - (A - 1) * cw - s
+    return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
+
+
+def apply_eq(x: np.ndarray, eq: dict) -> np.ndarray:
+    """Égaliseur 3 bandes : graves (shelf 200Hz), médiums (peak 1kHz), aigus (shelf 4kHz)."""
+    if not eq:
+        return x
+    low, mid, high = float(eq.get("low", 0)), float(eq.get("mid", 0)), float(eq.get("high", 0))
+    if low == 0 and mid == 0 and high == 0:
+        return x
+    out = x
+    if low:  out = sosfilt(_biquad_sos("lowshelf", 200, low), out, axis=0)
+    if mid:  out = sosfilt(_biquad_sos("peaking", 1000, mid, 1.0), out, axis=0)
+    if high: out = sosfilt(_biquad_sos("highshelf", 4000, high), out, axis=0)
+    return out.astype(np.float32)
+
+
 def apply_filter(x: np.ndarray, mode: str) -> np.ndarray:
     if mode == "none" or not mode:
         return x
@@ -352,6 +394,7 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
                 seg[-f:] *= ramp[::-1]
             layer_buf[start:start + L] += seg
 
+        layer_buf = apply_eq(layer_buf, layer.get("eq"))
         mix += layer_buf * gain
 
     # effets globaux

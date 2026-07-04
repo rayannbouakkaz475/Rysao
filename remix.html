@@ -149,6 +149,17 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
 .track .vval{font-size:11px;color:var(--gris);width:30px;text-align:right;font-variant-numeric:tabular-nums}
 .track.muted{opacity:.5}
 @media(max-width:720px){.track .wave,.track .mix .vval{display:none}}
+.track{flex-wrap:wrap}
+.track .eqbtn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);border:1px solid var(--ligne);border-radius:20px;padding:4px 11px;cursor:pointer;background:transparent;font-family:var(--sans);transition:.15s}
+.track .eqbtn:hover,.track .eqbtn.on{border-color:var(--or);color:var(--or)}
+.eqpanel{flex:0 0 100%;display:none;gap:22px;margin-top:12px;padding-top:14px;border-top:1px solid var(--ligne)}
+.eqpanel.open{display:flex}
+.eqband{flex:1;min-width:120px}
+.eqband label{display:flex;justify-content:space-between;font-size:12px;color:var(--ivoire-doux);margin-bottom:6px}
+.eqband label b{color:var(--or);font-weight:400}
+.eqband input[type=range]{width:100%}
+.eqreset{align-self:flex-end;font-size:11px;color:var(--gris);background:transparent;border:1px solid var(--ligne);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--sans)}
+.eqreset:hover{color:var(--or);border-color:var(--or)}
 </style>
 </head>
 <body>
@@ -547,7 +558,8 @@ async function addFiles(list){
       }
       state.tracks.push({
         name:f.name.replace(/\.[^.]+$/,""), buffer:buf, revBuffer:reverseBuffer(ctx,buf),
-        bpm, key, id, stem:null, sel:true, role:"auto", gain:1, mute:false, peaks:peaksOf(buf,120)
+        bpm, key, id, stem:null, sel:true, role:"auto", gain:1, mute:false,
+        eq:{low:0,mid:0,high:0}, eqOpen:false, peaks:peaksOf(buf,120)
       });
     }catch(err){ setStatus("importStatus",`Impossible de lire « ${f.name} ».`,"err"); }
   }
@@ -587,7 +599,8 @@ async function separateTrack(i){
         name:t.name, buffer:buf, revBuffer:reverseBuffer(ctx,buf),
         bpm:s.bpm||t.bpm, key:s.key||t.key, id:s.id,
         stem:(res.labels&&res.labels[name])||name,
-        sel:false, role:"auto", gain:1, mute:false, peaks:peaksOf(buf,120)
+        sel:false, role:"auto", gain:1, mute:false,
+        eq:{low:0,mid:0,high:0}, eqOpen:false, peaks:peaksOf(buf,120)
       });
     }
     ctx.close();
@@ -652,8 +665,20 @@ function renderTracks(){
       ${t.stem?`<span class="badge">${escapeHtml(t.stem)}</span>`:""}
       ${(backend.on && backend.caps.stem_separation && t.id && !t.stem)
         ?`<button class="stem" data-s="${i}">⃝ Séparer IA</button>`:""}
+      <button class="eqbtn${t.eqOpen?" on":""}" data-e="${i}">EQ</button>
       <div class="role" data-r="${i}">${roleLabel(t.role)}</div>
-      <div class="del" data-d="${i}">✕</div>`;
+      <div class="del" data-d="${i}">✕</div>
+      <div class="eqpanel${t.eqOpen?" open":""}">
+        ${["low","mid","high"].map(band=>{
+          const lbl={low:"Graves",mid:"Médiums",high:"Aigus"}[band];
+          const v=t.eq[band]||0;
+          return `<div class="eqband">
+            <label>${lbl} <b><span data-eqv="${i}-${band}">${v>0?"+":""}${v}</span> dB</b></label>
+            <input type="range" class="eqsl" data-eq="${i}" data-band="${band}" min="-12" max="12" step="1" value="${v}">
+          </div>`;
+        }).join("")}
+        <button class="eqreset" data-eqr="${i}">Réinit.</button>
+      </div>`;
     el.appendChild(row);
   });
   el.querySelectorAll(".chk").forEach(c=>c.onclick=()=>{const i=+c.dataset.i;state.tracks[i].sel=!state.tracks[i].sel;renderTracks();refreshUI()});
@@ -662,6 +687,10 @@ function renderTracks(){
   el.querySelectorAll(".stem").forEach(c=>c.onclick=()=>separateTrack(+c.dataset.s));
   el.querySelectorAll(".mute").forEach(c=>c.onclick=()=>{const i=+c.dataset.m;state.tracks[i].mute=!state.tracks[i].mute;renderTracks()});
   el.querySelectorAll(".vol").forEach(c=>c.oninput=()=>{const i=+c.dataset.v;state.tracks[i].gain=(+c.value)/100;el.querySelector(`[data-vv="${i}"]`).textContent=c.value});
+  el.querySelectorAll(".eqbtn").forEach(c=>c.onclick=()=>{const i=+c.dataset.e;state.tracks[i].eqOpen=!state.tracks[i].eqOpen;renderTracks()});
+  el.querySelectorAll(".eqsl").forEach(c=>c.oninput=()=>{const i=+c.dataset.eq,band=c.dataset.band,v=+c.value;
+    state.tracks[i].eq[band]=v;el.querySelector(`[data-eqv="${i}-${band}"]`).textContent=(v>0?"+":"")+v});
+  el.querySelectorAll(".eqreset").forEach(c=>c.onclick=()=>{const i=+c.dataset.eqr;state.tracks[i].eq={low:0,mid:0,high:0};renderTracks()});
 }
 function roleLabel(r){return {auto:"rôle auto",rythme:"rythme",melodie:"mélodie",accent:"accents"}[r]}
 function cycleRole(i){const o=["auto","rythme","melodie","accent"];const t=state.tracks[i];t.role=o[(o.indexOf(t.role)+1)%o.length]}
@@ -816,9 +845,13 @@ async function renderRemix(r){
     }
 
     const layerGain=ctx.createGain(); layerGain.gain.value=layer.gain;
-    layerGain.connect(masterOut===master?master:master); // dry via master
-    // envois
-    const send=(node)=>{node.connect(convolver);node.connect(delay)};
+    layerGain.connect(master);                        // dry
+    const layerIn=ctx.createGain();                   // somme des cellules de la piste
+    const eq=makeEQ(ctx, t.eq);
+    let tap;                                           // point post-EQ (dry + envois)
+    if(eq){ layerIn.connect(eq.input); eq.output.connect(layerGain); tap=eq.output; }
+    else  { layerIn.connect(layerGain); tap=layerIn; }
+    tap.connect(convolver); tap.connect(delay);        // envois reverb/delay post-EQ
 
     for(let i=0;i<totalCells;i++){
       const when=i*cellDur;
@@ -843,7 +876,7 @@ async function renderRemix(r){
         g.gain.linearRampToValueAtTime(1,st+a);
         g.gain.setValueAtTime(1,st+sub-rel);
         g.gain.linearRampToValueAtTime(0,st+sub);
-        s.connect(g); g.connect(layerGain); send(g);
+        s.connect(g); g.connect(layerIn);
         const consume=sub*layer.speed;
         try{ s.start(st, srcOffset, consume+0.02); s.stop(st+sub+0.03); }catch(e){}
       }
@@ -852,6 +885,16 @@ async function renderRemix(r){
 
   const rendered=await ctx.startRendering();
   return rendered;
+}
+
+/* Égaliseur 3 bandes (graves/médiums/aigus) pour une piste */
+function makeEQ(ctx, eq){
+  if(!eq || (!eq.low && !eq.mid && !eq.high)) return null;
+  const low=ctx.createBiquadFilter(); low.type="lowshelf"; low.frequency.value=200; low.gain.value=eq.low||0;
+  const mid=ctx.createBiquadFilter(); mid.type="peaking"; mid.frequency.value=1000; mid.Q.value=1; mid.gain.value=eq.mid||0;
+  const high=ctx.createBiquadFilter(); high.type="highshelf"; high.frequency.value=4000; high.gain.value=eq.high||0;
+  low.connect(mid); mid.connect(high);
+  return {input:low, output:high};
 }
 
 /* Impulse response synthétique pour la reverb */
@@ -912,7 +955,7 @@ async function generateServer(r,sel){
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked
     },
-    layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role}))
+    layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };
   const out=await backend.remix(spec);
   const blob=await (await fetch(backend.fileUrl(out.id))).blob();

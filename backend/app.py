@@ -148,7 +148,8 @@ async def api_remix(spec: str = Form(...)):
         bpm = L.get("bpm") or ae.estimate_bpm(samples)
         layers.append({"samples": samples, "bpm": float(bpm),
                        "gain": float(L.get("gain", 1.0)),
-                       "role": L.get("role", "rythme")})
+                       "role": L.get("role", "rythme"),
+                       "eq": L.get("eq")})
     if "bpm" not in recipe:
         recipe["bpm"] = layers[0]["bpm"]
     recipe.setdefault("dur", 30)

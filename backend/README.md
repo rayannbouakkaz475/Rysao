@@ -7,6 +7,7 @@ peut pas** offrir :
 |---|:---:|:---:|
 | Import multi-morceaux, remix, effets, export WAV | ✅ | ✅ |
 | Mixage par piste (volume + mute) | ✅ | ✅ |
+| Égaliseur 3 bandes par piste (graves/médiums/aigus) | ✅ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |
 | **Time-stretch en conservant la hauteur** (vrai) | ❌ | ✅ |
 | **Pitch-shift indépendant** | ❌ | ✅ |
