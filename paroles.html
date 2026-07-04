@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RYSAO — Atelier de Paroles</title>
+<meta name="description" content="Atelier de paroles RYSAO — une intelligence artificielle qui compose des paroles de chansons dans n'importe quelle langue et n'importe quel style.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2308080a' stroke='%23c9a771' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='50' fill='%23c9a771' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RYSAO">
+<meta name="theme-color" content="#08080a">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noir:#08080a; --noir-2:#0e0e11; --carte:#131318;
+    --or:#c9a771; --or-clair:#e6cfa6; --texte:#e9e6e0; --gris:#9a968e;
+    --bordure:rgba(201,167,113,.18);
+    --serif:"Cormorant Garamond",Georgia,serif; --sans:"Jost",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--noir); color:var(--texte);
+    font-family:var(--sans); font-weight:300; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none}
+  .eyebrow{
+    font-family:var(--sans); font-size:.72rem; letter-spacing:.32em;
+    text-transform:uppercase; color:var(--or); font-weight:400;
+  }
+
+  /* --- En-tête --- */
+  header.nav{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:1.1rem clamp(1.2rem,4vw,3rem);
+    background:rgba(8,8,10,.82); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--bordure);
+  }
+  .logo-nav{font-family:var(--serif); font-size:1.5rem; letter-spacing:.18em}
+  .logo-nav b{color:var(--or); font-weight:600}
+  .retour{font-size:.78rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris)}
+  .retour:hover{color:var(--or)}
+
+  /* --- Titre --- */
+  .intro{
+    text-align:center; padding:clamp(2.6rem,6vw,4.5rem) 1.2rem 1.5rem;
+    max-width:760px; margin:0 auto;
+  }
+  .intro h1{
+    font-family:var(--serif); font-weight:500;
+    font-size:clamp(2.4rem,7vw,4rem); line-height:1.05; margin:.7rem 0;
+  }
+  .intro h1 span{color:var(--or)}
+  .intro p{color:var(--gris); font-size:1.05rem; max-width:560px; margin:.4rem auto 0}
+
+  /* --- Disposition --- */
+  .atelier{
+    display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+    gap:1.6rem; align-items:start;
+    max-width:1200px; margin:0 auto; padding:1.5rem clamp(1.2rem,4vw,3rem) 4rem;
+  }
+  @media(max-width:900px){ .atelier{grid-template-columns:1fr} }
+
+  .panneau{
+    background:var(--carte); border:1px solid var(--bordure);
+    border-radius:14px; padding:clamp(1.3rem,3vw,2rem);
+  }
+  .panneau h2{
+    font-family:var(--serif); font-weight:500; font-size:1.5rem;
+    margin-bottom:1.3rem; padding-bottom:.9rem; border-bottom:1px solid var(--bordure);
+  }
+
+  label.champ{display:block; margin-bottom:1.15rem}
+  label.champ > span{
+    display:block; font-size:.7rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--or); margin-bottom:.5rem; font-weight:400;
+  }
+  input[type=text], textarea, select{
+    width:100%; background:var(--noir-2); color:var(--texte);
+    border:1px solid var(--bordure); border-radius:8px;
+    padding:.7rem .85rem; font-family:var(--sans); font-size:.95rem; font-weight:300;
+    transition:border-color .2s;
+  }
+  input[type=text]:focus, textarea:focus, select:focus{outline:none; border-color:var(--or)}
+  textarea{resize:vertical; min-height:88px}
+  select{appearance:none; cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c9a771' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right .9rem center; padding-right:2.2rem;}
+
+  .puces{display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.6rem}
+  .puces-titre{font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--gris); margin:.85rem 0 .15rem}
+  .picker{margin-top:.6rem}
+  .puce{
+    font-size:.78rem; letter-spacing:.04em; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:999px; padding:.32rem .8rem;
+    cursor:pointer; background:transparent; transition:.18s; font-family:var(--sans);
+  }
+  .puce:hover{color:var(--or-clair); border-color:var(--or)}
+
+  .rangee{display:grid; grid-template-columns:1fr 1fr; gap:1rem}
+  @media(max-width:480px){ .rangee{grid-template-columns:1fr} }
+
+  .bascule{display:flex; align-items:flex-start; gap:.65rem; margin-bottom:1.15rem; cursor:pointer;
+    background:var(--noir-2); border:1px solid var(--bordure); border-radius:8px; padding:.75rem .85rem}
+  .bascule input{width:auto; margin-top:.15rem; accent-color:var(--or); flex:none}
+  .bascule .txt{font-size:.9rem; color:var(--texte)}
+  .bascule .txt small{display:block; color:var(--gris); font-size:.78rem; margin-top:.15rem}
+
+  .bouton{
+    width:100%; margin-top:.4rem;
+    background:linear-gradient(135deg,var(--or),var(--or-clair));
+    color:#1a1408; border:none; border-radius:8px;
+    padding:.95rem; font-family:var(--sans); font-weight:500;
+    font-size:.82rem; letter-spacing:.2em; text-transform:uppercase;
+    cursor:pointer; transition:.2s;
+  }
+  .bouton:hover{filter:brightness(1.08)}
+  .bouton:disabled{opacity:.5; cursor:not-allowed; filter:none}
+  .bouton-sec{width:100%; margin-top:.6rem; background:transparent; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:8px; padding:.7rem;
+    font-family:var(--sans); font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+    cursor:pointer; transition:.2s}
+  .bouton-sec:hover{color:var(--or); border-color:var(--or)}
+
+  /* --- Clé API --- */
+  details.cle{margin-top:1.4rem; border-top:1px solid var(--bordure); padding-top:1rem}
+  details.cle summary{
+    cursor:pointer; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--gris); list-style:none;
+  }
+  details.cle summary::-webkit-details-marker{display:none}
+  details.cle summary:hover{color:var(--or)}
+  details.cle .aide{font-size:.82rem; color:var(--gris); margin:.7rem 0}
+  details.cle a{color:var(--or); border-bottom:1px solid var(--bordure)}
+  .etat-cle{font-size:.78rem; margin-top:.55rem}
+  .etat-cle.ok{color:#7fbf8f} .etat-cle.non{color:var(--gris)}
+
+  /* --- Sortie --- */
+  .sortie-tete{display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding-bottom:.9rem; margin-bottom:1.1rem; border-bottom:1px solid var(--bordure)}
+  .sortie-tete h2{border:none; padding:0; margin:0}
+  .actions{display:flex; gap:.5rem; flex-wrap:wrap; justify-content:flex-end}
+  .mini{
+    font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--gris);
+    border:1px solid var(--bordure); border-radius:6px; padding:.4rem .7rem;
+    background:transparent; cursor:pointer; transition:.18s; font-family:var(--sans);
+  }
+  .mini:hover:not(:disabled){color:var(--or); border-color:var(--or)}
+  .mini:disabled{opacity:.4; cursor:not-allowed}
+
+  .presets{display:flex; gap:.4rem; flex-wrap:wrap; align-items:center;
+    margin-bottom:1.3rem; padding-bottom:1.1rem; border-bottom:1px solid var(--bordure)}
+  .presets select{flex:1 1 130px; min-width:0}
+  .presets .mini{flex:none}
+
+  #paroles{
+    font-family:var(--serif); font-size:1.18rem; line-height:1.75;
+    white-space:pre-wrap; word-wrap:break-word; min-height:340px; color:var(--texte);
+  }
+  #paroles .vide{color:var(--gris); font-family:var(--sans); font-size:.95rem; font-style:italic}
+  #paroles .curseur{display:inline-block; width:2px; height:1.1em; background:var(--or);
+    vertical-align:text-bottom; animation:clign 1s steps(2) infinite}
+  #paroles .tag{color:var(--or); font-weight:500}
+  #paroles .tag.refrain{background:rgba(201,167,113,.16); border-radius:4px; padding:0 .32em}
+  @keyframes clign{0%{opacity:1}50%{opacity:0}}
+
+  .erreur{color:#e0918a; font-family:var(--sans); font-size:.9rem;
+    background:rgba(224,145,138,.08); border:1px solid rgba(224,145,138,.25);
+    border-radius:8px; padding:.8rem 1rem; margin-top:1rem; display:none}
+
+  .variante{border:1px solid var(--bordure); border-radius:10px; padding:1rem 1.1rem; margin-bottom:1.1rem}
+  .variante-tete{display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    margin-bottom:.7rem; padding-bottom:.55rem; border-bottom:1px solid var(--bordure)}
+  .variante-tete span{font-family:var(--serif); font-size:1.15rem; color:var(--or)}
+  .variante-corps{white-space:pre-wrap; word-wrap:break-word}
+
+  .rangee-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem}
+  @media(max-width:640px){ .rangee-3{grid-template-columns:1fr} }
+
+  #edit{width:100%; min-height:340px; display:none; background:var(--noir-2); color:var(--texte);
+    border:1px solid var(--bordure); border-radius:8px; padding:.9rem;
+    font-family:var(--serif); font-size:1.1rem; line-height:1.7; resize:vertical}
+  .cout{font-size:.75rem; color:var(--gris); margin-top:.9rem; letter-spacing:.03em}
+  .cout span{color:var(--or-clair)}
+
+  .hist{margin-top:1.5rem; border-top:1px solid var(--bordure); padding-top:1rem}
+  .hist summary{cursor:pointer; font-size:.72rem; letter-spacing:.18em; text-transform:uppercase; color:var(--gris); list-style:none}
+  .hist summary::-webkit-details-marker{display:none}
+  .hist summary:hover{color:var(--or)}
+  .hist-actions{margin:.8rem 0 .2rem}
+  .hist-liste{display:flex; flex-direction:column; gap:.4rem; margin-top:.5rem}
+  .hist-item{display:flex; gap:.35rem}
+  .hist-item button{background:transparent; border:1px solid var(--bordure); border-radius:6px;
+    color:var(--texte); font-family:var(--sans); cursor:pointer; transition:.15s}
+  .hist-charger{flex:1; min-width:0; text-align:left; padding:.5rem .6rem; font-size:.82rem;
+    color:var(--gris); overflow:hidden; white-space:nowrap; text-overflow:ellipsis}
+  .hist-charger:hover{color:var(--or); border-color:var(--or)}
+  .hist-date{color:var(--or); font-size:.68rem; margin-right:.5rem; letter-spacing:.04em}
+  .hist-fav, .hist-suppr{flex:none; width:2.2rem; font-size:.9rem}
+  .hist-fav:hover{color:var(--or); border-color:var(--or)}
+  .hist-suppr:hover{color:#e0918a; border-color:rgba(224,145,138,.4)}
+  .hist-vide{color:var(--gris); font-size:.85rem; font-style:italic}
+
+  footer{text-align:center; padding:2rem 1.2rem 3rem; color:var(--gris); font-size:.78rem;
+    letter-spacing:.06em; border-top:1px solid var(--bordure)}
+  footer b{color:var(--or); font-weight:400}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a href="index.html" class="logo-nav">RY<b>S</b>AO</a>
+  <a href="index.html" class="retour">← Retour à la Maison</a>
+</header>
+
+<section class="intro">
+  <span class="eyebrow">Atelier de Paroles — Intelligence Artificielle</span>
+  <h1>Écrire une <span>chanson</span></h1>
+  <p>Une IA qui compose des paroles dans n'importe quelle langue et dans n'importe quel style. Décrivez votre idée, elle écrit.</p>
+</section>
+
+<main class="atelier">
+
+  <!-- Colonne des réglages -->
+  <div class="panneau">
+    <h2>Votre chanson</h2>
+
+    <div class="presets">
+      <select id="presetSel"><option value="">— Mes presets enregistrés —</option></select>
+      <button class="mini" id="presetSave" type="button">Enregistrer</button>
+      <button class="mini" id="presetDel" type="button">Supprimer</button>
+    </div>
+
+    <label class="champ">
+      <span>Langue</span>
+      <input type="text" id="langue" placeholder="Ex : Français, ou « Français + English » pour mélanger…" value="Français">
+      <div class="puces" data-cible="langue" data-mode="ajout">
+        <button class="puce" type="button">Français</button>
+        <button class="puce" type="button">English</button>
+        <button class="puce" type="button">Español</button>
+        <button class="puce" type="button">Italiano</button>
+        <button class="puce" type="button">Português (BR)</button>
+        <button class="puce" type="button">Português (PT)</button>
+        <button class="puce" type="button">Deutsch</button>
+        <button class="puce" type="button">العربية</button>
+        <button class="puce" type="button">日本語</button>
+        <button class="puce" type="button">한국어</button>
+        <button class="puce" type="button">Créole</button>
+        <button class="puce" type="button">Créole antillais (kréyòl)</button>
+      </div>
+    </label>
+
+    <label class="champ">
+      <span>Style / Genre</span>
+      <input type="text" id="style" placeholder="Rap, pop, chanson française, jazz, opéra…" value="Chanson française">
+      <select class="picker" data-cible="style" data-mode="set">
+          <option value="">— Choisir un style —</option>
+          <option>Rap</option>
+          <option>Pop</option>
+          <option>Chanson française</option>
+          <option>Rock</option>
+          <option>R&B / Soul</option>
+          <option>Reggaeton</option>
+          <option>K-pop</option>
+          <option>Jazz</option>
+          <option>Folk</option>
+          <option>Metal</option>
+          <option>Slam / Poésie</option>
+          <option>Afrobeat</option>
+          <option>Shatta</option>
+          <option>Bouyon</option>
+          <option>Funk carioca</option>
+          <option>Baile funk</option>
+          <option>Funk dançante (150 BPM)</option>
+          <option>Funk mandelão</option>
+          <option>Trap</option>
+          <option>Drill</option>
+          <option>Boom bap</option>
+          <option>Cloud rap</option>
+          <option>Phonk</option>
+          <option>Afro trap</option>
+          <option>Amapiano</option>
+          <option>Dancehall</option>
+          <option>Ragga</option>
+          <option>Reggae</option>
+          <option>Zouk</option>
+          <option>Kompa</option>
+          <option>Kizomba</option>
+          <option>Raï</option>
+          <option>Salsa</option>
+          <option>Bachata</option>
+          <option>Cumbia</option>
+          <option>Electro / EDM</option>
+          <option>House</option>
+          <option>Techno</option>
+          <option>Disco</option>
+          <option>Gospel</option>
+          <option>Blues</option>
+          <option>Country</option>
+          <option>Grime</option>
+          <option>Lo-fi</option>
+          <option>Hyperpop</option>
+          <option>Sertanejo</option>
+          <option>Pagode</option>
+          <option>Samba</option>
+          <option>Bossa nova</option>
+        </select>
+    </label>
+
+    <label class="champ">
+      <span>Artistes de référence (style)</span>
+      <input type="text" id="artistes" placeholder="Ex : Ninho, Damso, Travis Scott, Aya Nakamura…">
+      <select class="picker" data-cible="artistes" data-mode="ajout">
+          <option value="">— Ajouter un artiste —</option>
+          <optgroup label="🇫🇷 France — rap">
+            <option>Ninho</option>
+            <option>Damso</option>
+            <option>SCH</option>
+            <option>PNL</option>
+            <option>Jul</option>
+            <option>Gazo</option>
+            <option>Tiakola</option>
+            <option>Werenoi</option>
+            <option>Aya Nakamura</option>
+            <option>Booba</option>
+            <option>Kaaris</option>
+            <option>Niska</option>
+            <option>Naps</option>
+            <option>Rohff</option>
+            <option>Lacrim</option>
+            <option>Maes</option>
+            <option>Freeze Corleone</option>
+            <option>Nekfeu</option>
+            <option>Orelsan</option>
+            <option>Vald</option>
+            <option>Laylow</option>
+            <option>Hamza</option>
+            <option>Dinos</option>
+            <option>Zola</option>
+            <option>Koba LaD</option>
+            <option>Ziak</option>
+            <option>Leto</option>
+            <option>Alpha Wann</option>
+            <option>Josman</option>
+            <option>Soolking</option>
+            <option>Gims</option>
+            <option>Bigflo &amp; Oli</option>
+            <option>Kalash</option>
+            <option>Shay</option>
+            <option>RK</option>
+            <option>Genezio</option>
+            <option>Keblack</option>
+            <option>Meryl</option>
+            <option>Gambi</option>
+            <option>SDM</option>
+            <option>Maureen</option>
+            <option>MHD</option>
+            <option>Dystinct</option>
+            <option>Soprano</option>
+            <option>PLK</option>
+          </optgroup>
+          <optgroup label="🎙️ France — chant / variété">
+            <option>Stromae</option>
+            <option>Angèle</option>
+            <option>Clara Luciani</option>
+            <option>Julien Doré</option>
+            <option>Vianney</option>
+            <option>Louane</option>
+            <option>-M- (Matthieu Chedid)</option>
+            <option>Zaz</option>
+            <option>Christine and the Queens</option>
+            <option>Juliette Armanet</option>
+            <option>Benjamin Biolay</option>
+            <option>Vitaa</option>
+            <option>Slimane</option>
+            <option>Kendji Girac</option>
+            <option>Amir</option>
+            <option>Hoshi</option>
+            <option>Pierre Garnier</option>
+            <option>Yseult</option>
+            <option>Eddy de Pretto</option>
+            <option>Barbara Pravi</option>
+            <option>Calogero</option>
+            <option>Pomme</option>
+            <option>Santa</option>
+            <option>Zaho</option>
+          </optgroup>
+          <optgroup label="🌍 International — rap">
+            <option>Drake</option>
+            <option>Kendrick Lamar</option>
+            <option>Travis Scott</option>
+            <option>The Weeknd</option>
+            <option>Central Cee</option>
+            <option>Bad Bunny</option>
+            <option>Burna Boy</option>
+            <option>Eminem</option>
+            <option>50 Cent</option>
+            <option>Jay-Z</option>
+            <option>Nas</option>
+            <option>Snoop Dogg</option>
+            <option>2Pac</option>
+            <option>The Notorious B.I.G.</option>
+            <option>Lil Wayne</option>
+            <option>J. Cole</option>
+            <option>Future</option>
+            <option>21 Savage</option>
+            <option>Nicki Minaj</option>
+            <option>Post Malone</option>
+            <option>Tyler, the Creator</option>
+            <option>A$AP Rocky</option>
+            <option>Playboi Carti</option>
+            <option>Lil Baby</option>
+            <option>Dave</option>
+            <option>Stormzy</option>
+            <option>Skepta</option>
+          </optgroup>
+          <optgroup label="🌍 International — chant / pop">
+            <option>Michael Jackson</option>
+            <option>Beyoncé</option>
+            <option>Rihanna</option>
+            <option>Adele</option>
+            <option>Ed Sheeran</option>
+            <option>Bruno Mars</option>
+            <option>Justin Bieber</option>
+            <option>Ariana Grande</option>
+            <option>Dua Lipa</option>
+            <option>Billie Eilish</option>
+            <option>Taylor Swift</option>
+            <option>The Weeknd</option>
+            <option>Sia</option>
+            <option>Sam Smith</option>
+            <option>Harry Styles</option>
+            <option>Doja Cat</option>
+            <option>SZA</option>
+            <option>Lana Del Rey</option>
+            <option>Lady Gaga</option>
+            <option>Whitney Houston</option>
+            <option>Mariah Carey</option>
+            <option>Amy Winehouse</option>
+            <option>Frank Ocean</option>
+            <option>Chris Brown</option>
+            <option>Usher</option>
+            <option>Alicia Keys</option>
+            <option>John Legend</option>
+            <option>Coldplay</option>
+            <option>Bob Marley</option>
+            <option>Shakira</option>
+            <option>Rosalía</option>
+            <option>Karol G</option>
+            <option>Wizkid</option>
+            <option>Davido</option>
+            <option>Rema</option>
+            <option>Céline Dion</option>
+          </optgroup>
+          <optgroup label="🌍 Latino / Reggaeton">
+            <option>Daddy Yankee</option>
+            <option>Don Omar</option>
+            <option>Wisin &amp; Yandel</option>
+            <option>Tego Calderón</option>
+            <option>Ozuna</option>
+            <option>Anuel AA</option>
+            <option>Farruko</option>
+            <option>Nicky Jam</option>
+            <option>J Balvin</option>
+            <option>Maluma</option>
+            <option>Rauw Alejandro</option>
+            <option>Feid</option>
+            <option>Myke Towers</option>
+            <option>Arcángel</option>
+            <option>Sech</option>
+            <option>Jhayco (Jhay Cortez)</option>
+            <option>Quevedo</option>
+            <option>Bizarrap</option>
+            <option>Peso Pluma</option>
+            <option>Natti Natasha</option>
+            <option>Becky G</option>
+            <option>Rels B</option>
+            <option>C. Tangana</option>
+            <option>Enrique Iglesias</option>
+            <option>Ricky Martin</option>
+            <option>Bad Bunny</option>
+            <option>Karol G</option>
+            <option>De La Ghetto</option>
+          </optgroup>
+          <optgroup label="🇧🇷 Brésil — funk / favela">
+            <option>MC Poze do Rodo</option>
+            <option>MC Kevin o Chris</option>
+            <option>MC Ryan SP</option>
+            <option>MC Hariel</option>
+            <option>MC IG</option>
+            <option>MC Cabelinho</option>
+            <option>MC Livinho</option>
+            <option>MC Don Juan</option>
+            <option>MC Kevinho</option>
+            <option>MC WM</option>
+            <option>MC Lan</option>
+            <option>MC GW</option>
+            <option>MC Menor da VG</option>
+            <option>MC Pedrinho</option>
+            <option>MC Th</option>
+            <option>MC Paiva</option>
+            <option>MC Daniel</option>
+            <option>MC Rebecca</option>
+            <option>MC Marcinho</option>
+            <option>L7NNON</option>
+            <option>Oruam</option>
+            <option>Matuê</option>
+            <option>Veigh</option>
+            <option>Anitta</option>
+            <option>Ludmilla</option>
+            <option>Zaac</option>
+            <option>Pedro Sampaio</option>
+            <option>Dennis DJ</option>
+            <option>Nego do Borel</option>
+            <option>Tati Quebra Barraco</option>
+            <option>Valesca Popozuda</option>
+            <option>Bonde do Tigrão</option>
+            <option>DJ Rennan da Penha</option>
+            <option>Furacão 2000</option>
+          </optgroup>
+        </select>
+    </label>
+
+    <label class="champ">
+      <span>Thème / Sujet</span>
+      <textarea id="theme" placeholder="De quoi parle la chanson ? Une histoire, une émotion, une personne, un lieu…">Le temps qui passe et la valeur d'un instant partagé.</textarea>
+    </label>
+
+    <div class="rangee">
+      <label class="champ">
+        <span>Ambiance</span>
+        <select id="ambiance">
+          <option>Libre (au choix de l'IA)</option>
+          <option>Mélancolique</option>
+          <option>Joyeuse</option>
+          <option>Romantique</option>
+          <option>Énergique</option>
+          <option>Nostalgique</option>
+          <option>Sombre</option>
+          <option>Épique</option>
+          <option>Sensuelle</option>
+          <option>Révoltée</option>
+          <option>Sereine</option>
+          <option>Festive</option>
+          <option>Dansante / club</option>
+          <option>Euphorique</option>
+          <option>Agressive</option>
+          <option>Menaçante</option>
+          <option>Triste</option>
+          <option>Motivante / inspirante</option>
+          <option>Planante / chill</option>
+          <option>Nocturne</option>
+          <option>Mystérieuse</option>
+          <option>Provocante</option>
+          <option>Douce</option>
+          <option>Estivale / solaire</option>
+          <option>Introspective</option>
+          <option>Rue / gangsta</option>
+          <option>Amoureuse</option>
+          <option>Fêtarde</option>
+          <option>Vibe été</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Structure</span>
+        <select id="structure">
+          <option>Couplet / Refrain / Couplet / Refrain / Pont / Refrain</option>
+          <option>Couplet / Refrain (x2)</option>
+          <option>Couplet / Pré-refrain / Refrain</option>
+          <option>16 mesures de rap + refrain</option>
+          <option>Intro / Couplet / Refrain / Couplet / Refrain / Pont / Refrain / Outro</option>
+          <option>Refrain / Couplet / Refrain / Couplet / Refrain</option>
+          <option>Couplet / Pré-refrain / Refrain / Couplet / Pré-refrain / Refrain / Pont / Refrain</option>
+          <option>Couplet / Refrain / Couplet / Refrain / Refrain (double refrain final)</option>
+          <option>Hook / Couplet / Hook / Couplet / Pont / Hook</option>
+          <option>8 mesures + refrain</option>
+          <option>24 mesures de rap + refrain</option>
+          <option>Couplet unique (freestyle)</option>
+          <option>Vers libres (sans refrain)</option>
+          <option>Structure libre (au choix de l'IA)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="rangee">
+      <label class="champ">
+        <span>Argot / langage de quartier</span>
+        <select id="argot">
+          <option>Très marqué (rue / quartier)</option>
+          <option>Marqué</option>
+          <option>Modéré</option>
+          <option>Léger</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Région / accent (optionnel)</span>
+        <input type="text" id="region" placeholder="Ex : banlieue parisienne, Marseille, UK drill, Atlanta…">
+        <select class="picker" data-cible="region" data-mode="set">
+          <option value="">— Choisir un lieu —</option>
+          <option>Rio de Janeiro</option>
+          <option>São Paulo</option>
+          <option>Favela (Brésil)</option>
+          <option>Banlieue parisienne</option>
+          <option>Marseille</option>
+          <option>Lyon</option>
+          <option>Bruxelles</option>
+          <option>Martinique</option>
+          <option>Guadeloupe</option>
+          <option>Abidjan</option>
+          <option>Kinshasa</option>
+          <option>London (UK drill)</option>
+          <option>Atlanta</option>
+          <option>Los Angeles</option>
+          <option>New York</option>
+          <option>Lagos</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="rangee-3">
+      <label class="champ">
+        <span>Format de sortie</span>
+        <select id="format">
+          <option>Paroles seules</option>
+          <option>Prompt Suno (style + paroles)</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Version de Suno</span>
+        <select id="versionSuno">
+          <option>Suno v5.5</option>
+          <option>Suno v5</option>
+          <option>Suno v4.5</option>
+          <option>Suno v4</option>
+          <option>Suno v3.5</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Variantes</span>
+        <select id="variantes">
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="rangee-3">
+      <label class="champ">
+        <span>Couplets (nombre)</span>
+        <select id="longueur">
+          <option>2 couplets</option>
+          <option>1 couplet</option>
+          <option>3 couplets</option>
+          <option>4 couplets</option>
+          <option>5 couplets</option>
+          <option>6 couplets</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Refrain (lignes)</span>
+        <select id="refrain">
+          <option>4 lignes</option>
+          <option>2 lignes</option>
+          <option>6 lignes</option>
+          <option>8 lignes</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Niveau de basse</span>
+        <select id="basse">
+          <option>Standard</option>
+          <option>Basses légères</option>
+          <option>Grosses basses (808)</option>
+          <option>Basses saturées / distordues</option>
+          <option>808 lourdes / sliding</option>
+          <option>Sub / basses profondes</option>
+          <option>Boom bap (basses sèches)</option>
+          <option>Basses funk (groovy / slap)</option>
+          <option>Reese bass</option>
+          <option>Basses rondes / warm</option>
+          <option>Wobble / dubstep</option>
+          <option>Basses minimales</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="rangee-3">
+      <label class="champ">
+        <span>Voix (interprète)</span>
+        <select id="voix">
+          <option>Au choix de l'IA</option>
+          <option>Homme</option>
+          <option>Femme</option>
+          <option>Duo homme + femme</option>
+          <option>Groupe / chœur</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Sonorité de la voix</span>
+        <select id="timbre">
+          <option>Au choix</option>
+          <option>Grave / rauque</option>
+          <option>Aiguë</option>
+          <option>Douce / suave</option>
+          <option>Puissante / criée</option>
+          <option>Autotune</option>
+          <option>Chuchotée</option>
+          <option>Mélodieuse</option>
+          <option>Falsetto / voix de tête</option>
+          <option>Soul / gospel</option>
+          <option>Veloutée / crooner</option>
+          <option>Aérienne / éthérée</option>
+          <option>Vocodée / robotique</option>
+          <option>Posée / laid-back</option>
+          <option>Agressive / hargneuse</option>
+          <option>Reggae / dancehall (chanté-parlé)</option>
+          <option>Débit rapide (fast flow)</option>
+          <option>Baby voice (reggaeton)</option>
+          <option>Lyrique / opéra</option>
+        </select>
+      </label>
+      <label class="champ">
+        <span>Tempo (BPM)</span>
+        <select id="bpm">
+          <option>Au choix</option>
+          <option>70 (lent / ballade)</option>
+          <option>80</option>
+          <option>90 (boom bap)</option>
+          <option>100</option>
+          <option>110</option>
+          <option>120 (pop / house)</option>
+          <option>130 (trap / reggaeton)</option>
+          <option>140 (drill / UK)</option>
+          <option>150 (funk dançante)</option>
+          <option>160</option>
+          <option>170 (DnB)</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="champ">
+      <span>Niveau de vulgarité</span>
+      <select id="vulgarite">
+        <option>Modérée (vulgaire mais pas trop)</option>
+        <option>Aucune (tout public)</option>
+        <option>Légère</option>
+        <option>Marquée (bien crue)</option>
+        <option>Élevée (très cru)</option>
+        <option>Sans limite</option>
+      </select>
+    </label>
+
+    <label class="bascule">
+      <input type="checkbox" id="titre" checked>
+      <span class="txt">Proposer un titre de chanson
+        <small>Ajoute un titre accrocheur (en tête des paroles, ou bloc 🏷️ Titre en mode Suno).</small>
+      </span>
+    </label>
+
+    <label class="champ">
+      <span>Consignes supplémentaires (optionnel)</span>
+      <textarea id="extra" placeholder="Toute instruction précise : un mot/nom à inclure, un point de vue (je/il), une punchline, un schéma de rimes, une histoire à raconter…"></textarea>
+    </label>
+
+    <button class="bouton" id="generer">Composer les paroles</button>
+    <button class="bouton-sec" id="reinit" type="button">Réinitialiser les choix</button>
+
+    <details class="cle">
+      <summary>Accès privé &nbsp;·&nbsp; optionnel</summary>
+      <p class="aide">
+        Outil à usage personnel. Si vous avez protégé votre serveur avec un code
+        (variable <strong>ACCESS_CODE</strong>), saisissez-le ici : il est mémorisé
+        <strong>uniquement dans ce navigateur</strong>. En usage local, laissez vide.
+      </p>
+      <input type="text" id="acces" placeholder="Code d'accès (laisser vide en local)" autocomplete="off" spellcheck="false">
+    </details>
+
+    <details class="cle">
+      <summary>Mode direct (sans serveur) &nbsp;·&nbsp; optionnel</summary>
+      <p class="aide">
+        Par défaut, l'atelier passe par le <strong>serveur</strong> du site : la clé API reste
+        côté serveur et n'est jamais exposée. Vous n'avez rien à renseigner ici.<br><br>
+        Si vous ouvrez ce fichier <strong>seul, sans serveur</strong> (double-clic), collez une clé
+        API <strong>Claude&nbsp;(Opus&nbsp;4.8)</strong> ci-dessous pour activer le mode direct : elle est
+        alors enregistrée <strong>uniquement dans ce navigateur</strong> (localStorage) et envoyée
+        directement à l'API d'Anthropic.
+        Obtenir une clé : <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+      </p>
+      <input type="text" id="cle" placeholder="sk-ant-… (laisser vide en mode serveur)" autocomplete="off" spellcheck="false">
+      <div class="etat-cle non" id="etatCle">Mode serveur — aucune clé nécessaire.</div>
+    </details>
+  </div>
+
+  <!-- Colonne de sortie -->
+  <div class="panneau">
+    <div class="sortie-tete">
+      <h2>Les paroles</h2>
+      <div class="actions">
+        <button class="mini" id="copierTitre" style="display:none">Copier le Titre</button>
+        <button class="mini" id="copier" disabled>Copier</button>
+        <button class="mini" id="copierStyle" style="display:none">Copier le Style</button>
+        <button class="mini" id="copierParoles" style="display:none">Copier les Paroles</button>
+        <button class="mini" id="regenerer" disabled>Régénérer</button>
+        <button class="mini" id="editer" disabled>Éditer</button>
+        <button class="mini" id="vider" disabled>Effacer</button>
+      </div>
+    </div>
+    <div id="paroles"><span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span></div>
+    <textarea id="edit"></textarea>
+    <div class="cout" id="cout"></div>
+    <div class="cout" id="creditLigne"></div>
+    <div class="erreur" id="erreur"></div>
+
+    <details class="hist">
+      <summary>Crédit (estimation locale)</summary>
+      <p style="font-size:.82rem; color:var(--gris); margin:.6rem 0">
+        Estimation calculée uniquement à partir des chansons générées dans cette app, sur cet appareil
+        (elle ne connaît pas ton solde réel chez Anthropic). Indique le crédit que tu as chargé pour voir ce qu'il te reste.
+      </p>
+      <label class="champ" style="max-width:220px">
+        <span>Crédit chargé ($)</span>
+        <input type="number" id="creditDepart" placeholder="ex : 20" min="0" step="1">
+      </label>
+      <div class="hist-actions">
+        <button class="mini" id="resetDepenses">Remettre la dépense à zéro</button>
+      </div>
+    </details>
+
+    <details class="hist">
+      <summary id="sommaireHist">Historique</summary>
+      <div class="hist-actions">
+        <button class="mini" id="viderHist">Effacer l'historique (garde les favoris)</button>
+      </div>
+      <div class="hist-liste" id="listeHist"></div>
+    </details>
+  </div>
+
+</main>
+
+<footer>
+  <b>RYSAO</b> — Atelier de Paroles &nbsp;·&nbsp; Le temps a la même valeur pour tous.
+</footer>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const CLE_STOCK = "rysao_cle_api";
+
+/* --- Puces de suggestion --- */
+document.querySelectorAll(".puces").forEach((groupe) => {
+  const cible = $("#" + groupe.dataset.cible);
+  groupe.querySelectorAll(".puce").forEach((b) => {
+    b.addEventListener("click", () => {
+      const val = b.textContent.trim();
+      if (groupe.dataset.mode === "ajout") {
+        const actuels = cible.value.split(",").map((s) => s.trim()).filter(Boolean);
+        if (!actuels.includes(val)) actuels.push(val);
+        cible.value = actuels.join(", ");
+      } else {
+        cible.value = val;
+      }
+      sauverReglages();
+    });
+  });
+});
+
+// Listes déroulantes (Style / Lieu / Artistes) : au choix, on remplit le champ.
+document.querySelectorAll("select.picker").forEach((sel) => {
+  const cible = $("#" + sel.dataset.cible);
+  sel.addEventListener("change", () => {
+    const val = sel.value;
+    if (!val) return;
+    if (sel.dataset.mode === "ajout") {
+      const actuels = cible.value.split(",").map((s) => s.trim()).filter(Boolean);
+      if (!actuels.includes(val)) actuels.push(val);
+      cible.value = actuels.join(", ");
+    } else {
+      cible.value = val;
+    }
+    sel.selectedIndex = 0;
+    sauverReglages();
+  });
+});
+
+/* --- Gestion de la clé API --- */
+const champCle = $("#cle");
+const etatCle = $("#etatCle");
+function majEtatCle() {
+  const k = (champCle.value || "").trim();
+  if (k.length > 10) { etatCle.textContent = "Mode direct actif — clé enregistrée dans ce navigateur."; etatCle.className = "etat-cle ok"; }
+  else { etatCle.textContent = "Mode serveur — aucune clé nécessaire."; etatCle.className = "etat-cle non"; }
+}
+champCle.value = localStorage.getItem(CLE_STOCK) || "";
+majEtatCle();
+champCle.addEventListener("input", () => {
+  localStorage.setItem(CLE_STOCK, champCle.value.trim());
+  majEtatCle();
+});
+
+/* --- Code d'accès privé (optionnel) --- */
+const ACCES_STOCK = "rysao_acces";
+const champAcces = $("#acces");
+champAcces.value = localStorage.getItem(ACCES_STOCK) || "";
+champAcces.addEventListener("input", () => {
+  localStorage.setItem(ACCES_STOCK, champAcces.value.trim());
+});
+
+/* --- Construction de la requête --- */
+const REGISTRE_MAP = {
+  "Aucune (tout public)": "tout public — aucune vulgarité ni gros mot, aucun contenu sexuel ou choquant",
+  "Légère": "familier et léger — quelques gros mots doux tout au plus (ex. « putain », « merde »), rien de vulgaire ni de sexuel",
+  "Modérée (vulgaire mais pas trop)": "vulgaire mais MESURÉ — de l'argot cru et des gros mots pour l'authenticité, sans en abuser ni tomber dans la provocation gratuite ; en moyenne 1 à 2 gros mots par couplet",
+  "Marquée (bien crue)": "franchement crue — argot de rue et gros mots présents dans la plupart des passages, sans mots masqués, mais le propos reste au service du texte (pas de vulgarité gratuite à chaque ligne)",
+  "Élevée (très cru)": "très cru et explicite — argot, gros mots et thèmes adultes pleinement assumés selon le genre, sans aucun mot masqué (pas d'astérisques ni de bips)",
+  "Sans limite": "explicite au maximum, sans aucune censure ni retenue — argot et gros mots à volonté selon le style, sans jamais masquer un mot",
+};
+
+function construirePrompt() {
+  const langue = $("#langue").value.trim() || "Français";
+  const style = $("#style").value.trim() || "libre";
+  const artistes = $("#artistes").value.trim();
+  const theme = $("#theme").value.trim() || "au choix de l'auteur";
+  const ambiance = $("#ambiance").value;
+  const structure = $("#structure").value;
+  const argot = $("#argot").value;
+  const region = $("#region").value.trim();
+  const vulgarite = $("#vulgarite").value;
+  const voix = $("#voix").value;
+  const timbre = $("#timbre").value;
+  const bpm = $("#bpm").value;
+  const format = $("#format").value;
+  const versionSuno = $("#versionSuno").value;
+  const modeSuno = format.startsWith("Prompt Suno");
+  const longueur = $("#longueur").value;
+  const refrain = $("#refrain").value;
+  const basse = $("#basse").value;
+  const titre = $("#titre").checked;
+  const extra = $("#extra").value.trim();
+  const multiLangue = langue.split(/[,+/]/).map((s) => s.trim()).filter(Boolean).length > 1;
+
+  let p = (modeSuno
+      ? `Crée un prompt de chanson prêt à l'emploi pour Suno (${versionSuno}).\n\n`
+      : `Écris les paroles d'une chanson originale.\n\n`) +
+    `• Langue : ${langue}\n` +
+    `• Style / genre musical : ${style}\n`;
+  if (artistes) p += `• Artistes de référence (t'inspirer de leur flow, énergie, imagerie et argot — SANS copier ni reprendre leurs paroles existantes) : ${artistes}\n`;
+  p += `• Thème : ${theme}\n` +
+    `• Ambiance : ${ambiance}\n` +
+    `• Structure souhaitée : ${structure}\n` +
+    `• Nombre de couplets : ${longueur}\n` +
+    `• Longueur du refrain : ${refrain} (respecte ce nombre de lignes pour chaque refrain)\n` +
+    `• Niveau de basse / low-end : ${basse}\n` +
+    `• Tempo (BPM) : ${bpm}\n` +
+    `• Voix (interprète) : ${voix}\n` +
+    `• Sonorité / timbre de la voix : ${timbre}\n` +
+    `• Niveau de vulgarité : ${REGISTRE_MAP[vulgarite] || vulgarite}\n` +
+    `• Argot / langage de quartier : ${argot}. Intègre le langage des jeunes et de la rue PROPRE À LA LANGUE choisie (${langue}) : ` +
+    `son argot courant, ses expressions actuelles, son verlan ou slang régional, le vocabulaire de quartier — ` +
+    `de façon naturelle et crédible, jamais caricaturale. Emploie l'argot NATIF de cette langue, jamais une transposition de l'argot français.\n`;
+  if (multiLangue) p += `• Chanson multilingue : mélange les langues (${langue}) de façon naturelle — alternance de couplets ou de lignes, code-switching — comme les artistes multilingues.\n`;
+  if (region) p += `• Région / accent à refléter dans le vocabulaire et les expressions : ${region}\n`;
+  if (extra) p += `• Consignes supplémentaires : ${extra}\n`;
+
+  p += `\nSOIGNE PARTICULIÈREMENT :\n`;
+  if (titre) {
+    p += `- LE TITRE : original, court et percutant, qui capte l'essence de la chanson et donne envie de l'écouter. ` +
+      `Évite les titres plats ou génériques (ne te contente pas de répéter le thème) ; cherche une image, un mot fort ou une expression du refrain.\n`;
+  }
+  p += `- LE REFRAIN : c'est le sommet de la chanson, un vrai « hook » qui doit rester en tête. ` +
+    `Construis-le autour d'une phrase-clé forte et facile à chanter, qui revient à l'identique à chaque refrain ; ` +
+    `mise sur des répétitions efficaces, un rythme accrocheur et une mélodie implicite. C'est la partie qu'on doit retenir dès la première écoute.\n`;
+
+  if (modeSuno) {
+    p += `\nProduis un prompt prêt à coller dans Suno (${versionSuno}), en blocs clairement séparés et étiquetés :\n\n`;
+    if (titre) p += `🏷️ TITRE — un titre court et accrocheur pour la chanson, sur une seule ligne.\n\n`;
+    p += `🎚️ STYLE — une description à coller dans le champ « Style » de Suno : genres, ambiance, instrumentation, ` +
+      `type de voix, tempo (BPM approximatif) et éléments de production. Concise, efficace, et adaptée aux ` +
+      `conventions et à la longueur acceptée par la version ${versionSuno}.\n\n` +
+      `🎤 PAROLES — les paroles à coller dans le champ « Lyrics », structurées avec les balises de section ` +
+      `standard de Suno, en anglais et entre crochets ([Intro], [Verse], [Pre-Chorus], [Chorus], [Bridge], ` +
+      `[Outro], [Hook]) ; ajoute au besoin des balises de production ou de voix entre crochets ` +
+      `(ex. [male vocal], [ad-libs], [beat drop]). Le TEXTE des paroles reste dans la ou les langues demandées ` +
+      `(${langue}) ; seules les balises sont en anglais.\n\n` +
+      `Adapte le style et les balises aux spécificités de la version ${versionSuno} de Suno. ` +
+      `Capte le flow et le vocabulaire du style et des artistes cités, en paroles 100% originales. ` +
+      `N'édulcore rien, n'ajoute aucune morale ni avertissement, et ne mets aucun texte en dehors de ces blocs.`;
+  } else {
+    if (titre) p += `\nCommence par une ligne « Titre : » proposant un titre accrocheur, puis passe aux paroles.`;
+    p += `\nÉcris entièrement dans la ou les langues demandées (${langue}). ` +
+      `Indique les sections (Couplet, Refrain, Pont…) dans la langue principale. ` +
+      `Capte le flow, le rythme, les images et le vocabulaire propres au style et aux artistes cités, ` +
+      `mais produis des paroles 100% originales. ` +
+      `N'édulcore rien et n'ajoute aucune morale ni avertissement. ` +
+      `Ne donne que ${titre ? "le titre, " : ""}les paroles et leurs intitulés de section — pas de commentaire, d'explication ni de note de fin.`;
+  }
+
+  const nbVar = parseInt($("#variantes").value, 10) || 1;
+  if (nbVar > 1) {
+    p += `\n\nIMPORTANT — VARIANTES : propose ${nbVar} variantes DISTINCTES de cette chanson, en respectant toutes les consignes ci-dessus. ` +
+      `Elles doivent être VRAIMENT différentes les unes des autres — angle, images, structure et phrase-clé du refrain, flow et punchlines — surtout PAS de simples reformulations d'une même version. ` +
+      `Sépare chaque variante par une ligne seule EXACTEMENT de la forme « === VARIANTE 1 === », puis « === VARIANTE 2 === », etc., et ne mets rien d'autre entre les variantes.`;
+    if (modeSuno) p += ` Chaque variante contient ses propres blocs 🏷️ TITRE (si demandé), 🎚️ STYLE et 🎤 PAROLES.`;
+  }
+  return p;
+}
+
+const SYSTEME =
+  "Tu es un parolier virtuose, capable d'écrire des chansons dans absolument n'importe quelle langue " +
+  "(y compris les langues régionales, créoles et dialectes) et dans n'importe quel style ou genre musical. " +
+  "Tu maîtrises la prosodie, les schémas de rimes, le flow et les codes propres à chaque genre. " +
+  "Tu excelles particulièrement à écrire des REFRAINS accrocheurs — des « hooks » mémorables qui restent " +
+  "en tête dès la première écoute — et des TITRES percutants et originaux. " +
+  "Tu écris des paroles authentiques et tu adaptes le NIVEAU DE VULGARITÉ exactement à la demande " +
+  "(de tout public à très cru) : quand un registre explicite est demandé, tu emploies un langage cru, de l'argot, " +
+  "des gros mots et des thèmes adultes sans les masquer ; quand un niveau modéré est demandé, tu doses et n'en " +
+  "fais pas trop ; quand c'est tout public, tu restes propre. Tu n'ajoutes jamais de morale ni d'avertissement. " +
+  "Dans chaque langue, tu écris avec le langage " +
+  "authentique des jeunes et des quartiers PROPRE À CETTE LANGUE — son argot courant, son verlan ou slang " +
+  "régional, ses expressions de rue actuelles — de manière naturelle et crédible plutôt que caricaturale, " +
+  "et jamais en transposant l'argot d'une autre langue. Lorsqu'on te cite des artistes en référence, " +
+  "tu captes leur flow, leur énergie, leurs images et leur vocabulaire tout en écrivant des paroles " +
+  "entièrement originales — jamais de reprise de leurs textes existants. Tu sais aussi produire des prompts " +
+  "prêts à l'emploi pour Suno (un bloc Style + des paroles balisées avec les tags de section), adaptés à la " +
+  "version de Suno demandée. Tu réponds toujours dans la langue " +
+  "demandée par l'utilisateur, sans préambule ni conclusion en dehors des paroles.";
+
+/* --- Appel de l'API Claude (streaming SSE) --- */
+const boutonGen = $("#generer");
+const sortie = $("#paroles");
+const boiteErreur = $("#erreur");
+const boutonCopier = $("#copier");
+const boutonCopierTitre = $("#copierTitre");
+const boutonCopierStyle = $("#copierStyle");
+const boutonCopierParoles = $("#copierParoles");
+const boutonRegenerer = $("#regenerer");
+const boutonEditer = $("#editer");
+const boutonVider = $("#vider");
+const champEdit = $("#edit");
+const elemCout = $("#cout");
+let enCours = false;
+let enEdition = false;
+let dernierTexte = "", dernierTitre = "", dernierStyle = "", dernierParoles = "";
+let usageIn = 0, usageOut = 0;
+
+function resetActions() {
+  boutonCopier.style.display = "";
+  boutonCopier.disabled = true;
+  boutonCopierTitre.style.display = "none";
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  boutonEditer.disabled = true;
+  boutonRegenerer.disabled = true;
+  dernierTitre = ""; dernierStyle = ""; dernierParoles = "";
+}
+
+// Affiche les bons boutons de copie selon la présence d'un prompt Suno.
+function majBoutons(suno) {
+  boutonCopier.style.display = "none";
+  boutonCopierTitre.style.display = "none";
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  if (suno) {
+    if (suno.titre) boutonCopierTitre.style.display = "";
+    boutonCopierStyle.style.display = "";
+    boutonCopierParoles.style.display = "";
+  } else {
+    boutonCopier.style.display = "";
+    boutonCopier.disabled = false;
+  }
+}
+
+// Rend le texte (sections/refrains mis en valeur) et prépare les copies.
+function appliquerSortie(texte) {
+  sortie.innerHTML = baliserSections(texte);
+  const suno = decouperSuno(texte);
+  dernierTitre = suno && suno.titre ? suno.titre : "";
+  dernierStyle = suno ? suno.style : "";
+  dernierParoles = suno ? suno.paroles : "";
+  majBoutons(suno);
+  boutonEditer.disabled = false;
+  boutonRegenerer.disabled = false;
+}
+
+// Découpe une sortie multi-variantes sur les lignes « === VARIANTE N === ».
+let variantesTextes = [];
+function decouperVariantes(texte) {
+  return texte.split(/^[=\-—\s]*VARIANTE\s*\d+[=\-—\s]*$/im).map((s) => s.trim()).filter(Boolean);
+}
+
+// Affiche plusieurs variantes en cartes séparées, chacune avec son bouton Copier.
+function appliquerVariantes(texte) {
+  variantesTextes = decouperVariantes(texte);
+  if (variantesTextes.length < 2) { appliquerSortie(texte); return; }
+  sortie.innerHTML = variantesTextes.map((p, i) =>
+    '<div class="variante"><div class="variante-tete"><span>Variante ' + (i + 1) + '</span>' +
+    '<button class="mini copie-var" data-i="' + i + '">Copier</button></div>' +
+    '<div class="variante-corps">' + baliserSections(p) + '</div></div>'
+  ).join("");
+  boutonCopier.style.display = "none";
+  boutonCopierTitre.style.display = "none";
+  boutonCopierStyle.style.display = "none";
+  boutonCopierParoles.style.display = "none";
+  boutonEditer.disabled = false;
+  boutonRegenerer.disabled = false;
+}
+
+// Choisit l'affichage selon la présence de variantes.
+function afficher(texte) {
+  if (/^[=\-—\s]*VARIANTE\s*\d+/im.test(texte) && decouperVariantes(texte).length >= 2) appliquerVariantes(texte);
+  else appliquerSortie(texte);
+}
+
+// Copie d'une variante (délégation sur la zone de sortie).
+sortie.addEventListener("click", (ev) => {
+  const b = ev.target.closest(".copie-var");
+  if (!b) return;
+  copier(b, variantesTextes[parseInt(b.dataset.i, 10)] || "", "Copier");
+});
+
+function afficherCout() {
+  if (!usageIn && !usageOut) { elemCout.textContent = ""; return; }
+  const usd = usageIn * 5 / 1e6 + usageOut * 25 / 1e6;
+  const eur = usd * 0.92;
+  elemCout.innerHTML = "Coût de cette génération : <span>≈ " + usd.toFixed(3) + " $ (~" +
+    eur.toFixed(3) + " €)</span> · " + (usageIn + usageOut) + " tokens";
+  if (usageOut) {
+    depenseCumul += usd;
+    try { localStorage.setItem("rysao_depense", String(depenseCumul)); } catch (e) {}
+    majCredit();
+  }
+}
+
+/* --- Crédit estimé (local, sur cet appareil) --- */
+let depenseCumul = parseFloat(localStorage.getItem("rysao_depense") || "0") || 0;
+function majCredit() {
+  const elem = document.getElementById("creditLigne");
+  if (!elem) return;
+  const brut = (document.getElementById("creditDepart").value || "").replace(",", ".");
+  const depart = parseFloat(brut);
+  const spent = depenseCumul;
+  if (!isNaN(depart) && depart > 0) {
+    const reste = Math.max(0, depart - spent);
+    elem.innerHTML = "Crédit estimé restant : <span>≈ " + reste.toFixed(2) + " $</span> " +
+      "(sur " + depart.toFixed(2) + " $ · dépensé ≈ " + spent.toFixed(2) + " $ sur cet appareil)";
+  } else {
+    elem.innerHTML = spent > 0 ? ("Dépensé sur cet appareil : <span>≈ " + spent.toFixed(2) + " $</span>") : "";
+  }
+}
+
+// Mots de section reconnus (multilingue), pour les repères et la mise en valeur.
+// MOTS_REFRAIN = intitulés de refrain (surlignés) ; MOTS_AUTRES = autres sections.
+const MOTS_REFRAIN =
+  "refrain|chorus|hook|estribillo|coro|refr[ãa]o|ritornello|refrein|nakarat|" +
+  "pripev|припев|refren|refr[äa]ng|ρεφρέν|επωδός|لازمة|كورس|サビ|コーラス|후렴|코러스";
+const MOTS_AUTRES =
+  "intro|outro|couplet|verse|vers|verso|estrofa|estrofe|strofa|strophe|zwrotka|strof[ăa]|" +
+  "στροφή|куплет|kuplet|مقطع|バース|벌스|k[ıi]ta|pont|puente|ponte|br[üu]cke|brug|k[öo]pr[üu]|" +
+  "ブリッジ|브릿지|bridge|solo|drop|beat[- ]?drop|instrumental|pré[- ]?refrain|pré[- ]?chorus|" +
+  "pre[- ]?chorus|pre[- ]?estribillo|pré[- ]?refr[ãa]o|pre[- ]?refr[ãa]o|introdu[çc][ãa]o|ad[- ]?libs?";
+const MOTS_SECTION = MOTS_REFRAIN + "|" + MOTS_AUTRES;
+const REGEX_REFRAIN = new RegExp(MOTS_REFRAIN, "i");
+
+// Un « pré-refrain / pre-chorus » n'est pas le refrain : on ne le surligne pas.
+function estRefrain(tok) {
+  return REGEX_REFRAIN.test(tok) && !/pr[ée][- ]?(?:refr|chor|estrib)/i.test(tok);
+}
+
+// Sépare un prompt Suno en bloc Style / bloc Paroles.
+// Repère principal : 🎚️ / 🎤. Repli tolérant : si 🎤 manque, on prend la
+// première balise de section entre crochets ([Verse], [Intro], [Chorus]…).
+function decouperSuno(texte) {
+  const iStyle = texte.indexOf("🎚️") !== -1 ? texte.indexOf("🎚️") : texte.indexOf("🎚");
+  let iParoles = texte.indexOf("🎤");
+  let couperEtiquette = true;
+
+  if (iParoles === -1) {
+    const m = texte.match(new RegExp("(^|\\n)\\s*\\[(?:" + MOTS_SECTION + ")\\b[^\\]]*\\]", "i"));
+    if (m && (iStyle === -1 || m.index >= iStyle)) { iParoles = m.index; couperEtiquette = false; }
+  }
+  if (iStyle === -1 || iParoles === -1 || iParoles < iStyle) return null;
+
+  let titre = "";
+  const iTitre = texte.indexOf("🏷️") !== -1 ? texte.indexOf("🏷️") : texte.indexOf("🏷");
+  if (iTitre !== -1 && iTitre < iStyle) {
+    titre = texte.slice(iTitre, iStyle)
+      .replace(/^\s*🏷️?\s*TITRE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+    titre = titre.split("\n")[0].trim();
+  }
+
+  let style = texte.slice(iStyle, iParoles);
+  let paroles = texte.slice(iParoles);
+  style = style.replace(/^\s*🎚️?\s*STYLE\b[ \t]*[—:\-]?[ \t]*/i, "").replace(/^\n+/, "").trim();
+  if (couperEtiquette) paroles = paroles.replace(/^\s*🎤\s*PAROLES\b[ \t]*[—:\-]?[ \t]*/i, "");
+  paroles = paroles.replace(/^\n+/, "").trim();
+  if (!style || !paroles) return null;
+  return { titre, style, paroles };
+}
+
+function echapHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Met en valeur les intitulés de section ; surligne les refrains.
+function baliserSections(texte) {
+  const enTete = new RegExp("^(\\s*)((?:\\[[^\\]\\n]{1,48}\\])|(?:(?:" + MOTS_SECTION + ")(?:\\s*\\d+)?\\s*:?))(\\s*)$", "i");
+  const crochet = /\[([^\]\n]{1,48})\]/g;
+  return echapHtml(texte).split("\n").map((ligne) => {
+    const m = ligne.match(enTete);
+    if (m) {
+      const cls = estRefrain(m[2]) ? "tag refrain" : "tag";
+      return m[1] + '<span class="' + cls + '">' + m[2].trim() + "</span>" + m[3];
+    }
+    return ligne.replace(crochet, (t, inner) => {
+      const cls = estRefrain(inner) ? "tag refrain" : "tag";
+      return '<span class="' + cls + '">[' + inner + "]</span>";
+    });
+  }).join("\n");
+}
+
+function erreur(msg) {
+  boiteErreur.style.display = "block";
+  boiteErreur.textContent = msg;
+}
+function effacerErreur(){ boiteErreur.style.display = "none"; boiteErreur.textContent = ""; }
+
+const ENDPOINT_BACKEND = "/api/paroles";
+
+// Mode direct (navigateur) si une clé est saisie ; sinon relais via le serveur.
+function envoyerRequete() {
+  const cle = (champCle.value || "").trim();
+  const prompt = construirePrompt();
+  if (cle) {
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": cle,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-4-8", max_tokens: 4000, stream: true,
+        system: SYSTEME, messages: [{ role: "user", content: prompt }],
+      }),
+    });
+  }
+  const enTetes = { "content-type": "application/json" };
+  const acces = (champAcces.value || "").trim();
+  if (acces) enTetes["x-acces"] = acces;
+  return fetch(ENDPOINT_BACKEND, {
+    method: "POST",
+    headers: enTetes,
+    body: JSON.stringify({ systeme: SYSTEME, prompt: prompt }),
+  });
+}
+
+async function generer() {
+  if (enCours) return;
+  effacerErreur();
+
+  enCours = true;
+  boutonGen.disabled = true;
+  boutonGen.textContent = "Composition en cours…";
+  usageIn = 0; usageOut = 0; elemCout.textContent = "";
+  dernierTexte = "";
+  if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
+  resetActions();
+  boutonVider.disabled = false;
+  sortie.innerHTML = '<span class="curseur"></span>';
+  let texte = "";
+
+  try {
+    const reponse = await envoyerRequete();
+
+    if (!reponse.ok || !reponse.body) {
+      let détail = "";
+      try { const j = await reponse.json(); détail = j.error?.message || JSON.stringify(j); }
+      catch (e) { try { détail = await reponse.text(); } catch (_) {} }
+      if (reponse.status === 401) throw new Error("Clé API refusée (401). Vérifiez qu'elle est valide et active.");
+      if (reponse.status === 403) throw new Error("Code d'accès requis ou invalide. Renseignez-le dans « Accès privé » ci-dessous.");
+      if (reponse.status === 429) throw new Error("Limite de requêtes atteinte (429). Patientez un instant puis réessayez.");
+      if (reponse.status === 501) throw new Error("Le serveur n'a pas de clé configurée (ANTHROPIC_API_KEY). Configurez-la côté serveur, ou saisissez une clé en « mode direct » ci-dessous.");
+      if (reponse.status === 404) throw new Error("Serveur introuvable (/api/paroles). Lancez le serveur (npm start), ou saisissez une clé en « mode direct » ci-dessous.");
+      throw new Error("Erreur (" + reponse.status + ") " + (détail || ""));
+    }
+
+    const lecteur = reponse.body.getReader();
+    const decodeur = new TextDecoder();
+    let tampon = "";
+
+    const rendre = () => { sortie.innerHTML = ""; sortie.append(document.createTextNode(texte));
+      const c = document.createElement("span"); c.className = "curseur"; sortie.append(c); };
+
+    while (true) {
+      const { value, done } = await lecteur.read();
+      if (done) break;
+      tampon += decodeur.decode(value, { stream: true });
+      const lignes = tampon.split("\n");
+      tampon = lignes.pop();
+      for (const ligne of lignes) {
+        if (!ligne.startsWith("data:")) continue;
+        const data = ligne.slice(5).trim();
+        if (!data || data === "[DONE]") continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+            texte += evt.delta.text; rendre();
+          } else if (evt.type === "message_start") {
+            usageIn = evt.message?.usage?.input_tokens || usageIn;
+          } else if (evt.type === "message_delta") {
+            if (evt.usage?.output_tokens != null) usageOut = evt.usage.output_tokens;
+          } else if (evt.type === "error") {
+            throw new Error(evt.error?.message || "Erreur de flux.");
+          }
+        } catch (e) { if (e instanceof SyntaxError) continue; throw e; }
+      }
+    }
+
+    if (!texte.trim()) throw new Error("Réponse vide reçue de l'API.");
+    const propre = texte.trim();
+    dernierTexte = propre;
+    afficher(propre);
+    afficherCout();
+    ajouterHistorique(propre);
+
+  } catch (e) {
+    if (e.name === "TypeError") {
+      erreur("Impossible de contacter le service. Si vous avez ouvert le fichier sans serveur, saisissez une clé API en « mode direct » ci-dessous ; sinon vérifiez que le serveur est bien lancé.");
+    } else {
+      erreur(e.message || String(e));
+    }
+    if (!texte.trim()) sortie.innerHTML = '<span class="vide">La composition n\'a pas abouti. Consultez le message ci-dessous.</span>';
+    else sortie.textContent = texte.trim();
+  } finally {
+    enCours = false;
+    boutonGen.disabled = false;
+    boutonGen.textContent = "Composer les paroles";
+  }
+}
+
+boutonGen.addEventListener("click", generer);
+
+async function copier(bouton, texte, libelle) {
+  if (!texte) return;
+  try {
+    await navigator.clipboard.writeText(texte);
+    bouton.textContent = "Copié ✓";
+    setTimeout(() => (bouton.textContent = libelle), 1600);
+  } catch (e) { erreur("Copie impossible dans ce navigateur."); }
+}
+
+boutonCopier.addEventListener("click", () => copier(boutonCopier, enEdition ? champEdit.value : dernierTexte, "Copier"));
+boutonCopierTitre.addEventListener("click", () => copier(boutonCopierTitre, dernierTitre, "Copier le Titre"));
+boutonCopierStyle.addEventListener("click", () => copier(boutonCopierStyle, dernierStyle, "Copier le Style"));
+boutonCopierParoles.addEventListener("click", () => copier(boutonCopierParoles, dernierParoles, "Copier les Paroles"));
+
+boutonRegenerer.addEventListener("click", () => { if (!boutonRegenerer.disabled) generer(); });
+
+boutonEditer.addEventListener("click", () => {
+  if (boutonEditer.disabled) return;
+  if (!enEdition) {
+    champEdit.value = dernierTexte;
+    sortie.style.display = "none";
+    champEdit.style.display = "";
+    boutonEditer.textContent = "Terminer";
+    majBoutons(null);           // pendant l'édition, « Copier » copie le texte modifié
+    enEdition = true;
+    champEdit.focus();
+  } else {
+    dernierTexte = champEdit.value;
+    champEdit.style.display = "none";
+    sortie.style.display = "";
+    boutonEditer.textContent = "Éditer";
+    afficher(dernierTexte);
+    enEdition = false;
+  }
+});
+
+boutonVider.addEventListener("click", () => {
+  if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
+  sortie.innerHTML = '<span class="vide">Vos paroles apparaîtront ici. Renseignez une langue, un style et un thème, puis lancez la composition.</span>';
+  resetActions();
+  boutonVider.disabled = true;
+  elemCout.textContent = "";
+  dernierTexte = "";
+  effacerErreur();
+});
+
+/* --- Historique (localStorage) --- */
+const HIST_STOCK = "rysao_historique";
+const sommaireHist = $("#sommaireHist");
+const listeHist = $("#listeHist");
+let historique = [];
+
+function persistHist() { try { localStorage.setItem(HIST_STOCK, JSON.stringify(historique)); } catch (e) {} }
+
+function rendreHistorique() {
+  sommaireHist.textContent = "Historique (" + historique.length + ")";
+  if (!historique.length) {
+    listeHist.innerHTML = '<div class="hist-vide">Aucune chanson enregistrée pour l\'instant.</div>';
+    return;
+  }
+  listeHist.innerHTML = historique.map((e) =>
+    '<div class="hist-item">' +
+      '<button class="hist-fav" data-action="fav" data-id="' + e.id + '" title="Favori">' + (e.fav ? "★" : "☆") + '</button>' +
+      '<button class="hist-charger" data-action="charger" data-id="' + e.id + '">' +
+        '<span class="hist-date">' + e.date + '</span>' + echapHtml(e.apercu) + '…</button>' +
+      '<button class="hist-suppr" data-action="suppr" data-id="' + e.id + '" title="Supprimer">🗑</button>' +
+    '</div>'
+  ).join("");
+}
+
+function chargerHistorique() {
+  try { historique = JSON.parse(localStorage.getItem(HIST_STOCK)) || []; } catch (e) { historique = []; }
+  rendreHistorique();
+}
+
+function ajouterHistorique(texte) {
+  const e = {
+    id: String(Date.now()),
+    date: new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    apercu: texte.replace(/\s+/g, " ").trim().slice(0, 70),
+    texte: texte,
+    fav: false,
+  };
+  historique.unshift(e);
+  let n = 0;
+  historique = historique.filter((x) => x.fav || ++n <= 40);  // garde tous les favoris + 40 récents
+  persistHist();
+  rendreHistorique();
+}
+
+listeHist.addEventListener("click", (ev) => {
+  const b = ev.target.closest("button[data-action]");
+  if (!b) return;
+  const e = historique.find((x) => x.id === b.dataset.id);
+  if (!e) return;
+  if (b.dataset.action === "fav") { e.fav = !e.fav; persistHist(); rendreHistorique(); }
+  else if (b.dataset.action === "suppr") { historique = historique.filter((x) => x.id !== e.id); persistHist(); rendreHistorique(); }
+  else if (b.dataset.action === "charger") {
+    if (enEdition) { enEdition = false; champEdit.style.display = "none"; sortie.style.display = ""; boutonEditer.textContent = "Éditer"; }
+    dernierTexte = e.texte;
+    afficher(e.texte);
+    boutonVider.disabled = false;
+    elemCout.textContent = "";
+    effacerErreur();
+    sortie.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+});
+
+$("#viderHist").addEventListener("click", () => {
+  if (!confirm("Effacer l'historique ? Les favoris (★) seront conservés.")) return;
+  historique = historique.filter((x) => x.fav);
+  persistHist();
+  rendreHistorique();
+});
+
+chargerHistorique();
+
+/* --- Mémorisation des réglages du formulaire --- */
+const REG_STOCK = "rysao_reglages";
+const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","bpm","longueur","refrain","basse","format","versionSuno","variantes","extra"];
+
+function collecterReglages() {
+  const o = {};
+  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el) o[id] = el.value; });
+  o.titre = $("#titre").checked;
+  return o;
+}
+
+function appliquerReglagesObjet(o) {
+  if (!o) return;
+  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el && o[id] != null) el.value = o[id]; });
+  if (typeof o.titre === "boolean") $("#titre").checked = o.titre;
+}
+
+function sauverReglages() {
+  try { localStorage.setItem(REG_STOCK, JSON.stringify(collecterReglages())); } catch (e) {}
+}
+
+function chargerReglages() {
+  let o; try { o = JSON.parse(localStorage.getItem(REG_STOCK)); } catch (e) {}
+  appliquerReglagesObjet(o);
+}
+
+chargerReglages();
+CHAMPS_REGLAGES.concat(["titre"]).forEach((id) => {
+  const el = $("#" + id);
+  if (el) { el.addEventListener("input", sauverReglages); el.addEventListener("change", sauverReglages); }
+});
+
+/* --- Presets (configurations enregistrées) --- */
+const PRESET_STOCK = "rysao_presets";
+const presetSel = $("#presetSel");
+let presets = [];
+
+function persistPresets() { try { localStorage.setItem(PRESET_STOCK, JSON.stringify(presets)); } catch (e) {} }
+
+function rendrePresets(selName) {
+  presetSel.innerHTML = '<option value="">— Mes presets enregistrés —</option>' +
+    presets.map((p) => '<option value="' + echapHtml(p.nom) + '">' + echapHtml(p.nom) + "</option>").join("");
+  if (selName) presetSel.value = selName;
+}
+
+function chargerListePresets() {
+  try { presets = JSON.parse(localStorage.getItem(PRESET_STOCK)) || []; } catch (e) { presets = []; }
+  rendrePresets();
+}
+
+presetSel.addEventListener("change", () => {
+  const p = presets.find((x) => x.nom === presetSel.value);
+  if (!p) return;
+  appliquerReglagesObjet(p.reg);
+  sauverReglages();
+});
+
+$("#presetSave").addEventListener("click", () => {
+  const nom = (prompt("Nom du preset :", presetSel.value || "") || "").trim();
+  if (!nom) return;
+  presets = presets.filter((x) => x.nom !== nom);
+  presets.push({ nom: nom, reg: collecterReglages() });
+  presets.sort((a, b) => a.nom.localeCompare(b.nom));
+  persistPresets();
+  rendrePresets(nom);
+});
+
+$("#presetDel").addEventListener("click", () => {
+  const nom = presetSel.value;
+  if (!nom) { alert("Choisis d'abord un preset dans la liste."); return; }
+  if (!confirm("Supprimer le preset « " + nom + " » ?")) return;
+  presets = presets.filter((x) => x.nom !== nom);
+  persistPresets();
+  rendrePresets();
+});
+
+chargerListePresets();
+
+/* --- Crédit : chargement, écoute, remise à zéro --- */
+const champCredit = $("#creditDepart");
+champCredit.value = localStorage.getItem("rysao_credit_depart") || "";
+champCredit.addEventListener("input", () => {
+  localStorage.setItem("rysao_credit_depart", champCredit.value);
+  majCredit();
+});
+$("#resetDepenses").addEventListener("click", () => {
+  if (!confirm("Remettre à zéro le total dépensé sur cet appareil ?")) return;
+  depenseCumul = 0;
+  localStorage.setItem("rysao_depense", "0");
+  majCredit();
+});
+majCredit();
+
+/* --- Réinitialiser les choix du formulaire (garde clé, historique, crédit) --- */
+$("#reinit").addEventListener("click", () => {
+  if (!confirm("Réinitialiser tous les choix ? (ta clé, ton historique et ton crédit sont conservés)")) return;
+  $("#langue").value = "Français";
+  $("#style").value = "Chanson française";
+  $("#artistes").value = "";
+  $("#theme").value = "";
+  $("#region").value = "";
+  $("#extra").value = "";
+  ["ambiance", "structure", "vulgarite", "voix", "timbre", "bpm", "longueur", "refrain", "basse", "argot", "format", "versionSuno", "variantes"].forEach((id) => {
+    $("#" + id).selectedIndex = 0;
+  });
+  $("#titre").checked = true;
+  sauverReglages();
+});
+</script>
+</body>
+</html>
