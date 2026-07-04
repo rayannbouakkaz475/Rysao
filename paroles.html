@@ -156,6 +156,11 @@
   .mini:hover:not(:disabled){color:var(--or); border-color:var(--or)}
   .mini:disabled{opacity:.4; cursor:not-allowed}
 
+  .presets{display:flex; gap:.4rem; flex-wrap:wrap; align-items:center;
+    margin-bottom:1.3rem; padding-bottom:1.1rem; border-bottom:1px solid var(--bordure)}
+  .presets select{flex:1 1 130px; min-width:0}
+  .presets .mini{flex:none}
+
   #paroles{
     font-family:var(--serif); font-size:1.18rem; line-height:1.75;
     white-space:pre-wrap; word-wrap:break-word; min-height:340px; color:var(--texte);
@@ -227,6 +232,12 @@
   <!-- Colonne des réglages -->
   <div class="panneau">
     <h2>Votre chanson</h2>
+
+    <div class="presets">
+      <select id="presetSel"><option value="">— Mes presets enregistrés —</option></select>
+      <button class="mini" id="presetSave" type="button">Enregistrer</button>
+      <button class="mini" id="presetDel" type="button">Supprimer</button>
+    </div>
 
     <label class="champ">
       <span>Langue</span>
@@ -1458,18 +1469,26 @@ chargerHistorique();
 const REG_STOCK = "rysao_reglages";
 const CHAMPS_REGLAGES = ["langue","style","artistes","theme","ambiance","structure","argot","region","vulgarite","voix","timbre","bpm","longueur","refrain","basse","format","versionSuno","variantes","extra"];
 
-function sauverReglages() {
+function collecterReglages() {
   const o = {};
   CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el) o[id] = el.value; });
   o.titre = $("#titre").checked;
-  try { localStorage.setItem(REG_STOCK, JSON.stringify(o)); } catch (e) {}
+  return o;
+}
+
+function appliquerReglagesObjet(o) {
+  if (!o) return;
+  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el && o[id] != null) el.value = o[id]; });
+  if (typeof o.titre === "boolean") $("#titre").checked = o.titre;
+}
+
+function sauverReglages() {
+  try { localStorage.setItem(REG_STOCK, JSON.stringify(collecterReglages())); } catch (e) {}
 }
 
 function chargerReglages() {
   let o; try { o = JSON.parse(localStorage.getItem(REG_STOCK)); } catch (e) {}
-  if (!o) return;
-  CHAMPS_REGLAGES.forEach((id) => { const el = $("#" + id); if (el && o[id] != null) el.value = o[id]; });
-  if (typeof o.titre === "boolean") $("#titre").checked = o.titre;
+  appliquerReglagesObjet(o);
 }
 
 chargerReglages();
@@ -1477,6 +1496,52 @@ CHAMPS_REGLAGES.concat(["titre"]).forEach((id) => {
   const el = $("#" + id);
   if (el) { el.addEventListener("input", sauverReglages); el.addEventListener("change", sauverReglages); }
 });
+
+/* --- Presets (configurations enregistrées) --- */
+const PRESET_STOCK = "rysao_presets";
+const presetSel = $("#presetSel");
+let presets = [];
+
+function persistPresets() { try { localStorage.setItem(PRESET_STOCK, JSON.stringify(presets)); } catch (e) {} }
+
+function rendrePresets(selName) {
+  presetSel.innerHTML = '<option value="">— Mes presets enregistrés —</option>' +
+    presets.map((p) => '<option value="' + echapHtml(p.nom) + '">' + echapHtml(p.nom) + "</option>").join("");
+  if (selName) presetSel.value = selName;
+}
+
+function chargerListePresets() {
+  try { presets = JSON.parse(localStorage.getItem(PRESET_STOCK)) || []; } catch (e) { presets = []; }
+  rendrePresets();
+}
+
+presetSel.addEventListener("change", () => {
+  const p = presets.find((x) => x.nom === presetSel.value);
+  if (!p) return;
+  appliquerReglagesObjet(p.reg);
+  sauverReglages();
+});
+
+$("#presetSave").addEventListener("click", () => {
+  const nom = (prompt("Nom du preset :", presetSel.value || "") || "").trim();
+  if (!nom) return;
+  presets = presets.filter((x) => x.nom !== nom);
+  presets.push({ nom: nom, reg: collecterReglages() });
+  presets.sort((a, b) => a.nom.localeCompare(b.nom));
+  persistPresets();
+  rendrePresets(nom);
+});
+
+$("#presetDel").addEventListener("click", () => {
+  const nom = presetSel.value;
+  if (!nom) { alert("Choisis d'abord un preset dans la liste."); return; }
+  if (!confirm("Supprimer le preset « " + nom + " » ?")) return;
+  presets = presets.filter((x) => x.nom !== nom);
+  persistPresets();
+  rendrePresets();
+});
+
+chargerListePresets();
 
 /* --- Crédit : chargement, écoute, remise à zéro --- */
 const champCredit = $("#creditDepart");
