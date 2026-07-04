@@ -107,6 +107,7 @@ select{width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px so
 .player .title{font-family:var(--serif);font-size:22px;color:var(--ivoire)}
 .player .recipe{font-size:12px;color:var(--gris);margin:4px 0 16px;line-height:1.7}
 .player .recipe b{color:var(--or-mat);font-weight:400}
+.viz{width:100%;height:120px;display:block;margin:6px 0 18px;border:1px solid var(--ligne);border-radius:10px;background:linear-gradient(180deg,#0c0c0f,#0a0a0c)}
 .transport{display:flex;align-items:center;gap:16px}
 .play{width:52px;height:52px;border-radius:50%;border:1px solid var(--or);background:transparent;color:var(--or);cursor:pointer;flex:0 0 auto;display:grid;place-items:center;transition:.2s}
 .play:hover{background:var(--or);color:var(--noir-fond)}
@@ -389,6 +390,7 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
     <div class="player show" id="player">
       <div class="title" id="rTitle">Remix RYSAO</div>
       <div class="recipe" id="rRecipe"></div>
+      <canvas id="viz" class="viz" width="900" height="120"></canvas>
       <div class="transport">
         <button class="play" id="playBtn" aria-label="Lecture">
           <svg id="pIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -399,9 +401,11 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         </div>
       </div>
       <div class="btnrow" style="margin-top:22px">
-        <button class="btn solid" id="dl">⤓ Télécharger (WAV)</button>
+        <select id="dlFmt" style="width:auto;padding:13px 14px"><option value="wav">WAV</option></select>
+        <button class="btn solid" id="dl">⤓ Télécharger</button>
         <button class="btn" id="regen2">↻ Générer une autre version</button>
       </div>
+      <div class="status" id="dlStatus"></div>
     </div>
   </div>
 </section>
@@ -476,6 +480,12 @@ async function initBackend(){
       $("createBlock").style.display="block";
       populateMoods();
       if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
+    }
+    // formats d'export supplémentaires (encodés par le serveur)
+    const fmtSel=$("dlFmt");
+    if(fmtSel){
+      if(backend.caps.mp3_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="mp3">MP3</option>');
+      if(backend.caps.ogg_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="ogg">OGG</option>');
     }
   }else{
     txt.textContent="Mode navigateur (serveur hors ligne)";
@@ -1000,12 +1010,14 @@ function playFrom(off){
   stopPlayback();
   state.playCtx=state.playCtx||new AC();
   const ctx=state.playCtx;
-  const s=ctx.createBufferSource(); s.buffer=state.result; s.connect(ctx.destination);
+  if(!state.analyser){ state.analyser=ctx.createAnalyser(); state.analyser.fftSize=1024;
+    state.analyser.smoothingTimeConstant=0.8; state.analyser.connect(ctx.destination); }
+  const s=ctx.createBufferSource(); s.buffer=state.result; s.connect(state.analyser);
   s.start(0,off); state.src=s; state.playing=true; state.offset=off;
   state.startAt=ctx.currentTime-off;
   setPlayIcon(true);
   s.onended=()=>{ if(state.playing){ state.playing=false;state.offset=0;setPlayIcon(false);
-    $("seekFill").style.width="0%";$("tCur").textContent="0:00"; cancelAnimationFrame(state.raf);} };
+    $("seekFill").style.width="0%";$("tCur").textContent="0:00"; cancelAnimationFrame(state.raf); clearSpectrum();} };
   tick();
 }
 function stopPlayback(){
@@ -1019,21 +1031,65 @@ function tick(){
   const d=state.result.duration;
   $("seekFill").style.width=Math.min(100,cur/d*100)+"%";
   $("tCur").textContent=fmtTime(Math.min(cur,d));
+  drawSpectrum();
   state.raf=requestAnimationFrame(tick);
 }
+
+/* Visualisation spectrale (analyseur FFT) */
+function drawSpectrum(){
+  const cv=$("viz"), an=state.analyser; if(!cv||!an)return;
+  const ctx=cv.getContext("2d");
+  const w=cv.width, h=cv.height;
+  const n=an.frequencyBinCount, data=new Uint8Array(n);
+  an.getByteFrequencyData(data);
+  ctx.clearRect(0,0,w,h);
+  const bars=64, step=Math.floor(n*0.7/bars);
+  const bw=w/bars;
+  for(let i=0;i<bars;i++){
+    let m=0; for(let j=0;j<step;j++)m=Math.max(m,data[i*step+j]||0);
+    const bh=Math.pow(m/255,1.4)*h;
+    const g=ctx.createLinearGradient(0,h,0,h-bh);
+    g.addColorStop(0,"#9c8156"); g.addColorStop(1,"#e7c98e");
+    ctx.fillStyle=g;
+    ctx.fillRect(i*bw+1,h-bh,bw-2,bh);
+  }
+}
+function clearSpectrum(){const cv=$("viz");if(cv)cv.getContext("2d").clearRect(0,0,cv.width,cv.height)}
 function setPlayIcon(p){$("pIcon").innerHTML=p?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>'}
 
 /* ============================================================
    EXPORT WAV
    ============================================================ */
-$("dl").onclick=()=>{
-  if(!state.result)return;
+function dlName(ext){
   const sel=state.tracks.filter(t=>t.sel);
-  const blob = state.serverBlob || new Blob([bufferToWav(state.result)],{type:"audio/wav"});
+  const base = state.lastKind==="music" ? ("creation-"+($("genMood")?$("genMood").value:"ia"))
+    : ("remix-"+sel.map(t=>t.name).join("-").slice(0,40));
+  return `rysao-${base}-${state._seed}.${ext}`;
+}
+function saveBlob(blob,name){
   const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download=`rysao-remix-${sel.map(t=>t.name).join("-").slice(0,40)}-${state._seed}.wav`;
-  a.click(); setTimeout(()=>URL.revokeObjectURL(url),4000);
+  const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+$("dl").onclick=async()=>{
+  if(!state.result)return;
+  const fmt=($("dlFmt")&&$("dlFmt").value)||"wav";
+  const wavBlob = state.serverBlob || new Blob([bufferToWav(state.result)],{type:"audio/wav"});
+  if(fmt==="wav"){ saveBlob(wavBlob,dlName("wav")); return; }
+  // MP3 / OGG : encodage par le serveur
+  if(!backend.on){ setStatus("dlStatus","L'export "+fmt.toUpperCase()+" nécessite le serveur.","err"); return; }
+  setStatus("dlStatus","Encodage "+fmt.toUpperCase()+"…");
+  $("dl").disabled=true;
+  try{
+    const fd=new FormData();
+    fd.append("file", new File([wavBlob],"audio.wav",{type:"audio/wav"}));
+    fd.append("fmt", fmt);
+    const r=await fetch(backend.base+"/api/encode",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("encode "+r.status);
+    saveBlob(await r.blob(), dlName(fmt));
+    setStatus("dlStatus","Téléchargement "+fmt.toUpperCase()+" prêt ✦","ok");
+  }catch(e){ setStatus("dlStatus","Erreur d'encodage : "+e.message,"err"); }
+  finally{ $("dl").disabled=false; }
 };
 function bufferToWav(buf){
   const nCh=buf.numberOfChannels, sr=buf.sampleRate, n=buf.length;

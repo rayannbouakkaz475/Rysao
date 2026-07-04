@@ -8,6 +8,8 @@ peut pas** offrir :
 | Import multi-morceaux, remix, effets, export WAV | ✅ | ✅ |
 | Mixage par piste (volume + mute) | ✅ | ✅ |
 | Égaliseur 3 bandes par piste (graves/médiums/aigus) | ✅ | ✅ |
+| Visualisation spectrale à la lecture | ✅ | ✅ |
+| Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |
 | **Time-stretch en conservant la hauteur** (vrai) | ❌ | ✅ |
 | **Pitch-shift indépendant** | ❌ | ✅ |
@@ -116,6 +118,7 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 | `POST` | `/api/process` | `id`, `stretch`, `semitones` → WAV traité |
 | `POST` | `/api/remix` | `spec` (JSON) → remix rendu, WAV |
 | `POST` | `/api/generate` | `spec` (JSON) → musique générée, WAV |
+| `POST` | `/api/encode` | WAV + `fmt` → audio encodé (mp3/ogg/flac/wav) |
 | `GET`  | `/api/file/{id}` | récupère un fichier généré |
 | `GET`  | `/` | le studio (`remix.html`) |
 

@@ -38,6 +38,24 @@ def write_wav(path: str, x: np.ndarray, sr: int = SR) -> None:
     sf.write(path, x, sr, subtype="PCM_16")
 
 
+# formats d'export disponibles selon la libsndfile installée
+_WRITE_FORMATS = {k for k in ("WAV", "FLAC", "OGG", "MP3") if k in sf.available_formats()}
+
+
+def can_encode(fmt: str) -> bool:
+    return fmt.upper() in _WRITE_FORMATS
+
+
+def encode_file(dest: str, x: np.ndarray, sr: int, fmt: str) -> None:
+    """Écrit x dans dest au format demandé (WAV/MP3/OGG/FLAC)."""
+    fmt = fmt.upper()
+    x = np.clip(x, -1.0, 1.0)
+    if fmt == "WAV":
+        sf.write(dest, x, sr, subtype="PCM_16")
+    else:
+        sf.write(dest, x, sr, format=fmt)
+
+
 # --------------------------------------------------------------- helpers
 def _resample_linear(x: np.ndarray, new_len: int) -> np.ndarray:
     if new_len <= 0:

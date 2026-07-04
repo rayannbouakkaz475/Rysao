@@ -62,6 +62,8 @@ def health():
             "time_stretch_keep_pitch": True,
             "pitch_shift": True,
             "server_remix": True,
+            "mp3_export": ae.can_encode("MP3"),
+            "ogg_export": ae.can_encode("OGG"),
             "music_generation": True,
             "neural_music": mg.neural_available(),
             "stem_separation": stemmod.AVAILABLE,
@@ -195,6 +197,27 @@ async def api_generate(spec: str = Form(...)):
     fid = _register(dest)
     return {"id": fid, "file": name, "duration": round(len(x) / ae.SR, 2),
             "url": f"/api/file/{fid}"}
+
+
+# ------------------------------------------------------- encodage MP3/OGG
+_MIME = {"mp3": "audio/mpeg", "ogg": "audio/ogg", "flac": "audio/flac", "wav": "audio/wav"}
+
+
+@app.post("/api/encode")
+async def api_encode(file: UploadFile = File(...), fmt: str = Form("mp3")):
+    """Reçoit un WAV, renvoie le même audio encodé (mp3/ogg/flac/wav)."""
+    fmt = fmt.lower()
+    if fmt not in _MIME or not ae.can_encode(fmt):
+        raise HTTPException(400, f"Format non disponible : {fmt}")
+    import io
+    try:
+        x, sr = ae.sf.read(io.BytesIO(await file.read()), always_2d=True, dtype="float32")
+    except Exception as e:
+        raise HTTPException(400, f"Audio illisible : {e}")
+    name = f"enc_{uuid.uuid4().hex[:10]}.{fmt}"
+    dest = os.path.join(OUT, name)
+    ae.encode_file(dest, x, sr, fmt)
+    return FileResponse(dest, media_type=_MIME[fmt], filename=name)
 
 
 # ------------------------------------------------------- récupération
