@@ -134,6 +134,19 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
 .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--gris-fonce);flex:0 0 auto}
 .pill.on{border-color:var(--ligne-vive);color:var(--or)}
 .pill.on .dot{background:var(--or);box-shadow:0 0 8px var(--or)}
+
+/* Écran de connexion (accès privé) */
+.overlay{position:fixed;inset:0;background:rgba(6,6,8,.9);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:24px}
+.overlay.show{display:flex}
+.login{background:var(--noir-panneau);border:1px solid var(--ligne-vive);border-radius:16px;padding:40px 34px;max-width:400px;width:100%;text-align:center}
+.login .lk{font-size:30px;margin-bottom:8px}
+.login h3{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--ivoire);margin-bottom:6px}
+.login p{color:var(--gris);font-size:13px;margin-bottom:22px}
+.login input{width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:13px 14px;font-family:var(--sans);font-size:15px;text-align:center;letter-spacing:.05em}
+.login input:focus{outline:none;border-color:var(--or)}
+.login .btn{width:100%;margin-top:14px;justify-content:center}
+.login .err{color:#d98a76;font-size:13px;min-height:18px;margin-top:12px}
+.login .hint{color:var(--gris-fonce);font-size:11px;margin-top:16px;line-height:1.6}
 .track .stem{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--or);border:1px solid var(--ligne);border-radius:20px;padding:4px 11px;cursor:pointer;background:transparent;font-family:var(--sans);transition:.15s}
 .track .stem:hover{background:#141116;border-color:var(--or)}
 .track .stem:disabled{opacity:.4;cursor:default}
@@ -176,6 +189,19 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
     </div>
   </div>
 </header>
+
+<!-- Écran de connexion (accès privé) -->
+<div class="overlay" id="loginOverlay">
+  <div class="login">
+    <div class="lk">🔒</div>
+    <h3>Accès privé</h3>
+    <p>Ce studio est protégé. Entrez votre mot de passe pour continuer.</p>
+    <input type="password" id="pwInput" placeholder="Mot de passe" autocomplete="current-password">
+    <button class="btn solid" id="loginBtn">Entrer</button>
+    <div class="err" id="loginErr"></div>
+    <div class="hint">Le mot de passe est celui du serveur (variable <b>RYSAO_PASSWORD</b>, ou celui affiché dans la console au démarrage).</div>
+  </div>
+</div>
 
 <section class="hero">
   <div class="wrap">
@@ -438,30 +464,52 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
    ============================================================ */
 const backend = {
   on:false, base:"", caps:{}, engine:"browser", moods:[],
+  authRequired:false, authed:false, token:localStorage.getItem("rysao_token")||"",
   async detect(){
     const bases = location.protocol==="file:" ? ["http://127.0.0.1:8000"] : ["", "http://127.0.0.1:8000"];
     for(const b of bases){
       try{
         const r=await fetch(b+"/api/health",{signal:AbortSignal.timeout(2500)});
-        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};this.moods=j.moods||[];return true}
+        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};
+          this.moods=j.moods||[];this.authRequired=!!j.auth_required;return true}
       }catch(e){}
     }
     return false;
   },
+  // fetch authentifié : ajoute le jeton (cookie + en-tête Bearer)
+  api(path,opts={}){
+    opts.headers=Object.assign({},opts.headers, this.token?{Authorization:"Bearer "+this.token}:{});
+    opts.credentials="include";
+    return fetch(this.base+path,opts);
+  },
+  async login(password){
+    const fd=new FormData(); fd.append("password",password);
+    const r=await fetch(this.base+"/api/login",{method:"POST",body:fd,credentials:"include"});
+    if(!r.ok)return false;
+    const j=await r.json(); this.token=j.token||""; this.authed=true;
+    if(this.token)localStorage.setItem("rysao_token",this.token);
+    return true;
+  },
+  async checkAuth(){
+    if(!this.authRequired){this.authed=true;return true}
+    try{ const r=await this.api("/api/me"); this.authed=r.ok; return r.ok; }
+    catch(e){ this.authed=false; return false; }
+  },
+  logout(){ this.token=""; this.authed=false; localStorage.removeItem("rysao_token"); },
   async analyze(file){
     const fd=new FormData(); fd.append("file",file);
-    const r=await fetch(this.base+"/api/analyze",{method:"POST",body:fd});
+    const r=await this.api("/api/analyze",{method:"POST",body:fd});
     if(!r.ok)throw new Error("analyze "+r.status);
     return r.json();
   },
   async separate(id){
     const fd=new FormData(); fd.append("id",id);
-    const r=await fetch(this.base+"/api/separate",{method:"POST",body:fd});
+    const r=await this.api("/api/separate",{method:"POST",body:fd});
     return r.json();
   },
   async remix(spec){
     const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
-    const r=await fetch(this.base+"/api/remix",{method:"POST",body:fd});
+    const r=await this.api("/api/remix",{method:"POST",body:fd});
     if(!r.ok)throw new Error("remix "+r.status);
     return r.json();
   },
@@ -470,26 +518,43 @@ const backend = {
 
 async function initBackend(){
   const ok=await backend.detect();
+  const txt=$("beText");
+  if(!ok){ txt.textContent="Mode navigateur (serveur hors ligne)"; return; }
+  // serveur présent : faut-il se connecter ?
+  const authed=await backend.checkAuth();
+  if(authed) enableBackendFeatures();
+  else{ txt.textContent="Serveur — connexion requise"; showLogin(); }
+}
+
+function enableBackendFeatures(){
   const pill=$("beStatus"), txt=$("beText");
-  if(ok){
-    pill.classList.add("on");
-    const extra=backend.caps.stem_separation?" · séparation IA":"";
-    txt.textContent="Serveur connecté"+extra;
-    $("engineBox").classList.add("show");
-    if(backend.caps.music_generation){
-      $("createBlock").style.display="block";
-      populateMoods();
-      if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
-    }
-    // formats d'export supplémentaires (encodés par le serveur)
-    const fmtSel=$("dlFmt");
-    if(fmtSel){
-      if(backend.caps.mp3_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="mp3">MP3</option>');
-      if(backend.caps.ogg_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="ogg">OGG</option>');
-    }
-  }else{
-    txt.textContent="Mode navigateur (serveur hors ligne)";
+  pill.classList.add("on");
+  const extra=backend.caps.stem_separation?" · séparation IA":"";
+  txt.textContent="Serveur connecté"+extra;
+  $("loginOverlay").classList.remove("show");
+  $("engineBox").classList.add("show");
+  if(backend.caps.music_generation){
+    $("createBlock").style.display="block";
+    populateMoods();
+    if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
   }
+  const fmtSel=$("dlFmt");
+  if(fmtSel && fmtSel.options.length<2){
+    if(backend.caps.mp3_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="mp3">MP3</option>');
+    if(backend.caps.ogg_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="ogg">OGG</option>');
+  }
+}
+
+/* ---------- Écran de connexion (accès privé) ---------- */
+function showLogin(){ $("loginOverlay").classList.add("show"); setTimeout(()=>$("pwInput").focus(),100); }
+async function doLogin(){
+  const pw=$("pwInput").value;
+  if(!pw){ $("loginErr").textContent="Entrez le mot de passe."; return; }
+  $("loginBtn").disabled=true; $("loginErr").textContent="";
+  const ok=await backend.login(pw);
+  $("loginBtn").disabled=false;
+  if(ok){ $("pwInput").value=""; enableBackendFeatures(); }
+  else{ $("loginErr").textContent="Mot de passe incorrect."; $("pwInput").select(); }
 }
 
 /* ---------- Ambiances (peuplées depuis le serveur) ---------- */
@@ -516,11 +581,11 @@ async function generateMusic(reseed){
   $("genMusic").disabled=$("genSurprise").disabled=true;
   try{
     const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
-    const r=await fetch(backend.base+"/api/generate",{method:"POST",body:fd});
+    const r=await backend.api("/api/generate",{method:"POST",body:fd});
     if(!r.ok)throw new Error("generate "+r.status);
     const out=await r.json();
     if(out.error){ setStatus("createStatus",out.error+" "+(out.how_to||""),"err"); return; }
-    const blob=await (await fetch(backend.fileUrl(out.id))).blob();
+    const blob=await (await backend.api("/api/file/"+out.id)).blob();
     state.serverBlob=blob; state.serverName=out.file; state.lastKind="music";
     const ctx=new AC(); state.result=await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
     state._seed=genState.seed;
@@ -562,7 +627,7 @@ async function addFiles(list){
     try{
       const buf=await ctx.decodeAudioData(await f.arrayBuffer());
       let bpm=estimateBPM(buf), id=null, key=null;
-      if(backend.on){
+      if(backend.authed){
         try{ const meta=await backend.analyze(f); id=meta.id; bpm=meta.bpm||bpm; key=meta.key; }
         catch(e){ /* le morceau reste utilisable en mode navigateur */ }
       }
@@ -591,7 +656,7 @@ function reverseBuffer(ctx,buf){
 /* ---------- Séparation IA d'une piste (backend) ---------- */
 async function separateTrack(i){
   const t=state.tracks[i];
-  if(!t.id||!backend.on)return;
+  if(!t.id||!backend.authed)return;
   setStatus("importStatus",`Séparation IA de « ${t.name} »… (cela peut prendre un moment)`);
   try{
     const res=await backend.separate(t.id);
@@ -603,7 +668,7 @@ async function separateTrack(i){
     const order=["vocals","drums","bass","other"];
     for(const name of order){
       const s=res.stems[name]; if(!s)continue;
-      const ab=await (await fetch(backend.fileUrl(s.id))).arrayBuffer();
+      const ab=await (await backend.api("/api/file/"+s.id)).arrayBuffer();
       const buf=await ctx.decodeAudioData(ab);
       state.tracks.push({
         name:t.name, buffer:buf, revBuffer:reverseBuffer(ctx,buf),
@@ -673,7 +738,7 @@ function renderTracks(){
         <span class="vval" data-vv="${i}">${Math.round((t.gain??1)*100)}</span>
       </div>
       ${t.stem?`<span class="badge">${escapeHtml(t.stem)}</span>`:""}
-      ${(backend.on && backend.caps.stem_separation && t.id && !t.stem)
+      ${(backend.authed && backend.caps.stem_separation && t.id && !t.stem)
         ?`<button class="stem" data-s="${i}">⃝ Séparer IA</button>`:""}
       <button class="eqbtn${t.eqOpen?" on":""}" data-e="${i}">EQ</button>
       <div class="role" data-r="${i}">${roleLabel(t.role)}</div>
@@ -928,7 +993,7 @@ async function generate(reseed){
   stopPlayback();
   state.serverBlob=null; state.serverName=null; state.lastKind="remix";
   loading(true);
-  const server = backend.on && backend.engine==="server";
+  const server = backend.authed && backend.engine==="server";
   setStatus("genStatus", server?"Rendu haute qualité sur le serveur…":"L'IA compose votre remix…");
   $("gen").disabled=$("regen").disabled=true;
   try{
@@ -968,7 +1033,7 @@ async function generateServer(r,sel){
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };
   const out=await backend.remix(spec);
-  const blob=await (await fetch(backend.fileUrl(out.id))).blob();
+  const blob=await (await backend.api("/api/file/"+out.id)).blob();
   state.serverBlob=blob; state.serverName=out.file;
   const ctx=new AC();
   const buf=await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -1077,14 +1142,14 @@ $("dl").onclick=async()=>{
   const wavBlob = state.serverBlob || new Blob([bufferToWav(state.result)],{type:"audio/wav"});
   if(fmt==="wav"){ saveBlob(wavBlob,dlName("wav")); return; }
   // MP3 / OGG : encodage par le serveur
-  if(!backend.on){ setStatus("dlStatus","L'export "+fmt.toUpperCase()+" nécessite le serveur.","err"); return; }
+  if(!backend.authed){ setStatus("dlStatus","L'export "+fmt.toUpperCase()+" nécessite le serveur (connexion).","err"); return; }
   setStatus("dlStatus","Encodage "+fmt.toUpperCase()+"…");
   $("dl").disabled=true;
   try{
     const fd=new FormData();
     fd.append("file", new File([wavBlob],"audio.wav",{type:"audio/wav"}));
     fd.append("fmt", fmt);
-    const r=await fetch(backend.base+"/api/encode",{method:"POST",body:fd});
+    const r=await backend.api("/api/encode",{method:"POST",body:fd});
     if(!r.ok)throw new Error("encode "+r.status);
     saveBlob(await r.blob(), dlName(fmt));
     setStatus("dlStatus","Téléchargement "+fmt.toUpperCase()+" prêt ✦","ok");
@@ -1119,6 +1184,10 @@ function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">
 
 // état initial des panneaux mode
 $("manual").classList.add("hide");
+
+// connexion (accès privé)
+$("loginBtn").onclick=doLogin;
+$("pwInput").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 
 // détection du serveur (débloque séparation IA + rendu Pro si présent)
 initBackend();

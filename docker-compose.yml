@@ -14,6 +14,12 @@ services:
     image: rysao-studio:full
     ports:
       - "8000:8000"
+    environment:
+      # Accès privé : choisissez votre mot de passe (sinon un mot de passe
+      # aléatoire est généré et affiché dans les logs au démarrage).
+      - RYSAO_PASSWORD=changez-moi
+      # Secret de session fixe pour rester connecté après un redémarrage.
+      - RYSAO_SECRET=changez-ce-secret-aussi
     volumes:
       - model-cache:/root/.cache          # modèles Demucs / MusicGen persistés
       - ./backend/uploads:/app/backend/uploads

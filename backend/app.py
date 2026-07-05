@@ -15,7 +15,7 @@ import os
 import uuid
 import json
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,6 +23,7 @@ from fastapi.staticfiles import StaticFiles
 import audio_engine as ae
 import stems as stemmod
 import music_gen as mg
+import auth
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)                       # dépôt (contient remix.html)
@@ -51,12 +52,44 @@ def _path(fid: str) -> str:
     return p
 
 
+# --------------------------------------------------------------- auth
+def require_auth(request: Request) -> bool:
+    """Exige un jeton valide (cookie ou en-tête Authorization: Bearer)."""
+    token = request.cookies.get("rysao_auth") or ""
+    if not token:
+        h = request.headers.get("Authorization", "")
+        if h.startswith("Bearer "):
+            token = h[7:]
+    if not auth.verify_token(token):
+        raise HTTPException(401, "Authentification requise")
+    return True
+
+
+auth.startup_banner()
+
+
+@app.post("/api/login")
+async def api_login(response: Response, password: str = Form(...)):
+    if not auth.check_password(password):
+        raise HTTPException(401, "Mot de passe incorrect")
+    token = auth.make_token()
+    response.set_cookie("rysao_auth", token, httponly=True, samesite="lax",
+                        max_age=auth.TOKEN_TTL)
+    return {"ok": True, "token": token}
+
+
+@app.get("/api/me")
+def api_me(_: bool = Depends(require_auth)):
+    return {"ok": True}
+
+
 # --------------------------------------------------------------- santé
 @app.get("/api/health")
 def health():
     return {
         "ok": True,
         "service": "RYSAO Studio API",
+        "auth_required": True,
         "capabilities": {
             "analyze": True,
             "time_stretch_keep_pitch": True,
@@ -75,7 +108,7 @@ def health():
 
 # ------------------------------------------------------------- analyse
 @app.post("/api/analyze")
-async def api_analyze(file: UploadFile = File(...)):
+async def api_analyze(file: UploadFile = File(...), _: bool = Depends(require_auth)):
     ext = os.path.splitext(file.filename or "audio")[1] or ".bin"
     dest = os.path.join(UP, uuid.uuid4().hex[:12] + ext)
     with open(dest, "wb") as f:
@@ -93,7 +126,7 @@ async def api_analyze(file: UploadFile = File(...)):
 
 # ------------------------------------------------------ séparation IA
 @app.post("/api/separate")
-async def api_separate(id: str = Form(...)):
+async def api_separate(id: str = Form(...), _: bool = Depends(require_auth)):
     src = _path(id)
     res = stemmod.separate(src, os.path.join(OUT, "stems_" + id))
     if res.get("stems"):
@@ -112,7 +145,8 @@ async def api_separate(id: str = Form(...)):
 @app.post("/api/process")
 async def api_process(id: str = Form(...),
                       stretch: float = Form(1.0),
-                      semitones: float = Form(0.0)):
+                      semitones: float = Form(0.0),
+                      _: bool = Depends(require_auth)):
     src = _path(id)
     x = ae.load_audio(src)
     if abs(stretch - 1.0) > 1e-3:
@@ -128,7 +162,7 @@ async def api_process(id: str = Form(...),
 
 # ---------------------------------------------------- remix serveur
 @app.post("/api/remix")
-async def api_remix(spec: str = Form(...)):
+async def api_remix(spec: str = Form(...), _: bool = Depends(require_auth)):
     """
     spec (JSON) :
       { "recipe": {...}, "layers": [ {"id": "...", "bpm": .., "gain": ..,
@@ -167,7 +201,7 @@ async def api_remix(spec: str = Form(...)):
 
 # ------------------------------------------------ génération de musique
 @app.post("/api/generate")
-async def api_generate(spec: str = Form(...)):
+async def api_generate(spec: str = Form(...), _: bool = Depends(require_auth)):
     """
     spec (JSON) :
       { "mood": "lofi", "key": "La", "scale": "min", "bpm": 78,
@@ -204,7 +238,8 @@ _MIME = {"mp3": "audio/mpeg", "ogg": "audio/ogg", "flac": "audio/flac", "wav": "
 
 
 @app.post("/api/encode")
-async def api_encode(file: UploadFile = File(...), fmt: str = Form("mp3")):
+async def api_encode(file: UploadFile = File(...), fmt: str = Form("mp3"),
+                     _: bool = Depends(require_auth)):
     """Reçoit un WAV, renvoie le même audio encodé (mp3/ogg/flac/wav)."""
     fmt = fmt.lower()
     if fmt not in _MIME or not ae.can_encode(fmt):
@@ -222,7 +257,7 @@ async def api_encode(file: UploadFile = File(...), fmt: str = Form("mp3")):
 
 # ------------------------------------------------------- récupération
 @app.get("/api/file/{fid}")
-def api_file(fid: str):
+def api_file(fid: str, _: bool = Depends(require_auth)):
     p = _path(fid)
     return FileResponse(p, media_type="audio/wav", filename=os.path.basename(p))
 

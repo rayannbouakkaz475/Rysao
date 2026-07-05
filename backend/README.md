@@ -27,6 +27,27 @@ fonctions Pro.
 
 ---
 
+## Accès privé (mot de passe)
+
+Le studio est **privé** : quand le serveur tourne, toutes les opérations
+exigent une connexion. Personne ne peut l'utiliser sans le mot de passe.
+
+- Choisissez votre mot de passe avant de lancer :
+  ```bash
+  export RYSAO_PASSWORD="votre-secret"
+  ```
+- Si vous n'en définissez pas, un mot de passe aléatoire est **généré et
+  affiché dans la console** au démarrage.
+- Pour rester connecté après un redémarrage, fixez aussi un secret de
+  session : `export RYSAO_SECRET="…"` (sinon les sessions expirent au
+  redémarrage — plus sûr par défaut).
+
+À la première ouverture de la page, un écran demande ce mot de passe. La
+session est mémorisée dans le navigateur (jeton signé, valable 7 jours).
+
+> En mode 100 % navigateur (sans serveur), il n'y a rien à protéger : tout
+> reste sur votre machine.
+
 ## Démarrage rapide
 
 ```bash
@@ -112,7 +133,9 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 
 | Méthode | Route | Rôle |
 |---|---|---|
-| `GET`  | `/api/health` | état + capacités du serveur |
+| `GET`  | `/api/health` | état + capacités (public) |
+| `POST` | `/api/login` | mot de passe → jeton de session |
+| `GET`  | `/api/me` | vérifie la session (protégé) |
 | `POST` | `/api/analyze` | upload audio → `{id, bpm, key, duration}` |
 | `POST` | `/api/separate` | `id` → pistes séparées (Demucs) |
 | `POST` | `/api/process` | `id`, `stretch`, `semitones` → WAV traité |
