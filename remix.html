@@ -367,6 +367,12 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <label>Tempo cible (BPM) <b><span id="vBpm">auto</span></b></label>
         <input type="range" id="sBpm" min="70" max="180" step="1" value="120">
         <div class="switch" style="margin-top:8px"><button id="bpmAuto" class="on">BPM auto</button></div>
+        <div class="phint">Vitesse du morceau. « Auto » = tempo détecté.</div>
+      </div>
+      <div class="ctrl">
+        <label>Basses (boost) <b>+<span id="vBass">0</span> dB</b></label>
+        <input type="range" id="sBass" min="0" max="12" step="1" value="0">
+        <div class="phint">Ajoute du grave / sub pour un son plus gros. 💥</div>
       </div>
     </div>
 
@@ -481,6 +487,17 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
       <div class="ctrl">
         <label>Intensité <b><span id="vGenInt">équilibré</span></b></label>
         <input type="range" id="genInt" min="0" max="100" step="1" value="55">
+      </div>
+      <div class="ctrl">
+        <label>Tempo (BPM) <b><span id="vGenBpm">auto</span></b></label>
+        <input type="range" id="genBpm" min="70" max="200" step="1" value="128">
+        <div class="switch" style="margin-top:8px"><button id="genBpmAuto" class="on">BPM auto</button></div>
+        <div class="phint">« Auto » = tempo conseillé du style choisi.</div>
+      </div>
+      <div class="ctrl">
+        <label>Basses (boost) <b>+<span id="vGenBass">0</span> dB</b></label>
+        <input type="range" id="genBass" min="0" max="12" step="1" value="0">
+        <div class="phint">Ajoute du grave pour un son plus gros. 💥</div>
       </div>
     </div>
 
@@ -679,7 +696,7 @@ async function generateMusic(reseed){
   const spec = engine==="neural"
     ? {engine:"neural", prompt:$("genPrompt").value||"calm melodic lofi", duration:+$("genDur").value}
     : {mood:$("genMood").value, key:$("genKey").value, scale:$("genScale").value,
-       duration:+$("genDur").value, intensity:+$("genInt").value/100, seed:genState.seed};
+       duration:+$("genDur").value, intensity:+$("genInt").value/100, seed:genState.seed, ...genExtra()};
   loading2(true); setStatus("createStatus","L'IA compose un morceau…");
   $("genMusic").disabled=$("genSurprise").disabled=true;
   try{
@@ -780,7 +797,7 @@ async function djGenerate(p, reseed){
   try{
     const seed=Math.floor(Math.random()*1e9);
     const spec={mood:p.mood, dj:true, duration:Math.max(40,+($("genDur")?$("genDur").value:40)),
-                intensity:p.energy/100, seed};
+                intensity:p.energy/100, seed, ...genExtra()};
     const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
     const r=await backend.api("/api/generate",{method:"POST",body:fd});
     if(!r.ok)throw new Error("generate "+r.status);
@@ -1083,6 +1100,7 @@ bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
 bind("sSlice","vSlice");
 bind("sShuf","vShuf");
 bind("sRev","vRev"); bind("sDel","vDel"); bind("sStut","vStut"); bind("sRevr","vRevr");
+bind("sBass","vBass");
 $("sEnergy").oninput=e=>{const v=+e.target.value;$("vEnergy").textContent=v<33?"délicat":v<66?"équilibré":"audacieux"};
 $("bpmAuto").onclick=()=>{state.bpmAuto=!state.bpmAuto;$("bpmAuto").classList.toggle("on",state.bpmAuto);
   $("vBpm").textContent=state.bpmAuto?"auto":$("sBpm").value};
@@ -1099,8 +1117,13 @@ $("regen").onclick=()=>generate(true);
 $("regen2").onclick=()=>{ state.lastKind==="dj"?djGo(true):(state.lastKind==="music"?generateMusic(true):generate(true)); };
 
 // Contrôles de création
-bind("genDur","vGenDur");
+let genBpmAuto=true;
+bind("genDur","vGenDur"); bind("genBass","vGenBass");
 $("genInt").oninput=e=>{const v=+e.target.value;$("vGenInt").textContent=v<33?"doux":v<66?"équilibré":"intense"};
+$("genBpm").oninput=e=>{if(!genBpmAuto)$("vGenBpm").textContent=e.target.value};
+$("genBpmAuto").onclick=()=>{genBpmAuto=!genBpmAuto;$("genBpmAuto").classList.toggle("on",genBpmAuto);
+  $("vGenBpm").textContent=genBpmAuto?"auto":$("genBpm").value};
+function genExtra(){ const o={bass:+($("genBass").value||0)}; if(!genBpmAuto)o.bpm=+$("genBpm").value; return o; }
 $("genMusic").onclick=()=>generateMusic(false);
 $("genSurprise").onclick=()=>generateMusic(true);
 if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.target.value==="neural"?1:.5;
@@ -1146,6 +1169,8 @@ function buildRecipe(reseed){
       filter: ["none","sweepup","lowpass","highpass","sweepdown"][Math.floor(rnd()* (e>0.4?5:2))]
     };
   }
+
+  r.bass = +($("sBass").value||0);   // boost de basses (dB)
 
   // Mélange de 2 morceaux : superposition (blend) ou transition/drop.
   // "auto" = l'IA décide (et vise un résultat qui claque).
@@ -1201,6 +1226,12 @@ async function renderRemix(r){
   const delGain=ctx.createGain(); delGain.gain.value=r.delay;
   delay.connect(fb).connect(delay); delay.connect(delGain).connect(master);
 
+  // Boost de basses (low-shelf ~100 Hz) en sortie
+  const bassNode=ctx.createBiquadFilter();
+  bassNode.type="lowshelf"; bassNode.frequency.value=100; bassNode.gain.value=r.bass||0;
+  bassNode.connect(ctx.destination);
+  const DEST=bassNode;   // tout le master passe par le boost de basses
+
   // Filtre global optionnel
   let masterOut=master;
   const T=r.dur;
@@ -1223,16 +1254,16 @@ async function renderRemix(r){
     master.gain.linearRampToValueAtTime(0.95,T*0.66);
     master.gain.setValueAtTime(0.95,T*0.90);
     master.gain.linearRampToValueAtTime(0.7,T);
-    master.connect(mf); mf.connect(ctx.destination);
+    master.connect(mf); mf.connect(DEST);
   }else if(r.filter!=="none"){
     const f=ctx.createBiquadFilter();
     if(r.filter==="lowpass"){f.type="lowpass";f.frequency.value=1200}
     else if(r.filter==="highpass"){f.type="highpass";f.frequency.value=600}
     else if(r.filter==="sweepup"){f.type="lowpass";f.frequency.setValueAtTime(300,0);f.frequency.exponentialRampToValueAtTime(16000,T)}
     else if(r.filter==="sweepdown"){f.type="lowpass";f.frequency.setValueAtTime(16000,0);f.frequency.exponentialRampToValueAtTime(400,T)}
-    master.connect(f); f.connect(ctx.destination);
+    master.connect(f); f.connect(DEST);
   }else{
-    master.connect(ctx.destination);
+    master.connect(DEST);
   }
 
   const beatOut=60/r.bpm;
@@ -1398,7 +1429,7 @@ async function generateServer(r,sel){
       shuffle:r.shuffle, reverb:r.reverb, delay:r.delay,
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
-      arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj
+      arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj, bass:r.bass
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };

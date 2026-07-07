@@ -355,6 +355,8 @@ def generate(params: dict) -> np.ndarray:
     mix = ae.apply_reverb(mix, cfg["reverb"])
     mix = ae.apply_delay(mix, cfg["delay"], bpm)
 
+    mix = ae.apply_bass(mix, params.get("bass", 0))       # boost de basses
+
     out_n = int(dur*SR)
     mix = mix[:out_n] if len(mix) >= out_n else np.pad(mix, ((0,out_n-len(mix)),(0,0)))
 
