@@ -100,6 +100,16 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .favs input[type=text]{background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:13px;min-width:160px}
 .favs select{width:auto;min-width:150px}
 .favs .btn{padding:9px 16px;font-size:13px}
+.setbox{margin-top:22px;border:1px solid var(--ligne-vive);border-radius:14px;padding:20px;background:var(--noir-panneau)}
+.setlabel{font-family:var(--serif);font-size:19px;color:var(--ivoire);margin-bottom:14px}
+.setlabel span{color:var(--or)}
+.setlist{display:flex;flex-direction:column;gap:8px}
+.setitem{display:flex;align-items:center;gap:12px;background:var(--noir-carte);border:1px solid var(--ligne);border-radius:8px;padding:10px 14px}
+.setitem .idx{width:24px;height:24px;border-radius:50%;background:var(--or-mat);color:var(--noir-fond);display:grid;place-items:center;font-size:12px;flex:0 0 auto}
+.setitem .snm{flex:1;font-size:14px;color:var(--ivoire);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setitem .sdur{font-size:12px;color:var(--gris);font-variant-numeric:tabular-nums}
+.setitem .sdel{color:var(--gris-fonce);cursor:pointer;font-size:16px}
+.setitem .sdel:hover{color:#c96b5a}
 .mix2{margin-bottom:24px;border:1px solid var(--ligne-vive);border-radius:12px;padding:18px;background:var(--noir-panneau)}
 .mix2 .lbl{font-family:var(--serif);font-size:18px;color:var(--ivoire);margin-bottom:12px}
 .mix2 .switch button{padding:9px 16px}
@@ -600,8 +610,20 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <select id="dlFmt" style="width:auto;padding:13px 14px"><option value="wav">WAV</option></select>
         <button class="btn solid" id="dl">⤓ Télécharger</button>
         <button class="btn" id="regen2">↻ Générer une autre version</button>
+        <button class="btn ghost" id="addSet">➕ Ajouter au set</button>
       </div>
       <div class="status" id="dlStatus"></div>
+    </div>
+
+    <!-- Set continu (liste de lecture) -->
+    <div class="setbox" id="setBox" style="display:none">
+      <div class="setlabel">🎶 Mon set — <span id="setCount">0</span> titre(s) · <span id="setDur">0:00</span></div>
+      <div class="setlist" id="setList"></div>
+      <div class="btnrow" style="margin-top:14px">
+        <button class="btn solid" id="setPlay">▶ Écouter / exporter le set complet</button>
+        <button class="btn ghost" id="setClear">Vider le set</button>
+      </div>
+      <div class="phint" style="margin-top:8px">Les titres s'enchaînent avec un fondu enchaîné. Après « Écouter », téléchargez le set entier avec le bouton ⤓ ci-dessus.</div>
     </div>
   </div>
 </section>
@@ -624,6 +646,7 @@ const state = {
   bpmAuto: true,
   result: null,        // AudioBuffer rendu
   recipeText: "",
+  setList: [],         // set continu : [{name, buffer}]
   playCtx: null, src: null, playing: false, startAt: 0, offset: 0, raf: 0
 };
 
@@ -1725,6 +1748,61 @@ $("dl").onclick=async()=>{
   }catch(e){ setStatus("dlStatus","Erreur d'encodage : "+e.message,"err"); }
   finally{ $("dl").disabled=false; }
 };
+/* ============================================================
+   SET CONTINU (liste de lecture avec fondu enchaîné)
+   ============================================================ */
+$("addSet").onclick=()=>{
+  if(!state.result){setStatus("dlStatus","Générez d'abord un morceau.","err");return}
+  if(state.setList.length>=20){setStatus("dlStatus","Set plein (20 titres max).","err");return}
+  const name=($("rTitle").textContent||"Titre").replace(/^🎧\s*/,"");
+  state.setList.push({name, buffer:state.result});
+  renderSetList();
+  setStatus("dlStatus","Ajouté au set ✦ ("+state.setList.length+")","ok");
+};
+$("setClear").onclick=()=>{ state.setList=[]; renderSetList(); };
+$("setPlay").onclick=()=>{
+  const buf=buildSet(); if(!buf){setStatus("dlStatus","Le set est vide.","err");return}
+  stopPlayback(); state.serverBlob=null; state.result=buf; state.lastKind="set";
+  $("rTitle").textContent="🎶 Set continu ("+state.setList.length+" titres)";
+  $("rRecipe").innerHTML="Vos créations enchaînées avec fondu enchaîné. Téléchargez le set complet avec ⤓.";
+  $("tTot").textContent=fmtTime(buf.duration); $("tCur").textContent="0:00"; $("seekFill").style.width="0%";
+  playFrom(0);
+};
+function renderSetList(){
+  const box=$("setBox"), el=$("setList");
+  if(!state.setList.length){ box.style.display="none"; return; }
+  box.style.display="block";
+  let tot=0; state.setList.forEach(it=>tot+=it.buffer.duration);
+  $("setCount").textContent=state.setList.length; $("setDur").textContent=fmtTime(tot);
+  el.innerHTML=state.setList.map((it,i)=>`<div class="setitem">
+    <div class="idx">${i+1}</div><div class="snm">${escapeHtml(it.name)}</div>
+    <div class="sdur">${fmtTime(it.buffer.duration)}</div><div class="sdel" data-sd="${i}">✕</div></div>`).join("");
+  el.querySelectorAll(".sdel").forEach(c=>c.onclick=()=>{state.setList.splice(+c.dataset.sd,1);renderSetList();});
+}
+function buildSet(){
+  const list=state.setList; if(!list.length)return null;
+  const sr=list[0].buffer.sampleRate;
+  const cfs=Math.floor(0.8*sr);                          // fondu enchaîné 0,8 s
+  let total=0; list.forEach((it,i)=>{ total += it.buffer.length - (i>0?cfs:0); });
+  const ctx=state.playCtx=state.playCtx||new AC();
+  const out=ctx.createBuffer(2,total,sr);
+  for(let c=0;c<2;c++){
+    const o=out.getChannelData(c); let start=0;
+    list.forEach((it,i)=>{
+      const b=it.buffer, L=b.length, src=b.getChannelData(Math.min(c,b.numberOfChannels-1));
+      const s0 = i>0 ? start-cfs : start;
+      for(let j=0;j<L;j++){
+        let g=1;
+        if(i>0 && j<cfs) g=j/cfs;
+        if(i<list.length-1 && j>=L-cfs) g=(L-j)/cfs;
+        const idx=s0+j; if(idx>=0 && idx<total) o[idx]+=src[j]*g;
+      }
+      start=s0+L;
+    });
+  }
+  return out;
+}
+
 function bufferToWav(buf){
   const nCh=buf.numberOfChannels, sr=buf.sampleRate, n=buf.length;
   const bytes=n*nCh*2, out=new ArrayBuffer(44+bytes), v=new DataView(out);

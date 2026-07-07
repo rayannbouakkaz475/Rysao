@@ -14,6 +14,7 @@ peut pas** offrir :
 | Ambiance/reverb globale + fondu de fin propre | ✅ | ✅ |
 | Égaliseur global (3 bandes sur tout le mix) | ✅ | ✅ |
 | Sauvegarde de réglages favoris | ✅ | ✅ |
+| Set continu (playlist enchaînée avec fondu) | ✅ | ✅ |
 | Visualisation spectrale à la lecture | ✅ | ✅ |
 | Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |
