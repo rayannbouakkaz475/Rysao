@@ -225,6 +225,46 @@ def _drum_track(pattern, bars, beat, total_n, rng, swing=0.0, hard=False, root=5
     return np.stack([L,R],axis=1)
 
 
+# ------------------------------------------------ structure « DJ / producteur »
+def _dj_structure(total_n, beat, rng):
+    """
+    Enveloppes de sections d'un vrai morceau produit :
+    intro → build-up (riser + snare roll) → drop → breakdown → 2e drop → outro.
+    Retourne (env_batterie, env_synthés, extra_stéréo).
+    """
+    secs = [("intro",0.12),("build",0.12),("drop",0.26),
+            ("break",0.14),("drop2",0.24),("outro",0.12)]
+    drum_env = np.zeros(total_n, dtype=np.float32)
+    synth_env = np.ones(total_n, dtype=np.float32)
+    extra = np.zeros((total_n,2), dtype=np.float32)
+    acc = 0.0
+    for name, frac in secs:
+        a = int(acc*total_n); acc += frac; b = min(total_n, int(acc*total_n))
+        n = b-a
+        if n <= 0:
+            continue
+        if name == "intro":
+            drum_env[a:b] = np.linspace(0.0,0.45,n); synth_env[a:b] = np.linspace(0.35,0.6,n)
+        elif name == "build":
+            drum_env[a:b] = np.linspace(0.45,0.7,n); synth_env[a:b] = np.linspace(0.6,0.8,n)
+            ramp = np.linspace(0,1,n)**2                      # riser (bruit montant)
+            noise = rng.randn(n)*ramp*0.12
+            extra[a:b,0] += noise; extra[a:b,1] += noise
+            roll_start = max(a, b-int(2*4*beat*SR))           # snare roll accélérant
+            pos = float(roll_start); step = beat/2*SR
+            while pos < b:
+                sn = _snare(rng=rng)*0.4*min(1.0, 0.4+(pos-roll_start)/max(1,(b-roll_start)))
+                _place(extra[:,0], sn, pos/SR); _place(extra[:,1], sn, pos/SR)
+                pos += step; step = max(beat/8*SR, step*0.82)
+        elif name in ("drop","drop2"):
+            drum_env[a:b] = 1.0; synth_env[a:b] = 1.0
+        elif name == "break":
+            drum_env[a:b] = 0.0; synth_env[a:b] = np.linspace(0.5,0.45,n)
+        elif name == "outro":
+            drum_env[a:b] = np.linspace(1.0,0.2,n); synth_env[a:b] = np.linspace(1.0,0.0,n)
+    return drum_env, synth_env, extra
+
+
 # --------------------------------------------------------------- compose
 def generate(params: dict) -> np.ndarray:
     mood = params.get("mood","lofi")
@@ -233,6 +273,7 @@ def generate(params: dict) -> np.ndarray:
     dur = float(params.get("duration", 30))
     seed = int(params.get("seed", 7))
     intensity = float(params.get("intensity", 0.5))
+    dj = bool(params.get("dj", False))
     key_name = params.get("key","La")
     scale_name = params.get("scale") or cfg["scale"]
 
@@ -297,6 +338,12 @@ def generate(params: dict) -> np.ndarray:
     root_hz = _midi_hz(root)/4.0     # basse de kick calée sur la tonalité
     drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng,
                         cfg.get("swing",0.0), hard=cfg.get("hard",False), root=root_hz)
+
+    # structure « DJ » : intro / build-up / drop / breakdown / drop / outro
+    if dj:
+        de, se, extra = _dj_structure(total_n, beat, rng)
+        drums = drums*de[:,None] + extra
+        pads = pads*se[:,None]; bass = bass*se[:,None]; lead = lead*se[:,None]
 
     # gros son : saturation des synthés (hardstyle / hardcore / dubstep…)
     synths = pads + bass*1.0 + lead

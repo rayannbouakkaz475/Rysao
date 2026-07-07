@@ -104,6 +104,23 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .mix2info .swap{border:1px solid var(--ligne);background:transparent;color:var(--gris);border-radius:20px;padding:4px 12px;font-family:var(--sans);font-size:12px;cursor:pointer}
 .mix2info .swap:hover{border-color:var(--or);color:var(--or)}
 
+/* Mode DJ IA */
+.djwrap{background:linear-gradient(180deg,#111015,#0b0b0e)}
+.dj{border:1px solid var(--ligne-vive);border-radius:16px;padding:26px;background:radial-gradient(120% 140% at 0% 0%,rgba(201,167,113,.08),transparent)}
+.djhead{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.djicon{font-size:34px;flex:0 0 auto}
+.djhead h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--ivoire)}
+.djrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.djrow select{width:auto;min-width:210px}
+.djbig{font-size:15px;padding:15px 30px}
+.djcard{display:none;margin-top:20px;border:1px solid var(--ligne);border-radius:12px;padding:18px 20px;background:var(--noir-carte)}
+.djcard.show{display:block}
+.djcard .dn{font-family:var(--serif);font-size:22px;color:var(--or)}
+.djcard .dv{font-size:13px;color:var(--gris);margin:2px 0 12px}
+.djcard .dsteps{display:flex;flex-wrap:wrap;gap:8px}
+.djcard .dstep{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ivoire-doux);border:1px solid var(--ligne);border-radius:20px;padding:5px 12px}
+.djcard .dstep b{color:var(--or);font-weight:400}
+
 /* Controls */
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
 .ctrl label{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em;color:var(--ivoire-doux);margin-bottom:8px}
@@ -255,6 +272,29 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
 
     <div class="tracks" id="tracks"></div>
     <div class="status" id="importStatus"></div>
+  </div>
+</section>
+
+<!-- MODE DJ IA -->
+<section class="block djwrap">
+  <div class="wrap">
+    <div class="dj">
+      <div class="djhead">
+        <div class="djicon">🎧</div>
+        <div>
+          <h2>Mode DJ — l'IA fait tout</h2>
+          <div class="sub">Un seul clic : le DJ IA choisit le style, le tempo, la structure (intro → montée → drop → breakdown) et mixe pour vous.</div>
+        </div>
+      </div>
+      <div class="djrow">
+        <select id="djPersona" title="Style du DJ"></select>
+        <button class="btn solid djbig" id="djGo">🎧 Laisse le DJ mixer</button>
+        <button class="btn ghost" id="djAgain" style="display:none">↻ Un autre set</button>
+      </div>
+      <div class="djcard" id="djCard"></div>
+      <div class="bar-load" id="loadbar3"><i></i></div>
+      <div class="status" id="djStatus"></div>
+    </div>
   </div>
 </section>
 
@@ -670,6 +710,96 @@ async function generateMusic(reseed){
 }
 const genState={seed:null};
 function loading2(on){const b=$("loadbar2");b.classList.toggle("show",on);b.querySelector("i").style.width=on?"85%":"100%";if(!on)setTimeout(()=>{b.querySelector("i").style.width="0%"},300)}
+function loading3(on){const b=$("loadbar3");if(!b)return;b.classList.toggle("show",on);b.querySelector("i").style.width=on?"85%":"100%";if(!on)setTimeout(()=>{b.querySelector("i").style.width="0%"},300)}
+
+/* ============================================================
+   MODE DJ IA — le DJ choisit tout et fait le morceau
+   ============================================================ */
+const DJ_PERSONAS=[
+  {id:"nova",  name:"DJ Nova",  vibe:"Big-room festival EDM",  mood:"house",    energy:80,
+   remix:{speed:1.06,slice:1,shuf:45,rev:20,del:20,stut:35,revr:5,filter:"sweepup",keepPitch:true}},
+  {id:"titan", name:"Titan",    vibe:"Hardstyle mainstage",    mood:"hardstyle",energy:92,
+   remix:{speed:1.14,slice:1,shuf:45,rev:15,del:12,stut:45,revr:12,filter:"sweepup",keepPitch:false}},
+  {id:"shadow",name:"Shadow",   vibe:"Phonk / drift",          mood:"phonk",    energy:65,
+   remix:{speed:0.9,slice:2,shuf:25,rev:35,del:20,stut:25,revr:5,filter:"lowpass",keepPitch:false}},
+  {id:"pulse", name:"Pulse",    vibe:"Techno underground",     mood:"techno",   energy:78,
+   remix:{speed:1.0,slice:1,shuf:40,rev:20,del:22,stut:30,revr:5,filter:"sweepup",keepPitch:true}},
+  {id:"mirage",name:"Mirage",   vibe:"Trance mélodique",       mood:"trance",   energy:70,
+   remix:{speed:1.0,slice:2,shuf:30,rev:45,del:30,stut:15,revr:5,filter:"sweepup",keepPitch:true}},
+  {id:"riddim",name:"Riddim",   vibe:"Dubstep / bass",         mood:"dubstep",  energy:86,
+   remix:{speed:1.0,slice:1,shuf:40,rev:20,del:25,stut:50,revr:12,filter:"sweepdown",keepPitch:true}},
+  {id:"vice",  name:"Vice",     vibe:"Trap / hip-hop",         mood:"trap",     energy:70,
+   remix:{speed:0.95,slice:1,shuf:30,rev:25,del:18,stut:35,revr:8,filter:"none",keepPitch:false}},
+  {id:"dusk",  name:"Dusk",     vibe:"Lo-fi chill",            mood:"lofi",     energy:42,
+   remix:{speed:0.9,slice:2,shuf:20,rev:45,del:25,stut:10,revr:3,filter:"lowpass",keepPitch:false}},
+];
+function populateDJ(){
+  const sel=$("djPersona"); if(!sel)return;
+  sel.innerHTML='<option value="random">🎲 Surprise — le DJ choisit</option>'+
+    DJ_PERSONAS.map(p=>`<option value="${p.id}">${p.name} — ${p.vibe}</option>`).join("");
+}
+function pickPersona(){
+  const v=$("djPersona")?$("djPersona").value:"random";
+  if(v==="random") return DJ_PERSONAS[Math.floor(Math.random()*DJ_PERSONAS.length)];
+  return DJ_PERSONAS.find(p=>p.id===v)||DJ_PERSONAS[0];
+}
+function djCard(p, steps){
+  const el=$("djCard"); if(!el)return;
+  el.innerHTML=`<div class="dn">🎧 ${p.name}</div><div class="dv">${p.vibe}</div>
+    <div class="dsteps">${steps.map(s=>`<span class="dstep">${s}</span>`).join("")}</div>`;
+  el.classList.add("show");
+}
+async function djGo(reseed){
+  const p=pickPersona();
+  const ready=state.tracks.some(t=>t.sel&&!t.mute);
+  if(ready){ await djRemix(p,reseed); }
+  else if(backend.authed && backend.caps.music_generation){ await djGenerate(p,reseed); }
+  else { setStatus("djStatus","Importe une musique (ou connecte le serveur) pour lancer le DJ.","err"); }
+}
+async function djRemix(p, reseed){
+  // le DJ applique son style + une vraie structure + un drop si 2 morceaux
+  setMode("manuel");
+  const R=p.remix;
+  setSlider("sSpeed",R.speed,"vSpeed",v=>(+v).toFixed(2));
+  setSlider("sSlice",R.slice,"vSlice");
+  setSlider("sShuf",R.shuf,"vShuf");
+  setSlider("sRev",R.rev,"vRev"); setSlider("sDel",R.del,"vDel");
+  setSlider("sStut",R.stut,"vStut"); setSlider("sRevr",R.revr,"vRevr");
+  if($("selFilter"))$("selFilter").value=R.filter;
+  if($("keepPitch"))$("keepPitch").checked=R.keepPitch!==false;
+  const two=state.tracks.filter(t=>t.sel&&!t.mute).length>=2;
+  if(two){ state.arrangement="transition"; document.querySelectorAll("#mix2 .switch button").forEach(b=>b.classList.toggle("on",b.dataset.arr==="transition")); updateMix2(state.tracks.filter(t=>t.sel&&!t.mute)); }
+  djCard(p, ["Tempo & tonalité auto","Intro filtrée","Build-up",two?"Drop A→B":"Drop",two?"2e partie":"Breakdown","Structure DJ"]);
+  await generate(reseed, true);          // dj=true -> structure
+  state.lastKind="dj";
+  $("djAgain").style.display="";
+}
+async function djGenerate(p, reseed){
+  loading3(true); setStatus("djStatus",`${p.name} compose un morceau ${p.vibe}…`);
+  $("djGo").disabled=true;
+  try{
+    const seed=Math.floor(Math.random()*1e9);
+    const spec={mood:p.mood, dj:true, duration:Math.max(40,+($("genDur")?$("genDur").value:40)),
+                intensity:p.energy/100, seed};
+    const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
+    const r=await backend.api("/api/generate",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("generate "+r.status);
+    const out=await r.json();
+    if(out.error){ setStatus("djStatus",out.error,"err"); return; }
+    const blob=await (await backend.api("/api/file/"+out.id)).blob();
+    state.serverBlob=blob; state.serverName=out.file; state.lastKind="dj";
+    const ctx=new AC(); state.result=await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
+    state._seed=seed; stopPlayback();
+    $("resultBlock").style.display="block";
+    $("rTitle").textContent=`🎧 ${p.name} — ${p.vibe}`;
+    $("rRecipe").innerHTML=`Morceau original composé par l'IA · structure <b>intro → build-up → drop → breakdown → drop → outro</b>`;
+    $("tTot").textContent=fmtTime(state.result.duration); $("tCur").textContent="0:00"; $("seekFill").style.width="0%";
+    djCard(p, ["Style "+p.vibe,"Intro","Build-up","Drop","Breakdown","2e Drop","Outro"]);
+    $("resultBlock").scrollIntoView({behavior:"smooth"});
+    setStatus("djStatus","Set prêt ✦","ok"); $("djAgain").style.display="";
+  }catch(e){ setStatus("djStatus","Erreur : "+e.message,"err"); }
+  finally{ loading3(false); $("djGo").disabled=false; }
+}
 
 /* ============================================================
    IMPORT + DÉCODAGE
@@ -942,6 +1072,11 @@ renderPresets();
 $("helpToggle").onclick=()=>$("helpBox").classList.toggle("show");
 $("presetHelp").onclick=()=>{$("helpBox").classList.add("show");$("helpBox").scrollIntoView({behavior:"smooth",block:"nearest"});};
 
+// Mode DJ IA
+populateDJ();
+$("djGo").onclick=()=>djGo(true);
+$("djAgain").onclick=()=>djGo(true);
+
 const bind=(sid,vid,fmt)=>{const s=$(sid),v=$(vid);const up=()=>v.textContent=fmt?fmt(s.value):s.value;s.oninput=up;up()};
 bind("sDur","vDur");
 bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
@@ -961,7 +1096,7 @@ document.querySelectorAll("#engineBox .switch button").forEach(b=>b.onclick=()=>
 
 $("gen").onclick=()=>generate();
 $("regen").onclick=()=>generate(true);
-$("regen2").onclick=()=>{ state.lastKind==="music"?generateMusic(true):generate(true); };
+$("regen2").onclick=()=>{ state.lastKind==="dj"?djGo(true):(state.lastKind==="music"?generateMusic(true):generate(true)); };
 
 // Contrôles de création
 bind("genDur","vGenDur");
@@ -1068,9 +1203,29 @@ async function renderRemix(r){
 
   // Filtre global optionnel
   let masterOut=master;
-  if(r.filter!=="none"){
+  const T=r.dur;
+  if(r.dj){
+    // Structure DJ : intro/breakdown filtrés & plus bas, drops ouverts & forts.
+    const mf=ctx.createBiquadFilter(); mf.type="lowpass";
+    mf.frequency.setValueAtTime(500,0);
+    mf.frequency.linearRampToValueAtTime(1200,T*0.12);
+    mf.frequency.exponentialRampToValueAtTime(18000,T*0.24);
+    mf.frequency.setValueAtTime(18000,T*0.50);
+    mf.frequency.exponentialRampToValueAtTime(700,T*0.52);
+    mf.frequency.setValueAtTime(700,T*0.64);
+    mf.frequency.exponentialRampToValueAtTime(18000,T*0.66);
+    mf.frequency.setValueAtTime(18000,T);
+    master.gain.setValueAtTime(0.5,0);
+    master.gain.linearRampToValueAtTime(0.9,T*0.24);
+    master.gain.setValueAtTime(0.9,T*0.50);
+    master.gain.linearRampToValueAtTime(0.55,T*0.52);
+    master.gain.setValueAtTime(0.55,T*0.64);
+    master.gain.linearRampToValueAtTime(0.95,T*0.66);
+    master.gain.setValueAtTime(0.95,T*0.90);
+    master.gain.linearRampToValueAtTime(0.7,T);
+    master.connect(mf); mf.connect(ctx.destination);
+  }else if(r.filter!=="none"){
     const f=ctx.createBiquadFilter();
-    const T=r.dur;
     if(r.filter==="lowpass"){f.type="lowpass";f.frequency.value=1200}
     else if(r.filter==="highpass"){f.type="highpass";f.frequency.value=600}
     else if(r.filter==="sweepup"){f.type="lowpass";f.frequency.setValueAtTime(300,0);f.frequency.exponentialRampToValueAtTime(16000,T)}
@@ -1196,7 +1351,7 @@ function makeImpulse(ctx,dur,decay){
 /* ============================================================
    GÉNÉRATION (orchestration)
    ============================================================ */
-async function generate(reseed){
+async function generate(reseed, dj){
   const sel=state.tracks.filter(t=>t.sel && !t.mute);
   if(!sel.length){
     const anySel=state.tracks.some(t=>t.sel);
@@ -1211,6 +1366,7 @@ async function generate(reseed){
   $("gen").disabled=$("regen").disabled=true;
   try{
     const r=buildRecipe(reseed);
+    r.dj = dj===true;   // structure DJ (intro / build / drop / breakdown)
     let buf;
     if(server){
       buf=await generateServer(r,sel);
@@ -1242,7 +1398,7 @@ async function generateServer(r,sel){
       shuffle:r.shuffle, reverb:r.reverb, delay:r.delay,
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
-      arrangement:r.arrangement, dropAt:r.dropAt
+      arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };
