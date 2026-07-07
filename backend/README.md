@@ -9,6 +9,8 @@ peut pas** offrir :
 | Mixage par piste (volume + mute) | ✅ | ✅ |
 | Égaliseur 3 bandes par piste (graves/médiums/aigus) | ✅ | ✅ |
 | Boost de basses + contrôle du tempo (BPM) | ✅ | ✅ |
+| Puissance / distorsion réglable | ✅ | ✅ |
+| Mode DJ : durée du set + nombre de drops réglables | ✅ | ✅ |
 | Visualisation spectrale à la lecture | ✅ | ✅ |
 | Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |

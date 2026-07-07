@@ -226,14 +226,29 @@ def _drum_track(pattern, bars, beat, total_n, rng, swing=0.0, hard=False, root=5
 
 
 # ------------------------------------------------ structure « DJ / producteur »
-def _dj_structure(total_n, beat, rng):
+def _dj_sections(drops=2):
+    """Liste (type, fraction) : intro → [build → drop → break] × N → outro."""
+    drops = max(1, min(4, int(drops)))
+    unit_w, break_w, body = 1.0, 0.5, 0.78
+    total_w = drops*unit_w + (drops-1)*break_w
+    secs = [("intro", 0.12)]
+    for i in range(drops):
+        u = body*(unit_w/total_w)
+        secs.append(("build", u*0.4))
+        secs.append(("drop",  u*0.6))
+        if i < drops-1:
+            secs.append(("break", body*(break_w/total_w)))
+    secs.append(("outro", 0.10))
+    return secs
+
+
+def _dj_structure(total_n, beat, rng, drops=2):
     """
     Enveloppes de sections d'un vrai morceau produit :
-    intro → build-up (riser + snare roll) → drop → breakdown → 2e drop → outro.
-    Retourne (env_batterie, env_synthés, extra_stéréo).
+    intro → build-up (riser + snare roll) → drop → breakdown → … → outro.
+    Le nombre de drops est réglable. Retourne (env_batterie, env_synthés, extra).
     """
-    secs = [("intro",0.12),("build",0.12),("drop",0.26),
-            ("break",0.14),("drop2",0.24),("outro",0.12)]
+    secs = _dj_sections(drops)
     drum_env = np.zeros(total_n, dtype=np.float32)
     synth_env = np.ones(total_n, dtype=np.float32)
     extra = np.zeros((total_n,2), dtype=np.float32)
@@ -274,6 +289,8 @@ def generate(params: dict) -> np.ndarray:
     seed = int(params.get("seed", 7))
     intensity = float(params.get("intensity", 0.5))
     dj = bool(params.get("dj", False))
+    drops = int(params.get("drops", 2))
+    power = float(params.get("power", 0))
     key_name = params.get("key","La")
     scale_name = params.get("scale") or cfg["scale"]
 
@@ -339,9 +356,9 @@ def generate(params: dict) -> np.ndarray:
     drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng,
                         cfg.get("swing",0.0), hard=cfg.get("hard",False), root=root_hz)
 
-    # structure « DJ » : intro / build-up / drop / breakdown / drop / outro
+    # structure « DJ » : intro / build-up / drop / breakdown / … / outro
     if dj:
-        de, se, extra = _dj_structure(total_n, beat, rng)
+        de, se, extra = _dj_structure(total_n, beat, rng, drops)
         drums = drums*de[:,None] + extra
         pads = pads*se[:,None]; bass = bass*se[:,None]; lead = lead*se[:,None]
 
@@ -350,6 +367,8 @@ def generate(params: dict) -> np.ndarray:
     if cfg.get("distortion"):
         synths = _distort(synths, float(cfg["distortion"]))
     mix = synths + drums*(0.75+0.3*intensity)
+    if power > 0:                                     # puissance / distorsion réglable
+        mix = _distort(mix, power)
 
     # effets d'ambiance
     mix = ae.apply_reverb(mix, cfg["reverb"])
