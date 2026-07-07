@@ -389,6 +389,11 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <input type="range" id="sPower" min="0" max="100" step="5" value="0">
         <div class="phint">Sature le son : plus haut = plus agressif / hardcore. ⚡</div>
       </div>
+      <div class="ctrl">
+        <label>Ambiance / Reverb <b><span id="vAmb">0</span>%</b></label>
+        <input type="range" id="sAmb" min="0" max="100" step="5" value="0">
+        <div class="phint">Ajoute de l'espace / écho de salle. 🌌</div>
+      </div>
     </div>
 
     <!-- Réglages manuels -->
@@ -518,6 +523,11 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <label>Puissance / Distorsion <b><span id="vGenPower">0</span>%</b></label>
         <input type="range" id="genPower" min="0" max="100" step="5" value="0">
         <div class="phint">Sature le son : plus haut = plus agressif. ⚡</div>
+      </div>
+      <div class="ctrl">
+        <label>Ambiance / Reverb <b><span id="vGenAmb">0</span>%</b></label>
+        <input type="range" id="genAmb" min="0" max="100" step="5" value="0">
+        <div class="phint">Ajoute de l'espace / écho de salle. 🌌</div>
       </div>
     </div>
 
@@ -769,6 +779,12 @@ const DJ_PERSONAS=[
    remix:{speed:0.95,slice:1,shuf:30,rev:25,del:18,stut:35,revr:8,filter:"none",keepPitch:false}},
   {id:"dusk",  name:"Dusk",     vibe:"Lo-fi chill",            mood:"lofi",     energy:42, power:0.0, bass:3,
    remix:{speed:0.9,slice:2,shuf:20,rev:45,del:25,stut:10,revr:3,filter:"lowpass",keepPitch:false}},
+  {id:"frappe",name:"Frappe",   vibe:"Frenchcore / mainstage", mood:"hardcore", energy:96, power:0.6, bass:8, bpm:200,
+   remix:{speed:1.3,slice:1,shuf:55,rev:12,del:10,stut:55,revr:15,filter:"sweepup",keepPitch:false}},
+  {id:"solar", name:"Solar",    vibe:"Afro house",             mood:"afro",     energy:66, power:0.1, bass:6, bpm:122,
+   remix:{speed:1.0,slice:2,shuf:30,rev:30,del:22,stut:20,revr:5,filter:"sweepup",keepPitch:true}},
+  {id:"onyx",  name:"Onyx",     vibe:"Drill UK",               mood:"trap",     energy:68, power:0.2, bass:8, bpm:142,
+   remix:{speed:0.92,slice:1,shuf:30,rev:22,del:16,stut:30,revr:8,filter:"none",keepPitch:false}},
 ];
 function populateDJ(){
   const sel=$("djPersona"); if(!sel)return;
@@ -825,6 +841,7 @@ async function djGenerate(p, reseed){
                 intensity:p.energy/100, seed, ...ex,
                 power:Math.max(p.power||0, ex.power||0),
                 bass:Math.max(p.bass||0, ex.bass||0)};
+    if(!("bpm" in ex) && p.bpm) spec.bpm=p.bpm;    // tempo signature du DJ
     const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
     const r=await backend.api("/api/generate",{method:"POST",body:fd});
     if(!r.ok)throw new Error("generate "+r.status);
@@ -1128,7 +1145,7 @@ bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
 bind("sSlice","vSlice");
 bind("sShuf","vShuf");
 bind("sRev","vRev"); bind("sDel","vDel"); bind("sStut","vStut"); bind("sRevr","vRevr");
-bind("sBass","vBass"); bind("sPower","vPower");
+bind("sBass","vBass"); bind("sPower","vPower"); bind("sAmb","vAmb");
 bind("djDur","vDjDur");
 $("sEnergy").oninput=e=>{const v=+e.target.value;$("vEnergy").textContent=v<33?"délicat":v<66?"équilibré":"audacieux"};
 $("bpmAuto").onclick=()=>{state.bpmAuto=!state.bpmAuto;$("bpmAuto").classList.toggle("on",state.bpmAuto);
@@ -1147,12 +1164,12 @@ $("regen2").onclick=()=>{ state.lastKind==="dj"?djGo(true):(state.lastKind==="mu
 
 // Contrôles de création
 let genBpmAuto=true;
-bind("genDur","vGenDur"); bind("genBass","vGenBass"); bind("genPower","vGenPower");
+bind("genDur","vGenDur"); bind("genBass","vGenBass"); bind("genPower","vGenPower"); bind("genAmb","vGenAmb");
 $("genInt").oninput=e=>{const v=+e.target.value;$("vGenInt").textContent=v<33?"doux":v<66?"équilibré":"intense"};
 $("genBpm").oninput=e=>{if(!genBpmAuto)$("vGenBpm").textContent=e.target.value};
 $("genBpmAuto").onclick=()=>{genBpmAuto=!genBpmAuto;$("genBpmAuto").classList.toggle("on",genBpmAuto);
   $("vGenBpm").textContent=genBpmAuto?"auto":$("genBpm").value};
-function genExtra(){ const o={bass:+($("genBass").value||0), power:+($("genPower").value||0)/100}; if(!genBpmAuto)o.bpm=+$("genBpm").value; return o; }
+function genExtra(){ const o={bass:+($("genBass").value||0), power:+($("genPower").value||0)/100, ambiance:+($("genAmb").value||0)/100}; if(!genBpmAuto)o.bpm=+$("genBpm").value; return o; }
 $("genMusic").onclick=()=>generateMusic(false);
 $("genSurprise").onclick=()=>generateMusic(true);
 if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.target.value==="neural"?1:.5;
@@ -1201,6 +1218,7 @@ function buildRecipe(reseed){
 
   r.bass = +($("sBass").value||0);   // boost de basses (dB)
   r.power = +($("sPower").value||0)/100;   // puissance / distorsion
+  r.ambiance = +($("sAmb").value||0)/100;  // ambiance / reverb globale
   r.djDrops = +(($("djDrops")&&$("djDrops").value)||2);   // nombre de drops (mode DJ)
 
   // Mélange de 2 morceaux : superposition (blend) ou transition/drop.
@@ -1249,7 +1267,7 @@ async function renderRemix(r){
   const master=ctx.createGain(); master.gain.value=0.9;
 
   const convolver=ctx.createConvolver(); convolver.buffer=makeImpulse(ctx,2.2,2.5);
-  const revGain=ctx.createGain(); revGain.gain.value=r.reverb;
+  const revGain=ctx.createGain(); revGain.gain.value=Math.min(0.95, r.reverb + (r.ambiance||0)*0.7);
   convolver.connect(revGain).connect(master);
 
   const delay=ctx.createDelay(1.5); delay.delayTime.value=60/r.bpm*0.75; // dotted-ish
@@ -1401,7 +1419,19 @@ async function renderRemix(r){
   }
 
   const rendered=await ctx.startRendering();
+  fadeOutBuffer(rendered, 1.2);      // fondu de fin propre
   return rendered;
+}
+
+/* Fondu de fin sur un AudioBuffer (in place) */
+function fadeOutBuffer(buf, seconds){
+  const sr=buf.sampleRate;
+  const n=Math.min(Math.floor(seconds*sr), Math.floor(buf.length*0.25));
+  if(n<=0)return;
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const d=buf.getChannelData(c), L=buf.length;
+    for(let i=0;i<n;i++){ d[L-n+i]*= (n-1-i)/(n-1); }
+  }
 }
 
 /* Égaliseur 3 bandes (graves/médiums/aigus) pour une piste */
@@ -1492,7 +1522,7 @@ async function generateServer(r,sel){
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
       arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj, bass:r.bass,
-      power:r.power, drops:r.djDrops
+      power:r.power, drops:r.djDrops, ambiance:r.ambiance
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };

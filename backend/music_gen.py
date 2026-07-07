@@ -370,8 +370,8 @@ def generate(params: dict) -> np.ndarray:
     if power > 0:                                     # puissance / distorsion réglable
         mix = _distort(mix, power)
 
-    # effets d'ambiance
-    mix = ae.apply_reverb(mix, cfg["reverb"])
+    # effets d'ambiance (+ reverb globale réglable)
+    mix = ae.apply_reverb(mix, min(0.95, cfg["reverb"] + float(params.get("ambiance", 0))))
     mix = ae.apply_delay(mix, cfg["delay"], bpm)
 
     mix = ae.apply_bass(mix, params.get("bass", 0))       # boost de basses
@@ -382,6 +382,7 @@ def generate(params: dict) -> np.ndarray:
     peak = np.abs(mix).max()
     if peak > 1e-6:
         mix = mix/peak*0.95
+    mix = ae.fade_out(mix, 1.2)                            # fondu de fin propre
     return mix.astype(np.float32)
 
 
