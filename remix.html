@@ -110,6 +110,10 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .djhead{display:flex;align-items:center;gap:16px;margin-bottom:20px}
 .djicon{font-size:34px;flex:0 0 auto}
 .djhead h2{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--ivoire)}
+.djopts{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:18px}
+.djopts label{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--ivoire-doux);min-width:180px}
+.djopts label b{color:var(--or);font-weight:400}
+.djopts select{width:auto;min-width:80px}
 .djrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .djrow select{width:auto;min-width:210px}
 .djbig{font-size:15px;padding:15px 30px}
@@ -286,6 +290,12 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
           <div class="sub">Un seul clic : le DJ IA choisit le style, le tempo, la structure (intro → montée → drop → breakdown) et mixe pour vous.</div>
         </div>
       </div>
+      <div class="djopts">
+        <label>Durée du set <b><span id="vDjDur">60</span> s</b>
+          <input type="range" id="djDur" min="30" max="180" step="10" value="60"></label>
+        <label>Nombre de drops
+          <select id="djDrops"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+      </div>
       <div class="djrow">
         <select id="djPersona" title="Style du DJ"></select>
         <button class="btn solid djbig" id="djGo">🎧 Laisse le DJ mixer</button>
@@ -373,6 +383,11 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <label>Basses (boost) <b>+<span id="vBass">0</span> dB</b></label>
         <input type="range" id="sBass" min="0" max="12" step="1" value="0">
         <div class="phint">Ajoute du grave / sub pour un son plus gros. 💥</div>
+      </div>
+      <div class="ctrl">
+        <label>Puissance / Distorsion <b><span id="vPower">0</span>%</b></label>
+        <input type="range" id="sPower" min="0" max="100" step="5" value="0">
+        <div class="phint">Sature le son : plus haut = plus agressif / hardcore. ⚡</div>
       </div>
     </div>
 
@@ -498,6 +513,11 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <label>Basses (boost) <b>+<span id="vGenBass">0</span> dB</b></label>
         <input type="range" id="genBass" min="0" max="12" step="1" value="0">
         <div class="phint">Ajoute du grave pour un son plus gros. 💥</div>
+      </div>
+      <div class="ctrl">
+        <label>Puissance / Distorsion <b><span id="vGenPower">0</span>%</b></label>
+        <input type="range" id="genPower" min="0" max="100" step="5" value="0">
+        <div class="phint">Sature le son : plus haut = plus agressif. ⚡</div>
       </div>
     </div>
 
@@ -733,21 +753,21 @@ function loading3(on){const b=$("loadbar3");if(!b)return;b.classList.toggle("sho
    MODE DJ IA — le DJ choisit tout et fait le morceau
    ============================================================ */
 const DJ_PERSONAS=[
-  {id:"nova",  name:"DJ Nova",  vibe:"Big-room festival EDM",  mood:"house",    energy:80,
+  {id:"nova",  name:"DJ Nova",  vibe:"Big-room festival EDM",  mood:"house",    energy:80, power:0.15, bass:6,
    remix:{speed:1.06,slice:1,shuf:45,rev:20,del:20,stut:35,revr:5,filter:"sweepup",keepPitch:true}},
-  {id:"titan", name:"Titan",    vibe:"Hardstyle mainstage",    mood:"hardstyle",energy:92,
+  {id:"titan", name:"Titan",    vibe:"Hardstyle mainstage",    mood:"hardstyle",energy:92, power:0.55, bass:8,
    remix:{speed:1.14,slice:1,shuf:45,rev:15,del:12,stut:45,revr:12,filter:"sweepup",keepPitch:false}},
-  {id:"shadow",name:"Shadow",   vibe:"Phonk / drift",          mood:"phonk",    energy:65,
+  {id:"shadow",name:"Shadow",   vibe:"Phonk / drift",          mood:"phonk",    energy:65, power:0.25, bass:7,
    remix:{speed:0.9,slice:2,shuf:25,rev:35,del:20,stut:25,revr:5,filter:"lowpass",keepPitch:false}},
-  {id:"pulse", name:"Pulse",    vibe:"Techno underground",     mood:"techno",   energy:78,
+  {id:"pulse", name:"Pulse",    vibe:"Techno underground",     mood:"techno",   energy:78, power:0.2, bass:5,
    remix:{speed:1.0,slice:1,shuf:40,rev:20,del:22,stut:30,revr:5,filter:"sweepup",keepPitch:true}},
-  {id:"mirage",name:"Mirage",   vibe:"Trance mélodique",       mood:"trance",   energy:70,
+  {id:"mirage",name:"Mirage",   vibe:"Trance mélodique",       mood:"trance",   energy:70, power:0.05, bass:4,
    remix:{speed:1.0,slice:2,shuf:30,rev:45,del:30,stut:15,revr:5,filter:"sweepup",keepPitch:true}},
-  {id:"riddim",name:"Riddim",   vibe:"Dubstep / bass",         mood:"dubstep",  energy:86,
+  {id:"riddim",name:"Riddim",   vibe:"Dubstep / bass",         mood:"dubstep",  energy:86, power:0.45, bass:9,
    remix:{speed:1.0,slice:1,shuf:40,rev:20,del:25,stut:50,revr:12,filter:"sweepdown",keepPitch:true}},
-  {id:"vice",  name:"Vice",     vibe:"Trap / hip-hop",         mood:"trap",     energy:70,
+  {id:"vice",  name:"Vice",     vibe:"Trap / hip-hop",         mood:"trap",     energy:70, power:0.2, bass:7,
    remix:{speed:0.95,slice:1,shuf:30,rev:25,del:18,stut:35,revr:8,filter:"none",keepPitch:false}},
-  {id:"dusk",  name:"Dusk",     vibe:"Lo-fi chill",            mood:"lofi",     energy:42,
+  {id:"dusk",  name:"Dusk",     vibe:"Lo-fi chill",            mood:"lofi",     energy:42, power:0.0, bass:3,
    remix:{speed:0.9,slice:2,shuf:20,rev:45,del:25,stut:10,revr:3,filter:"lowpass",keepPitch:false}},
 ];
 function populateDJ(){
@@ -784,6 +804,9 @@ async function djRemix(p, reseed){
   setSlider("sStut",R.stut,"vStut"); setSlider("sRevr",R.revr,"vRevr");
   if($("selFilter"))$("selFilter").value=R.filter;
   if($("keepPitch"))$("keepPitch").checked=R.keepPitch!==false;
+  setSlider("sPower",Math.round((p.power||0)*100),"vPower");   // puissance du persona
+  setSlider("sBass",p.bass||0,"vBass");                        // basses du persona
+  setSlider("sDur",+($("djDur")?$("djDur").value:60),"vDur");  // durée du set
   const two=state.tracks.filter(t=>t.sel&&!t.mute).length>=2;
   if(two){ state.arrangement="transition"; document.querySelectorAll("#mix2 .switch button").forEach(b=>b.classList.toggle("on",b.dataset.arr==="transition")); updateMix2(state.tracks.filter(t=>t.sel&&!t.mute)); }
   djCard(p, ["Tempo & tonalité auto","Intro filtrée","Build-up",two?"Drop A→B":"Drop",two?"2e partie":"Breakdown","Structure DJ"]);
@@ -796,8 +819,12 @@ async function djGenerate(p, reseed){
   $("djGo").disabled=true;
   try{
     const seed=Math.floor(Math.random()*1e9);
-    const spec={mood:p.mood, dj:true, duration:Math.max(40,+($("genDur")?$("genDur").value:40)),
-                intensity:p.energy/100, seed, ...genExtra()};
+    const ex=genExtra();
+    const spec={mood:p.mood, dj:true, duration:+($("djDur")?$("djDur").value:60),
+                drops:+($("djDrops")?$("djDrops").value:2),
+                intensity:p.energy/100, seed, ...ex,
+                power:Math.max(p.power||0, ex.power||0),
+                bass:Math.max(p.bass||0, ex.bass||0)};
     const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
     const r=await backend.api("/api/generate",{method:"POST",body:fd});
     if(!r.ok)throw new Error("generate "+r.status);
@@ -808,10 +835,11 @@ async function djGenerate(p, reseed){
     const ctx=new AC(); state.result=await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
     state._seed=seed; stopPlayback();
     $("resultBlock").style.display="block";
+    const nd=+($("djDrops")?$("djDrops").value:2);
     $("rTitle").textContent=`🎧 ${p.name} — ${p.vibe}`;
-    $("rRecipe").innerHTML=`Morceau original composé par l'IA · structure <b>intro → build-up → drop → breakdown → drop → outro</b>`;
+    $("rRecipe").innerHTML=`Morceau original composé par l'IA · <b>${nd} drop${nd>1?"s":""}</b> · structure <b>intro → build-up → drop → breakdown → outro</b>`;
     $("tTot").textContent=fmtTime(state.result.duration); $("tCur").textContent="0:00"; $("seekFill").style.width="0%";
-    djCard(p, ["Style "+p.vibe,"Intro","Build-up","Drop","Breakdown","2e Drop","Outro"]);
+    djCard(p, ["Style "+p.vibe,"Intro","Build-up",nd+" drop"+(nd>1?"s":""),"Breakdown","Outro"]);
     $("resultBlock").scrollIntoView({behavior:"smooth"});
     setStatus("djStatus","Set prêt ✦","ok"); $("djAgain").style.display="";
   }catch(e){ setStatus("djStatus","Erreur : "+e.message,"err"); }
@@ -1100,7 +1128,8 @@ bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
 bind("sSlice","vSlice");
 bind("sShuf","vShuf");
 bind("sRev","vRev"); bind("sDel","vDel"); bind("sStut","vStut"); bind("sRevr","vRevr");
-bind("sBass","vBass");
+bind("sBass","vBass"); bind("sPower","vPower");
+bind("djDur","vDjDur");
 $("sEnergy").oninput=e=>{const v=+e.target.value;$("vEnergy").textContent=v<33?"délicat":v<66?"équilibré":"audacieux"};
 $("bpmAuto").onclick=()=>{state.bpmAuto=!state.bpmAuto;$("bpmAuto").classList.toggle("on",state.bpmAuto);
   $("vBpm").textContent=state.bpmAuto?"auto":$("sBpm").value};
@@ -1118,12 +1147,12 @@ $("regen2").onclick=()=>{ state.lastKind==="dj"?djGo(true):(state.lastKind==="mu
 
 // Contrôles de création
 let genBpmAuto=true;
-bind("genDur","vGenDur"); bind("genBass","vGenBass");
+bind("genDur","vGenDur"); bind("genBass","vGenBass"); bind("genPower","vGenPower");
 $("genInt").oninput=e=>{const v=+e.target.value;$("vGenInt").textContent=v<33?"doux":v<66?"équilibré":"intense"};
 $("genBpm").oninput=e=>{if(!genBpmAuto)$("vGenBpm").textContent=e.target.value};
 $("genBpmAuto").onclick=()=>{genBpmAuto=!genBpmAuto;$("genBpmAuto").classList.toggle("on",genBpmAuto);
   $("vGenBpm").textContent=genBpmAuto?"auto":$("genBpm").value};
-function genExtra(){ const o={bass:+($("genBass").value||0)}; if(!genBpmAuto)o.bpm=+$("genBpm").value; return o; }
+function genExtra(){ const o={bass:+($("genBass").value||0), power:+($("genPower").value||0)/100}; if(!genBpmAuto)o.bpm=+$("genBpm").value; return o; }
 $("genMusic").onclick=()=>generateMusic(false);
 $("genSurprise").onclick=()=>generateMusic(true);
 if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.target.value==="neural"?1:.5;
@@ -1171,6 +1200,8 @@ function buildRecipe(reseed){
   }
 
   r.bass = +($("sBass").value||0);   // boost de basses (dB)
+  r.power = +($("sPower").value||0)/100;   // puissance / distorsion
+  r.djDrops = +(($("djDrops")&&$("djDrops").value)||2);   // nombre de drops (mode DJ)
 
   // Mélange de 2 morceaux : superposition (blend) ou transition/drop.
   // "auto" = l'IA décide (et vise un résultat qui claque).
@@ -1226,34 +1257,46 @@ async function renderRemix(r){
   const delGain=ctx.createGain(); delGain.gain.value=r.delay;
   delay.connect(fb).connect(delay); delay.connect(delGain).connect(master);
 
-  // Boost de basses (low-shelf ~100 Hz) en sortie
+  // Sortie : boost de basses (low-shelf ~100 Hz) puis puissance/distorsion
   const bassNode=ctx.createBiquadFilter();
   bassNode.type="lowshelf"; bassNode.frequency.value=100; bassNode.gain.value=r.bass||0;
-  bassNode.connect(ctx.destination);
-  const DEST=bassNode;   // tout le master passe par le boost de basses
+  if(r.power>0){
+    const ws=ctx.createWaveShaper(); ws.curve=makeDriveCurve(r.power); ws.oversample="2x";
+    bassNode.connect(ws); ws.connect(ctx.destination);
+  }else{
+    bassNode.connect(ctx.destination);
+  }
+  const DEST=bassNode;   // tout le master passe par basses (+ distorsion)
 
   // Filtre global optionnel
   let masterOut=master;
   const T=r.dur;
   if(r.dj){
     // Structure DJ : intro/breakdown filtrés & plus bas, drops ouverts & forts.
+    // Nombre de drops réglable (sections calculées dynamiquement).
     const mf=ctx.createBiquadFilter(); mf.type="lowpass";
     mf.frequency.setValueAtTime(500,0);
-    mf.frequency.linearRampToValueAtTime(1200,T*0.12);
-    mf.frequency.exponentialRampToValueAtTime(18000,T*0.24);
-    mf.frequency.setValueAtTime(18000,T*0.50);
-    mf.frequency.exponentialRampToValueAtTime(700,T*0.52);
-    mf.frequency.setValueAtTime(700,T*0.64);
-    mf.frequency.exponentialRampToValueAtTime(18000,T*0.66);
-    mf.frequency.setValueAtTime(18000,T);
     master.gain.setValueAtTime(0.5,0);
-    master.gain.linearRampToValueAtTime(0.9,T*0.24);
-    master.gain.setValueAtTime(0.9,T*0.50);
-    master.gain.linearRampToValueAtTime(0.55,T*0.52);
-    master.gain.setValueAtTime(0.55,T*0.64);
-    master.gain.linearRampToValueAtTime(0.95,T*0.66);
-    master.gain.setValueAtTime(0.95,T*0.90);
-    master.gain.linearRampToValueAtTime(0.7,T);
+    for(const [type,s,e] of djSectionsJS(r.djDrops)){
+      const t0=s*T, t1=Math.max(s*T+0.001,e*T);
+      if(type==="intro"){
+        mf.frequency.setValueAtTime(500,t0); mf.frequency.linearRampToValueAtTime(1200,t1);
+        master.gain.setValueAtTime(0.5,t0); master.gain.linearRampToValueAtTime(0.75,t1);
+      }else if(type==="build"){
+        mf.frequency.setValueAtTime(1200,t0); mf.frequency.exponentialRampToValueAtTime(18000,t1);
+        master.gain.setValueAtTime(0.75,t0); master.gain.linearRampToValueAtTime(0.9,t1);
+      }else if(type==="drop"){
+        mf.frequency.setValueAtTime(18000,t0); master.gain.setValueAtTime(0.95,t0);
+      }else if(type==="break"){
+        mf.frequency.setValueAtTime(18000,t0);
+        mf.frequency.exponentialRampToValueAtTime(700,t0+0.06*(t1-t0));
+        mf.frequency.setValueAtTime(700,t1);
+        master.gain.setValueAtTime(0.55,t0);
+      }else if(type==="outro"){
+        mf.frequency.setValueAtTime(18000,t0);
+        master.gain.setValueAtTime(0.9,t0); master.gain.linearRampToValueAtTime(0.7,t1);
+      }
+    }
     master.connect(mf); mf.connect(DEST);
   }else if(r.filter!=="none"){
     const f=ctx.createBiquadFilter();
@@ -1371,6 +1414,25 @@ function makeEQ(ctx, eq){
   return {input:low, output:high};
 }
 
+/* Courbe de distorsion (tanh) pour le WaveShaper — miroir de apply_drive serveur */
+function makeDriveCurve(amount){
+  const k=amount*10, n=1024, c=new Float32Array(n), d=Math.tanh(1+k);
+  for(let i=0;i<n;i++){const x=i*2/n-1; c[i]=Math.tanh(x*(1+k))/d;}
+  return c;
+}
+
+/* Sections de structure DJ (miroir de _dj_sections serveur) -> [type,start,end] en fractions */
+function djSectionsJS(drops){
+  drops=Math.max(1,Math.min(4,drops||2));
+  const uw=1, bw=0.5, body=0.78, tw=drops*uw+(drops-1)*bw;
+  const secs=[["intro",0.12]];
+  for(let i=0;i<drops;i++){const u=body*(uw/tw);secs.push(["build",u*0.4]);secs.push(["drop",u*0.6]);if(i<drops-1)secs.push(["break",body*(bw/tw)]);}
+  secs.push(["outro",0.10]);
+  let acc=0; const out=[];
+  for(const [t,f] of secs){ out.push([t,acc,acc+f]); acc+=f; }
+  return out;
+}
+
 /* Impulse response synthétique pour la reverb */
 function makeImpulse(ctx,dur,decay){
   const sr=ctx.sampleRate,len=sr*dur,imp=ctx.createBuffer(2,len,sr);
@@ -1429,7 +1491,8 @@ async function generateServer(r,sel){
       shuffle:r.shuffle, reverb:r.reverb, delay:r.delay,
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
-      arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj, bass:r.bass
+      arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj, bass:r.bass,
+      power:r.power, drops:r.djDrops
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };

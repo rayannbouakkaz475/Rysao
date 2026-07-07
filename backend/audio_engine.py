@@ -281,6 +281,15 @@ def _biquad_sos(kind: str, f0: float, gain_db: float, Q: float = 1.0):
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
 
 
+def apply_drive(x: np.ndarray, amount: float) -> np.ndarray:
+    """Puissance / distorsion (saturation tanh). amount 0..1."""
+    amount = float(amount or 0)
+    if amount <= 0:
+        return x
+    k = 1 + amount * 10
+    return (np.tanh(x * k) / np.tanh(k)).astype(np.float32)
+
+
 def apply_bass(x: np.ndarray, db: float) -> np.ndarray:
     """Boost (ou coupe) de basses : low-shelf ~100 Hz, pour un son plus gros."""
     db = float(db or 0)
@@ -471,6 +480,7 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
     mix = apply_reverb(mix, float(recipe.get("reverb", 0.0)))
     mix = apply_delay(mix, float(recipe.get("delay", 0.0)), bpm)
     mix = apply_bass(mix, recipe.get("bass", 0))          # boost de basses
+    mix = apply_drive(mix, recipe.get("power", 0))        # puissance / distorsion
 
     # normalisation douce
     peak = np.abs(mix).max()
