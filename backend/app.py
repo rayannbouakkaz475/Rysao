@@ -14,6 +14,7 @@ from __future__ import annotations
 import os
 import uuid
 import json
+import asyncio
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
@@ -71,6 +72,7 @@ auth.startup_banner()
 @app.post("/api/login")
 async def api_login(response: Response, password: str = Form(...)):
     if not auth.check_password(password):
+        await asyncio.sleep(1.0)          # ralentit les tentatives par force brute
         raise HTTPException(401, "Mot de passe incorrect")
     token = auth.make_token()
     response.set_cookie("rysao_auth", token, httponly=True, samesite="lax",

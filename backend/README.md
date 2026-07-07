@@ -27,6 +27,13 @@ fonctions Pro.
 
 ---
 
+## Accès partout (iPhone, 4G/5G)
+
+Pour ouvrir le studio depuis ton téléphone en dehors de chez toi, héberge-le en
+ligne : voir **[DEPLOY.md](DEPLOY.md)** (déploiement « 1 clic » sur Render via
+`render.yaml`, ou Railway / Hugging Face Spaces / tunnel). Tu obtiens une adresse
+`https` protégée par ton mot de passe.
+
 ## Accès privé (mot de passe)
 
 Le studio est **privé** : quand le serveur tourne, toutes les opérations
