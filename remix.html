@@ -96,6 +96,13 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .helptoggle{background:transparent;border:1px solid var(--ligne);color:var(--gris);border-radius:20px;padding:7px 15px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:20px}
 .helptoggle:hover{border-color:var(--or);color:var(--or)}
 .phint{font-size:11.5px;color:var(--gris-fonce);margin-top:5px;line-height:1.45}
+.mix2{margin-bottom:24px;border:1px solid var(--ligne-vive);border-radius:12px;padding:18px;background:var(--noir-panneau)}
+.mix2 .lbl{font-family:var(--serif);font-size:18px;color:var(--ivoire);margin-bottom:12px}
+.mix2 .switch button{padding:9px 16px}
+.mix2info{font-size:12.5px;color:var(--gris);margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mix2info b{color:var(--or-mat);font-weight:400}
+.mix2info .swap{border:1px solid var(--ligne);background:transparent;color:var(--gris);border-radius:20px;padding:4px 12px;font-family:var(--sans);font-size:12px;cursor:pointer}
+.mix2info .swap:hover{border-color:var(--or);color:var(--or)}
 
 /* Controls */
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
@@ -284,6 +291,17 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <div class="t">✦ Manuel</div>
         <div class="d">Vous pilotez tempo, effets, découpe et intensité à la main.</div>
       </div>
+    </div>
+
+    <!-- Mélange de 2 morceaux (visible quand 2+ morceaux sont cochés) -->
+    <div class="mix2" id="mix2" style="display:none">
+      <div class="lbl">🎚️ Plusieurs morceaux — comment les combiner ?</div>
+      <div class="switch">
+        <button id="arrAuto" class="on" data-arr="auto">🤖 IA décide (bangers)</button>
+        <button id="arrBlend" data-arr="blend">🔀 Superposition — les deux ensemble</button>
+        <button id="arrTrans" data-arr="transition">🎬 Transition — démarre A, drop vers B</button>
+      </div>
+      <div class="mix2info" id="mix2info"></div>
     </div>
 
     <!-- Moteur de rendu (visible si serveur connecté) -->
@@ -492,6 +510,7 @@ const AC = window.AudioContext || window.webkitAudioContext;
 const state = {
   tracks: [],          // {name, buffer, revBuffer, bpm, sel, role, peaks}
   mode: "ia",
+  arrangement: "auto",  // "auto" (IA décide) | "blend" (ensemble) | "transition" (drop A->B)
   bpmAuto: true,
   result: null,        // AudioBuffer rendu
   recipeText: "",
@@ -813,10 +832,39 @@ function roleLabel(r){return {auto:"rôle auto",rythme:"rythme",melodie:"mélodi
 function cycleRole(i){const o=["auto","rythme","melodie","accent"];const t=state.tracks[i];t.role=o[(o.indexOf(t.role)+1)%o.length]}
 
 function refreshUI(){
+  const selTracks=state.tracks.filter(t=>t.sel && !t.mute);
   const n=state.tracks.filter(t=>t.sel).length;
   const cfg=$("cfg");
   if(n>0){cfg.style.opacity=1;cfg.style.pointerEvents="auto"}
   else{cfg.style.opacity=.45;cfg.style.pointerEvents="none"}
+  updateMix2(selTracks);
+}
+
+/* Bloc « Mélange 2 morceaux » : visible dès 2 morceaux cochés */
+function updateMix2(selTracks){
+  const box=$("mix2"); if(!box)return;
+  if(selTracks.length<2){ box.style.display="none"; return; }
+  box.style.display="block";
+  const info=$("mix2info");
+  if(state.arrangement==="transition"){
+    const a=selTracks[0].name, b=selTracks[1].name;
+    info.innerHTML=`Démarre par <b>${escapeHtml(a)}</b> → drop vers <b>${escapeHtml(b)}</b>`+
+      (selTracks.length>2?` (+ ${selTracks.length-2} au drop)`:"")+
+      ` <button class="swap" id="swap2">↔ Inverser</button>`;
+    const sw=$("swap2"); if(sw) sw.onclick=swapFirstTwo;
+  }else if(state.arrangement==="auto"){
+    info.innerHTML=`L'IA choisit à chaque génération : parfois les morceaux <b>ensemble</b>, parfois un <b>drop</b> de l'un vers l'autre. Appuyez sur <b>Générer</b> (ou « Autre version ») pour tenter un banger. 🔥`;
+  }else{
+    info.innerHTML=`Les ${selTracks.length} morceaux jouent <b>ensemble</b>, calés sur le même tempo.`;
+  }
+}
+function swapFirstTwo(){
+  // inverse l'ordre des deux premiers morceaux cochés (A ↔ B)
+  const idx=state.tracks.map((t,i)=>({t,i})).filter(o=>o.t.sel&&!o.t.mute).map(o=>o.i);
+  if(idx.length<2)return;
+  const [a,b]=idx;
+  [state.tracks[a],state.tracks[b]]=[state.tracks[b],state.tracks[a]];
+  renderTracks(); refreshUI();
 }
 
 /* ============================================================
@@ -829,6 +877,13 @@ function setMode(m){
   $("iaBox").classList.toggle("hide",m!=="ia");
 }
 document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>setMode(m.dataset.mode));
+
+// Mélange 2 morceaux : superposition vs transition/drop
+document.querySelectorAll("#mix2 .switch button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#mix2 .switch button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); state.arrangement=b.dataset.arr;
+  updateMix2(state.tracks.filter(t=>t.sel&&!t.mute));
+});
 
 /* ============================================================
    STYLES EN 1 CLIC (débutant) — règlent tout automatiquement
@@ -947,6 +1002,27 @@ function buildRecipe(reseed){
     };
   }
 
+  // Mélange de 2 morceaux : superposition (blend) ou transition/drop.
+  // "auto" = l'IA décide (et vise un résultat qui claque).
+  let arrangement="blend";
+  if(sel.length>=2){
+    if(state.arrangement==="auto"){
+      arrangement = (state.mode==="ia" && rnd()<0.55) ? "transition" : "blend";
+    }else{
+      arrangement = state.arrangement;
+    }
+  }
+  r.arrangement = arrangement;
+  r.dropAt = 0.5;
+  if(arrangement==="transition"){
+    r.dropAt = +(0.42+rnd()*0.16).toFixed(2);   // moment du drop varié (42–58 %)
+    if(state.mode==="ia"){                        // coup de boost "banger"
+      r.stutter = Math.max(r.stutter, 0.18);
+      r.reverse = Math.max(r.reverse, 0.08);
+      if(rnd()<0.6) r.filter = "sweepup";         // montée avant le drop
+    }
+  }
+
   // Rôles / couches
   r.layers=sel.map((t,i)=>{
     let role=t.role;
@@ -999,28 +1075,65 @@ async function renderRemix(r){
   const totalCells=Math.ceil(r.dur/cellDur);
   const rnd=mulberry32(r.seed^0x9e3779b9);
 
-  for(const layer of r.layers){
+  // Transition / drop : le morceau A joue, puis bascule vers B au milieu.
+  const trans = r.arrangement==="transition" && r.layers.length>=2;
+  const dropT = r.dur*(r.dropAt||0.5);
+  const dropCell = Math.floor(dropT/cellDur);
+
+  for(let li=0; li<r.layers.length; li++){
+    const layer=r.layers[li];
     const t=layer.track, srcBeat=60/t.bpm;
     const srcCells=Math.max(1,Math.floor(t.buffer.duration/(srcBeat*r.beatsPerCell*layer.speed)));
+
+    // fenêtre de temps de la couche (transition)
+    let winStart=0, winEnd=r.dur;
+    if(trans){ if(li===0){winStart=0;winEnd=dropT;} else {winStart=dropT;winEnd=r.dur;} }
+
     // arrangement de base (séquentiel bouclé) puis shuffle partiel
     const arr=[];
-    for(let i=0;i<totalCells;i++)arr.push(i%srcCells);
+    for(let i=0;i<totalCells;i++){
+      const base = (trans && li>=1) ? ((i-dropCell)%srcCells+srcCells)%srcCells : i%srcCells;
+      arr.push(base);   // B démarre depuis son intro au moment du drop
+    }
     for(let i=0;i<totalCells;i++){
       if(rnd()<r.shuffle){const j=Math.floor(rnd()*totalCells);[arr[i],arr[j]]=[arr[j],arr[i]]}
     }
 
-    const layerGain=ctx.createGain(); layerGain.gain.value=layer.gain;
+    const layerGain=ctx.createGain();
     layerGain.connect(master);                        // dry
     const layerIn=ctx.createGain();                   // somme des cellules de la piste
     const eq=makeEQ(ctx, t.eq);
-    let tap;                                           // point post-EQ (dry + envois)
-    if(eq){ layerIn.connect(eq.input); eq.output.connect(layerGain); tap=eq.output; }
-    else  { layerIn.connect(layerGain); tap=layerIn; }
+    // filtre de montée (build-up) sur A : s'étouffe juste avant le drop
+    let tf=null;
+    if(trans && li===0){
+      tf=ctx.createBiquadFilter(); tf.type="lowpass";
+      tf.frequency.setValueAtTime(18000,0);
+      tf.frequency.setValueAtTime(18000,Math.max(0,winEnd-2.2));
+      tf.frequency.exponentialRampToValueAtTime(480,winEnd);
+    }
+    let node=layerIn;
+    if(eq){ node.connect(eq.input); node=eq.output; }
+    if(tf){ node.connect(tf); node=tf; }
+    node.connect(layerGain);
+    const tap=node;
     tap.connect(convolver); tap.connect(delay);        // envois reverb/delay post-EQ
+
+    // automation du volume (fondus de transition)
+    if(trans && li===0){
+      layerGain.gain.setValueAtTime(layer.gain,0);
+      layerGain.gain.setValueAtTime(layer.gain,Math.max(0,winEnd-0.5));
+      layerGain.gain.linearRampToValueAtTime(0,winEnd);
+    }else if(trans && li>=1){
+      layerGain.gain.setValueAtTime(0,Math.max(0,winStart-0.001));
+      layerGain.gain.linearRampToValueAtTime(layer.gain,winStart+0.12); // le drop entre franc
+    }else{
+      layerGain.gain.value=layer.gain;
+    }
 
     for(let i=0;i<totalCells;i++){
       const when=i*cellDur;
       if(when>=r.dur)break;
+      if(trans && (when<winStart-1e-6 || when>=winEnd)) continue;   // hors fenêtre de la couche
       const reverse = rnd()<r.reverse;
       const buf = reverse ? t.revBuffer : t.buffer;
       let srcIdx=arr[i];
@@ -1118,7 +1231,8 @@ async function generateServer(r,sel){
       bpm:r.bpm, dur:r.dur, beats_per_cell:r.beatsPerCell,
       shuffle:r.shuffle, reverb:r.reverb, delay:r.delay,
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
-      speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked
+      speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
+      arrangement:r.arrangement, dropAt:r.dropAt
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };
