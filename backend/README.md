@@ -12,6 +12,8 @@ peut pas** offrir :
 | Puissance / distorsion réglable | ✅ | ✅ |
 | Mode DJ : durée du set + nombre de drops réglables | ✅ | ✅ |
 | Ambiance/reverb globale + fondu de fin propre | ✅ | ✅ |
+| Égaliseur global (3 bandes sur tout le mix) | ✅ | ✅ |
+| Sauvegarde de réglages favoris | ✅ | ✅ |
 | Visualisation spectrale à la lecture | ✅ | ✅ |
 | Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |
@@ -138,10 +140,11 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 - **Algorithmique** (par défaut, instantané, sans GPU) : compose un vrai
   morceau original — gamme + accords, basse, nappes, mélodie et batterie
   synthétisés (grooves sur grille 16 pas), puis mixés avec reverb/delay.
-  16 ambiances : lo-fi, cinématique, house, trap, ambient, synthwave,
-  boom-bap, drum & bass, afrobeat, reggaeton, **hardstyle, hardcore (gabber),
-  phonk, techno, dubstep, trance** (kick puissant + distorsion pour les gros
-  sons). Réglages : tonalité, gamme, durée, intensité, graine.
+  19 ambiances : lo-fi, cinématique, house, trap, ambient, synthwave,
+  boom-bap, drum & bass, afrobeat, reggaeton, hardstyle, hardcore (gabber),
+  phonk, techno, dubstep, trance, **amapiano, riddim, jersey club** (kick
+  puissant + distorsion pour les gros sons). Réglages : tonalité, gamme,
+  durée, intensité, tempo, basses, puissance, ambiance, graine.
 - **Neuronal texte→musique** (optionnel) : [MusicGen](https://github.com/facebookresearch/audiocraft).
 
   ```bash

@@ -96,6 +96,10 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .helptoggle{background:transparent;border:1px solid var(--ligne);color:var(--gris);border-radius:20px;padding:7px 15px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:20px}
 .helptoggle:hover{border-color:var(--or);color:var(--or)}
 .phint{font-size:11.5px;color:var(--gris-fonce);margin-top:5px;line-height:1.45}
+.favs{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:22px;padding-top:18px;border-top:1px solid var(--ligne)}
+.favs input[type=text]{background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:13px;min-width:160px}
+.favs select{width:auto;min-width:150px}
+.favs .btn{padding:9px 16px;font-size:13px}
 .mix2{margin-bottom:24px;border:1px solid var(--ligne-vive);border-radius:12px;padding:18px;background:var(--noir-panneau)}
 .mix2 .lbl{font-family:var(--serif);font-size:18px;color:var(--ivoire);margin-bottom:12px}
 .mix2 .switch button{padding:9px 16px}
@@ -394,6 +398,25 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <input type="range" id="sAmb" min="0" max="100" step="5" value="0">
         <div class="phint">Ajoute de l'espace / écho de salle. 🌌</div>
       </div>
+    </div>
+
+    <!-- Égaliseur global (tout le mix) -->
+    <div class="grid" style="margin-top:14px">
+      <div class="ctrl"><label>🎚️ EQ global — Graves <b><span id="vGeqL">0</span> dB</b></label>
+        <input type="range" id="geqL" min="-12" max="12" step="1" value="0"></div>
+      <div class="ctrl"><label>🎚️ EQ global — Médiums <b><span id="vGeqM">0</span> dB</b></label>
+        <input type="range" id="geqM" min="-12" max="12" step="1" value="0"></div>
+      <div class="ctrl"><label>🎚️ EQ global — Aigus <b><span id="vGeqH">0</span> dB</b></label>
+        <input type="range" id="geqH" min="-12" max="12" step="1" value="0"></div>
+    </div>
+
+    <!-- Réglages favoris -->
+    <div class="favs">
+      <input type="text" id="favName" placeholder="Nom de mon réglage…">
+      <button class="btn ghost" id="favSave">💾 Sauvegarder</button>
+      <select id="favList"><option value="">— Mes favoris —</option></select>
+      <button class="btn ghost" id="favLoad">Charger</button>
+      <button class="btn ghost" id="favDel" title="Supprimer">✕</button>
     </div>
 
     <!-- Réglages manuels -->
@@ -710,7 +733,8 @@ const MOOD_LABELS={lofi:"Lo-fi (chill)",cinematique:"Cinématique",house:"House"
   trap:"Trap",ambient:"Ambient",synthwave:"Synthwave",boombap:"Boom-bap",
   dnb:"Drum & Bass",afro:"Afrobeat",reggaeton:"Reggaeton",
   hardstyle:"💥 Hardstyle",hardcore:"👹 Hardcore (gabber)",phonk:"🕶️ Phonk",
-  techno:"Techno",dubstep:"🌀 Dubstep",trance:"Trance"};
+  techno:"Techno",dubstep:"🌀 Dubstep",trance:"Trance",
+  amapiano:"Amapiano",riddim:"🌀 Riddim",jerseyclub:"Jersey Club"};
 function populateMoods(){
   const sel=$("genMood"); if(!sel||!backend.moods.length)return;
   const prev=sel.value;
@@ -785,6 +809,12 @@ const DJ_PERSONAS=[
    remix:{speed:1.0,slice:2,shuf:30,rev:30,del:22,stut:20,revr:5,filter:"sweepup",keepPitch:true}},
   {id:"onyx",  name:"Onyx",     vibe:"Drill UK",               mood:"trap",     energy:68, power:0.2, bass:8, bpm:142,
    remix:{speed:0.92,slice:1,shuf:30,rev:22,del:16,stut:30,revr:8,filter:"none",keepPitch:false}},
+  {id:"koba",  name:"Koba",     vibe:"Amapiano",               mood:"amapiano", energy:60, power:0.05, bass:6, bpm:112,
+   remix:{speed:1.0,slice:2,shuf:25,rev:30,del:22,stut:20,revr:5,filter:"sweepup",keepPitch:true}},
+  {id:"warp",  name:"Warp",     vibe:"Riddim / bass",          mood:"riddim",   energy:85, power:0.45, bass:9, bpm:140,
+   remix:{speed:1.0,slice:1,shuf:40,rev:18,del:20,stut:50,revr:12,filter:"sweepdown",keepPitch:true}},
+  {id:"bounce",name:"Bounce",   vibe:"Jersey club",            mood:"jerseyclub",energy:75, power:0.15, bass:7, bpm:140,
+   remix:{speed:1.05,slice:1,shuf:45,rev:20,del:20,stut:40,revr:8,filter:"sweepup",keepPitch:true}},
 ];
 function populateDJ(){
   const sel=$("djPersona"); if(!sel)return;
@@ -1139,6 +1169,46 @@ populateDJ();
 $("djGo").onclick=()=>djGo(true);
 $("djAgain").onclick=()=>djGo(true);
 
+// Réglages favoris (localStorage)
+const FAV_KEY="rysao_favorites";
+function loadFavs(){ try{return JSON.parse(localStorage.getItem(FAV_KEY))||[]}catch(e){return[]} }
+function saveFavs(a){ localStorage.setItem(FAV_KEY, JSON.stringify(a)); }
+function populateFavs(){ const sel=$("favList"); if(!sel)return; const a=loadFavs();
+  sel.innerHTML='<option value="">— Mes favoris —</option>'+a.map((f,i)=>`<option value="${i}">${escapeHtml(f.name)}</option>`).join(""); }
+function readSettings(){ return {
+  mode:state.mode, arrangement:state.arrangement, bpmAuto:state.bpmAuto,
+  sDur:$("sDur").value, sBpm:$("sBpm").value, sSpeed:$("sSpeed").value, sSlice:$("sSlice").value,
+  sShuf:$("sShuf").value, sRev:$("sRev").value, sDel:$("sDel").value, sStut:$("sStut").value,
+  sRevr:$("sRevr").value, selFilter:$("selFilter").value, sBass:$("sBass").value, sPower:$("sPower").value,
+  sAmb:$("sAmb").value, geqL:$("geqL").value, geqM:$("geqM").value, geqH:$("geqH").value,
+  keepPitch:$("keepPitch")?$("keepPitch").checked:true }; }
+function applySettings(s){
+  if(!s)return;
+  setMode(s.mode||"manuel");
+  const sg=v=>(v>0?"+":"")+v;
+  setSlider("sDur",s.sDur,"vDur"); setSlider("sSpeed",s.sSpeed,"vSpeed",v=>(+v).toFixed(2));
+  setSlider("sSlice",s.sSlice,"vSlice"); setSlider("sShuf",s.sShuf,"vShuf");
+  setSlider("sRev",s.sRev,"vRev"); setSlider("sDel",s.sDel,"vDel");
+  setSlider("sStut",s.sStut,"vStut"); setSlider("sRevr",s.sRevr,"vRevr");
+  setSlider("sBass",s.sBass,"vBass"); setSlider("sPower",s.sPower,"vPower"); setSlider("sAmb",s.sAmb,"vAmb");
+  setSlider("geqL",s.geqL,"vGeqL",sg); setSlider("geqM",s.geqM,"vGeqM",sg); setSlider("geqH",s.geqH,"vGeqH",sg);
+  if($("selFilter"))$("selFilter").value=s.selFilter||"none";
+  if($("keepPitch"))$("keepPitch").checked=s.keepPitch!==false;
+  state.bpmAuto=s.bpmAuto!==false; $("bpmAuto").classList.toggle("on",state.bpmAuto);
+  if(s.sBpm)$("sBpm").value=s.sBpm; $("vBpm").textContent=state.bpmAuto?"auto":$("sBpm").value;
+  if(s.arrangement){ state.arrangement=s.arrangement;
+    document.querySelectorAll("#mix2 .switch button").forEach(b=>b.classList.toggle("on",b.dataset.arr===s.arrangement));
+    updateMix2(state.tracks.filter(t=>t.sel&&!t.mute)); }
+}
+populateFavs();
+$("favSave").onclick=()=>{ const n=($("favName").value||"").trim()||("Réglage "+(loadFavs().length+1));
+  const a=loadFavs(); a.push({name:n,s:readSettings()}); saveFavs(a); populateFavs(); $("favName").value="";
+  setStatus("genStatus","Réglage « "+n+" » sauvegardé ✦","ok"); };
+$("favLoad").onclick=()=>{ const i=$("favList").value; if(i==="")return;
+  const f=loadFavs()[+i]; if(f){applySettings(f.s); setStatus("genStatus","Réglage « "+f.name+" » chargé.","ok");} };
+$("favDel").onclick=()=>{ const i=$("favList").value; if(i==="")return;
+  const a=loadFavs(); a.splice(+i,1); saveFavs(a); populateFavs(); };
+
 const bind=(sid,vid,fmt)=>{const s=$(sid),v=$(vid);const up=()=>v.textContent=fmt?fmt(s.value):s.value;s.oninput=up;up()};
 bind("sDur","vDur");
 bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
@@ -1146,6 +1216,7 @@ bind("sSlice","vSlice");
 bind("sShuf","vShuf");
 bind("sRev","vRev"); bind("sDel","vDel"); bind("sStut","vStut"); bind("sRevr","vRevr");
 bind("sBass","vBass"); bind("sPower","vPower"); bind("sAmb","vAmb");
+bind("geqL","vGeqL",v=>(v>0?"+":"")+v); bind("geqM","vGeqM",v=>(v>0?"+":"")+v); bind("geqH","vGeqH",v=>(v>0?"+":"")+v);
 bind("djDur","vDjDur");
 $("sEnergy").oninput=e=>{const v=+e.target.value;$("vEnergy").textContent=v<33?"délicat":v<66?"équilibré":"audacieux"};
 $("bpmAuto").onclick=()=>{state.bpmAuto=!state.bpmAuto;$("bpmAuto").classList.toggle("on",state.bpmAuto);
@@ -1219,6 +1290,7 @@ function buildRecipe(reseed){
   r.bass = +($("sBass").value||0);   // boost de basses (dB)
   r.power = +($("sPower").value||0)/100;   // puissance / distorsion
   r.ambiance = +($("sAmb").value||0)/100;  // ambiance / reverb globale
+  r.geq = {low:+($("geqL").value||0), mid:+($("geqM").value||0), high:+($("geqH").value||0)};  // EQ global
   r.djDrops = +(($("djDrops")&&$("djDrops").value)||2);   // nombre de drops (mode DJ)
 
   // Mélange de 2 morceaux : superposition (blend) ou transition/drop.
@@ -1275,7 +1347,7 @@ async function renderRemix(r){
   const delGain=ctx.createGain(); delGain.gain.value=r.delay;
   delay.connect(fb).connect(delay); delay.connect(delGain).connect(master);
 
-  // Sortie : boost de basses (low-shelf ~100 Hz) puis puissance/distorsion
+  // Sortie : EQ global -> boost de basses (low-shelf ~100 Hz) -> puissance/distorsion
   const bassNode=ctx.createBiquadFilter();
   bassNode.type="lowshelf"; bassNode.frequency.value=100; bassNode.gain.value=r.bass||0;
   if(r.power>0){
@@ -1284,7 +1356,10 @@ async function renderRemix(r){
   }else{
     bassNode.connect(ctx.destination);
   }
-  const DEST=bassNode;   // tout le master passe par basses (+ distorsion)
+  const geq=makeEQ(ctx, r.geq);      // égaliseur global (tout le mix)
+  let DEST;
+  if(geq){ geq.output.connect(bassNode); DEST=geq.input; }
+  else   { DEST=bassNode; }
 
   // Filtre global optionnel
   let masterOut=master;
@@ -1522,7 +1597,7 @@ async function generateServer(r,sel){
       stutter:r.stutter, reverse:r.reverse, filter:r.filter,
       speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked,
       arrangement:r.arrangement, dropAt:r.dropAt, dj:r.dj, bass:r.bass,
-      power:r.power, drops:r.djDrops, ambiance:r.ambiance
+      power:r.power, drops:r.djDrops, ambiance:r.ambiance, geq:r.geq
     },
     layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
   };
