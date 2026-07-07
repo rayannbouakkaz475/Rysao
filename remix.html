@@ -78,6 +78,25 @@ section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
 .mode .d{font-size:13px;color:var(--gris);margin-top:4px}
 .mode .t span{color:var(--or)}
 
+/* Styles en 1 clic (débutant) */
+.presets{margin-bottom:24px}
+.presets .lbl{font-size:13px;letter-spacing:.04em;color:var(--ivoire-doux);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.presets .lbl .q{width:20px;height:20px;border-radius:50%;border:1px solid var(--ligne);color:var(--gris);font-size:12px;display:grid;place-items:center;cursor:pointer}
+.presets .lbl .q:hover{border-color:var(--or);color:var(--or)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.preset{border:1px solid var(--ligne);border-radius:12px;padding:16px 14px;cursor:pointer;background:var(--noir-panneau);transition:.18s;text-align:left}
+.preset:hover{border-color:var(--or);background:#141116;transform:translateY(-1px)}
+.preset.on{border-color:var(--or);background:#141116}
+.preset .pe{font-size:22px;display:block;margin-bottom:6px}
+.preset .pt{font-family:var(--serif);font-size:17px;color:var(--ivoire)}
+.preset .pd{font-size:12px;color:var(--gris);margin-top:3px;line-height:1.4}
+.helpbox{background:var(--noir-carte);border:1px solid var(--ligne);border-radius:10px;padding:16px 18px;margin-bottom:20px;font-size:13.5px;color:var(--ivoire-doux);line-height:1.7;display:none}
+.helpbox.show{display:block}
+.helpbox b{color:var(--or);font-weight:400}
+.helptoggle{background:transparent;border:1px solid var(--ligne);color:var(--gris);border-radius:20px;padding:7px 15px;font-family:var(--sans);font-size:13px;cursor:pointer;margin-bottom:20px}
+.helptoggle:hover{border-color:var(--or);color:var(--or)}
+.phint{font-size:11.5px;color:var(--gris-fonce);margin-top:5px;line-height:1.45}
+
 /* Controls */
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
 .ctrl label{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em;color:var(--ivoire-doux);margin-bottom:8px}
@@ -237,7 +256,23 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
   <div class="wrap">
     <div class="step">
       <div class="num">2</div>
-      <div><h2>Choisissez le mode</h2><div class="sub">Laissez l'IA décider, ou réglez le remix à votre goût.</div></div>
+      <div><h2>Choisissez un style</h2><div class="sub">Débutant ? Appuyez sur un style — le reste est automatique.</div></div>
+    </div>
+
+    <!-- Guide rapide -->
+    <button class="helptoggle" id="helpToggle">💡 Comment ça marche ?</button>
+    <div class="helpbox" id="helpBox">
+      <b>3 étapes simples :</b><br>
+      1. <b>Importez</b> une ou plusieurs musiques (plus haut).<br>
+      2. <b>Choisissez un style</b> ci-dessous (ex : « Ralenti + Reverb »).<br>
+      3. Appuyez sur <b>Générer</b>, écoutez, et téléchargez. 🎧<br>
+      Chaque style règle tout pour vous. Vous pouvez en essayer plusieurs — rien n'est définitif, votre musique d'origine n'est jamais modifiée.
+    </div>
+
+    <!-- Styles en 1 clic -->
+    <div class="presets">
+      <div class="lbl">✨ Styles en 1 clic <span class="q" id="presetHelp" title="Astuce">?</span></div>
+      <div class="pgrid" id="presetGrid"></div>
     </div>
 
     <div class="modes">
@@ -283,30 +318,37 @@ footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:1
         <div class="ctrl">
           <label>Vitesse / hauteur <b><span id="vSpeed">1.00</span>×</b></label>
           <input type="range" id="sSpeed" min="0.7" max="1.4" step="0.01" value="1">
+          <div class="phint">Ralentit (grave) ou accélère (aigu) le morceau.</div>
         </div>
         <div class="ctrl">
           <label>Découpe (temps / cellule) <b><span id="vSlice">1</span></b></label>
           <input type="range" id="sSlice" min="1" max="4" step="1" value="1">
+          <div class="phint">Taille des morceaux découpés : petit = haché, grand = fluide.</div>
         </div>
         <div class="ctrl">
           <label>Ré-arrangement <b><span id="vShuf">40</span>%</b></label>
           <input type="range" id="sShuf" min="0" max="100" step="5" value="40">
+          <div class="phint">Mélange l'ordre des morceaux. Plus haut = plus différent de l'original.</div>
         </div>
         <div class="ctrl">
           <label>Reverb <b><span id="vRev">25</span>%</b></label>
           <input type="range" id="sRev" min="0" max="100" step="5" value="25">
+          <div class="phint">Effet de grande salle / écho spacieux.</div>
         </div>
         <div class="ctrl">
           <label>Écho / delay <b><span id="vDel">20</span>%</b></label>
           <input type="range" id="sDel" min="0" max="100" step="5" value="20">
+          <div class="phint">Répète le son en écho, en rythme.</div>
         </div>
         <div class="ctrl">
           <label>Stutter / répétitions <b><span id="vStut">20</span>%</b></label>
           <input type="range" id="sStut" min="0" max="100" step="5" value="20">
+          <div class="phint">Répète très vite des petits bouts (effet « bégaiement »).</div>
         </div>
         <div class="ctrl">
           <label>Reverse (segments à l'envers) <b><span id="vRevr">10</span>%</b></label>
           <input type="range" id="sRevr" min="0" max="100" step="5" value="10">
+          <div class="phint">Joue certains passages à l'envers.</div>
         </div>
         <div class="ctrl">
           <label>Filtre / balayage</label>
@@ -780,12 +822,60 @@ function refreshUI(){
 /* ============================================================
    CONTRÔLES UI
    ============================================================ */
-document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>{
-  document.querySelectorAll(".mode").forEach(x=>x.classList.remove("on"));
-  m.classList.add("on"); state.mode=m.dataset.mode;
-  $("manual").classList.toggle("hide",state.mode!=="manuel");
-  $("iaBox").classList.toggle("hide",state.mode!=="ia");
-});
+function setMode(m){
+  state.mode=m;
+  document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("on",x.dataset.mode===m));
+  $("manual").classList.toggle("hide",m!=="manuel");
+  $("iaBox").classList.toggle("hide",m!=="ia");
+}
+document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>setMode(m.dataset.mode));
+
+/* ============================================================
+   STYLES EN 1 CLIC (débutant) — règlent tout automatiquement
+   ============================================================ */
+const PRESETS=[
+  {emoji:"🐌",name:"Ralenti + Reverb",desc:"Version lente et rêveuse (style « slowed »).",
+   speed:0.82,slice:2,shuf:10,rev:70,del:35,stut:5,revr:0,filter:"none",keepPitch:false},
+  {emoji:"⚡",name:"Nightcore",desc:"Plus rapide et plus aigu, énergique.",
+   speed:1.25,slice:1,shuf:10,rev:15,del:15,stut:5,revr:0,filter:"none",keepPitch:false},
+  {emoji:"😌",name:"Chill / Lo-fi",desc:"Doux, feutré, parfait pour se détendre.",
+   speed:0.92,slice:2,shuf:20,rev:45,del:25,stut:10,revr:0,filter:"lowpass"},
+  {emoji:"🔥",name:"Club / Énergique",desc:"Rythmé, avec montée et répétitions.",
+   speed:1.06,slice:1,shuf:45,rev:20,del:20,stut:35,revr:5,filter:"sweepup"},
+  {emoji:"📻",name:"Propre / Fidèle",desc:"Proche de l'original, effets légers.",
+   speed:1.0,slice:1,shuf:0,rev:10,del:5,stut:0,revr:0,filter:"none"},
+  {emoji:"🎲",name:"Créatif / Chaos",desc:"Très transformé, surprenant.",
+   speed:1.0,slice:1,shuf:70,rev:30,del:30,stut:50,revr:25,filter:"sweepup"},
+];
+function renderPresets(){
+  const g=$("presetGrid"); if(!g)return;
+  g.innerHTML=PRESETS.map((p,i)=>`<div class="preset" data-p="${i}">
+    <span class="pe">${p.emoji}</span><span class="pt">${p.name}</span>
+    <div class="pd">${p.desc}</div></div>`).join("");
+  g.querySelectorAll(".preset").forEach(c=>c.onclick=()=>applyPreset(+c.dataset.p));
+}
+function setSlider(id,val,labelId,fmt){const s=$(id);if(!s)return;s.value=val;
+  if(labelId&&$(labelId))$(labelId).textContent=fmt?fmt(val):val;}
+function applyPreset(i){
+  const p=PRESETS[i];
+  setMode("manuel");
+  setSlider("sSpeed",p.speed,"vSpeed",v=>(+v).toFixed(2));
+  setSlider("sSlice",p.slice,"vSlice");
+  setSlider("sShuf",p.shuf,"vShuf");
+  setSlider("sRev",p.rev,"vRev");
+  setSlider("sDel",p.del,"vDel");
+  setSlider("sStut",p.stut,"vStut");
+  setSlider("sRevr",p.revr,"vRevr");
+  if($("selFilter"))$("selFilter").value=p.filter;
+  if($("keepPitch"))$("keepPitch").checked = p.keepPitch!==false;
+  document.querySelectorAll(".preset").forEach((el,j)=>el.classList.toggle("on",j===i));
+  const ready=state.tracks.some(t=>t.sel&&!t.mute);
+  if(ready) generate();
+  else setStatus("genStatus",`Style « ${p.name} » prêt — importez un morceau, puis appuyez sur Générer.`,"ok");
+}
+renderPresets();
+$("helpToggle").onclick=()=>$("helpBox").classList.toggle("show");
+$("presetHelp").onclick=()=>{$("helpBox").classList.add("show");$("helpBox").scrollIntoView({behavior:"smooth",block:"nearest"});};
 
 const bind=(sid,vid,fmt)=>{const s=$(sid),v=$(vid);const up=()=>v.textContent=fmt?fmt(s.value):s.value;s.oninput=up;up()};
 bind("sDur","vDur");
