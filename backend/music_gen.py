@@ -48,6 +48,24 @@ _MOODS = {
                     swing=0.05, drums="afro", reverb=0.2, delay=0.16, lead=0.5),
     "reggaeton": dict(scale="min", bpm=95, progs=[[0,5,3,4],[0,4,5,3]],
                     swing=0.0, drums="dembow", reverb=0.18, delay=0.12, lead=0.5),
+    "hardstyle": dict(scale="min", bpm=150, progs=[[0,0,5,3],[0,3,5,4]],
+                    swing=0.0, drums="hardstyle", reverb=0.22, delay=0.12, lead=0.7,
+                    hard=True, distortion=0.5, lead_kind="saw"),
+    "hardcore": dict(scale="min", bpm=190, progs=[[0,0,3,5],[0,5,3,3]],
+                    swing=0.0, drums="gabber", reverb=0.18, delay=0.1, lead=0.6,
+                    hard=True, distortion=0.7, lead_kind="square"),
+    "phonk":   dict(scale="penta", bpm=135, progs=[[0,3,5,3],[0,5,3,4]],
+                    swing=0.1, drums="phonk", reverb=0.22, delay=0.16, lead=0.6,
+                    distortion=0.25, lead_sound="cowbell"),
+    "techno":  dict(scale="min", bpm=130, progs=[[0,0,0,3],[0,3,0,5]],
+                    swing=0.0, drums="techno", reverb=0.25, delay=0.2, lead=0.4,
+                    distortion=0.15, lead_kind="saw"),
+    "dubstep": dict(scale="min", bpm=140, progs=[[0,0,5,3],[0,4,3,5]],
+                    swing=0.0, drums="dubstep", reverb=0.24, delay=0.14, lead=0.5,
+                    distortion=0.4, wobble=True, lead_kind="saw"),
+    "trance":  dict(scale="min", bpm=138, progs=[[0,5,6,4],[0,4,5,3]],
+                    swing=0.0, drums="four", reverb=0.4, delay=0.28, lead=0.6,
+                    lead_kind="saw"),
 }
 
 _KEY_MIDI = {"Do":60,"Do#":61,"Ré":62,"Ré#":63,"Mi":64,"Fa":65,"Fa#":66,
@@ -93,6 +111,14 @@ def _note(freq, dur, kind="saw", detune=0.008, adsr=(0.01,0.08,0.7,0.15), gain=1
     return (sig * _adsr(n, *adsr) * gain).astype(np.float32)
 
 
+def _distort(x, drive=0.5):
+    """Saturation (tanh) : plus 'drive' est haut, plus le son est agressif/gros."""
+    if drive <= 0:
+        return x
+    k = 1 + drive * 12
+    return (np.tanh(x * k) / np.tanh(k)).astype(np.float32)
+
+
 # --------------------------------------------------------------- batterie
 def _kick(dur=0.3):
     n = int(dur*SR); t = np.arange(n)/SR
@@ -115,6 +141,26 @@ def _hat(dur=0.05, rng=None):
     return (rng.randn(n)*np.exp(-t*90)*0.4).astype(np.float32)
 
 
+def _hard_kick(dur=0.42, root=55.0):
+    """Kick puissant et distordu (hardstyle/hardcore) : claque + queue tonale."""
+    n = int(dur*SR); t = np.arange(n)/SR
+    # claque : balayage de hauteur rapide, fortement saturé
+    click_f = 320*np.exp(-t*45) + root*2
+    click = np.sin(2*np.pi*np.cumsum(click_f)/SR) * np.exp(-t*11)
+    click = np.tanh(click*6)
+    # queue tonale (la fameuse basse pitchée du kick)
+    tail_f = root*np.exp(-t*1.2) + root*0.7
+    tail = np.sin(2*np.pi*np.cumsum(tail_f)/SR) * np.exp(-t*4) * 0.9
+    return ((click*0.7 + tail*0.6)*0.95).astype(np.float32)
+
+
+def _cowbell(freq=540.0, dur=0.14):
+    """Cloche métallique (signature phonk)."""
+    n = int(dur*SR); t = np.arange(n)/SR
+    sig = (np.sign(np.sin(2*np.pi*freq*t)) + np.sign(np.sin(2*np.pi*freq*1.48*t)))*0.5
+    return (sig * np.exp(-t*16) * 0.5).astype(np.float32)
+
+
 def _place(track, sig, at):
     i = int(at*SR)
     j = min(len(track), i+len(sig))
@@ -133,23 +179,29 @@ _GROOVES = {
     "afro":    dict(kick=[0,6,10],        snare=[4,12],          hats="afro"),
     "dembow":  dict(kick=[0,8],           snare=[3,6,11,14],     hats="8"),
     "synth":   dict(kick=[0,4,8,12],      snare=[4,12],          hats="off"),
+    "hardstyle":dict(kick=[0,4,8,12],     snare=[4,12],          hats="off"),
+    "gabber":  dict(kick=[0,2,4,6,8,10,12,14], snare=[4,12],     hats="16"),
+    "techno":  dict(kick=[0,4,8,12],      snare=[],              hats="off"),
+    "dubstep": dict(kick=[0],             snare=[8],             hats="16"),
+    "phonk":   dict(kick=[0,6,10],        snare=[4,12],          hats="8"),
     "none":    dict(kick=[],              snare=[],              hats="none"),
 }
 
 
-def _drum_track(pattern, bars, beat, total_n, rng, swing=0.0):
+def _drum_track(pattern, bars, beat, total_n, rng, swing=0.0, hard=False, root=55.0):
     L = np.zeros(total_n, dtype=np.float32)
     R = np.zeros(total_n, dtype=np.float32)
     g = _GROOVES.get(pattern, _GROOVES["soft"])
     stp = beat/4                                   # 16 pas par mesure
     sw = swing*stp                                 # décalage de swing
+    kickfn = (lambda: _hard_kick(root=root)) if hard else _kick
     def at_of(s):
         t = s*stp
         return t + (sw if (s % 2) else 0)          # swing sur les pas impairs
     for bar in range(bars):
         base = bar*4*beat
         for s in g["kick"]:
-            _place(L,_kick(),base+at_of(s)); _place(R,_kick(),base+at_of(s))
+            k=kickfn(); _place(L,k,base+at_of(s)); _place(R,k,base+at_of(s))
         for s in g["snare"]:
             sn=_snare(rng=rng); _place(L,sn,base+at_of(s)); _place(R,sn,base+at_of(s))
         mode=g["hats"]
@@ -229,13 +281,28 @@ def generate(params: dict) -> np.ndarray:
             f = _midi_hz(scale_note(int(deg_m), 2))
             swing = cfg["swing"]*beat if s % 2 else 0
             at = t0 + s*(beat/2) + swing
-            nl = _note(f, beat*0.45, kind="square", detune=0.006,
-                       adsr=(0.005,0.06,0.6,0.12), gain=0.12*cfg["lead"])
+            if cfg.get("lead_sound")=="cowbell":
+                nl = _cowbell(f, beat*0.4) * (0.9*cfg["lead"])
+            else:
+                nl = _note(f, beat*0.45, kind=cfg.get("lead_kind","square"), detune=0.006,
+                           adsr=(0.005,0.06,0.6,0.12), gain=0.12*cfg["lead"])
             _place(lead[:,0], nl, at); _place(lead[:,1], nl, at)
 
-    drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng, cfg.get("swing",0.0))
+    # wobble sur la basse (dubstep)
+    if cfg.get("wobble"):
+        tt = np.arange(total_n)/SR
+        lfo = (0.4 + 0.6*np.abs(np.sin(2*np.pi*(2.0/beat)*tt)))[:,None]
+        bass = bass*lfo
 
-    mix = pads + bass*1.0 + lead + drums*(0.7+0.3*intensity)
+    root_hz = _midi_hz(root)/4.0     # basse de kick calée sur la tonalité
+    drums = _drum_track(cfg["drums"], total_bars, beat, total_n, rng,
+                        cfg.get("swing",0.0), hard=cfg.get("hard",False), root=root_hz)
+
+    # gros son : saturation des synthés (hardstyle / hardcore / dubstep…)
+    synths = pads + bass*1.0 + lead
+    if cfg.get("distortion"):
+        synths = _distort(synths, float(cfg["distortion"]))
+    mix = synths + drums*(0.75+0.3*intensity)
 
     # effets d'ambiance
     mix = ae.apply_reverb(mix, cfg["reverb"])

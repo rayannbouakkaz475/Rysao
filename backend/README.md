@@ -125,9 +125,10 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 - **Algorithmique** (par défaut, instantané, sans GPU) : compose un vrai
   morceau original — gamme + accords, basse, nappes, mélodie et batterie
   synthétisés (grooves sur grille 16 pas), puis mixés avec reverb/delay.
-  10 ambiances : lo-fi, cinématique, house, trap, ambient, synthwave,
-  boom-bap, drum & bass, afrobeat, reggaeton. Réglages : tonalité, gamme,
-  durée, intensité, graine.
+  16 ambiances : lo-fi, cinématique, house, trap, ambient, synthwave,
+  boom-bap, drum & bass, afrobeat, reggaeton, **hardstyle, hardcore (gabber),
+  phonk, techno, dubstep, trance** (kick puissant + distorsion pour les gros
+  sons). Réglages : tonalité, gamme, durée, intensité, graine.
 - **Neuronal texte→musique** (optionnel) : [MusicGen](https://github.com/facebookresearch/audiocraft).
 
   ```bash
