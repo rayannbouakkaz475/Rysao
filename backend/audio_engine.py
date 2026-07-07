@@ -492,6 +492,7 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
     mix = apply_reverb(mix, reverb_amt)                   # reverb + ambiance globale
     mix = apply_delay(mix, float(recipe.get("delay", 0.0)), bpm)
     mix = apply_bass(mix, recipe.get("bass", 0))          # boost de basses
+    mix = apply_eq(mix, recipe.get("geq"))                # égaliseur global (tout le mix)
     mix = apply_drive(mix, recipe.get("power", 0))        # puissance / distorsion
 
     # normalisation douce

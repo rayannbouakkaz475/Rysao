@@ -66,6 +66,15 @@ _MOODS = {
     "trance":  dict(scale="min", bpm=138, progs=[[0,5,6,4],[0,4,5,3]],
                     swing=0.0, drums="four", reverb=0.4, delay=0.28, lead=0.6,
                     lead_kind="saw"),
+    "amapiano":dict(scale="maj", bpm=112, progs=[[0,3,4,5],[0,5,3,4]],
+                    swing=0.08, drums="amapiano", reverb=0.32, delay=0.2, lead=0.5,
+                    lead_kind="saw"),
+    "riddim":  dict(scale="min", bpm=140, progs=[[0,0,3,5],[0,5,0,3]],
+                    swing=0.0, drums="riddim", reverb=0.2, delay=0.14, lead=0.5,
+                    distortion=0.45, wobble=True, lead_kind="saw"),
+    "jerseyclub": dict(scale="min", bpm=140, progs=[[0,5,3,4],[0,4,5,3]],
+                    swing=0.0, drums="jersey", reverb=0.22, delay=0.16, lead=0.55,
+                    lead_kind="square"),
 }
 
 _KEY_MIDI = {"Do":60,"Do#":61,"Ré":62,"Ré#":63,"Mi":64,"Fa":65,"Fa#":66,
@@ -184,6 +193,9 @@ _GROOVES = {
     "techno":  dict(kick=[0,4,8,12],      snare=[],              hats="off"),
     "dubstep": dict(kick=[0],             snare=[8],             hats="16"),
     "phonk":   dict(kick=[0,6,10],        snare=[4,12],          hats="8"),
+    "amapiano":dict(kick=[0,6,10],        snare=[12],            hats="8"),
+    "riddim":  dict(kick=[0],             snare=[8],             hats="16"),
+    "jersey":  dict(kick=[0,3,5,10,13],   snare=[8],             hats="8"),
     "none":    dict(kick=[],              snare=[],              hats="none"),
 }
 
