@@ -1,0 +1,31 @@
+# RYSAO Studio — image COMPLÈTE avec séparation de pistes IA (Demucs).
+# Plus lourde que backend/Dockerfile (installe PyTorch + Demucs), mais la
+# séparation « Séparer IA » fonctionne sans aucune installation manuelle.
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 ffmpeg git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/backend
+
+# 1) dépendances légères du studio
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 2) PyTorch (CPU) + Demucs pour la séparation de pistes
+#    (roue CPU allégée ; retirez --index-url pour la version GPU/CUDA par défaut)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+    && pip install --no-cache-dir demucs
+
+# 3) (OPTIONNEL) génération neuronale texte->musique (gros modèle) :
+#    décommentez la ligne suivante pour activer MusicGen.
+# RUN pip install --no-cache-dir audiocraft
+
+# code + frontend
+COPY backend/ /app/backend/
+COPY remix.html /app/remix.html
+
+EXPOSE 8000
+# $PORT est fourni par l'hébergeur ; 8000 en local.
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]

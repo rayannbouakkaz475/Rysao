@@ -1,0 +1,25 @@
+# Déploiement RYSAO Studio sur Render (https://render.com) — accès partout.
+#
+# 1. Poussez ce dépôt sur GitHub.
+# 2. Sur render.com : New → Blueprint → choisissez ce dépôt.
+# 3. Render lit ce fichier, construit l'image et déploie.
+# 4. Définissez RYSAO_PASSWORD (demandé au déploiement) = votre mot de passe.
+# 5. Vous obtenez une adresse https://…onrender.com à ouvrir sur iPhone.
+#
+# Cette configuration utilise l'image LÉGÈRE (remix, mixage, EQ, spectre,
+# génération de musique, export MP3/OGG, time-stretch, BPM/tonalité) — idéale
+# pour les petites instances. La séparation de pistes IA (Demucs) demande plus
+# de mémoire : voir backend/DEPLOY.md.
+services:
+  - type: web
+    name: rysao-studio
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: RYSAO_PASSWORD   # votre mot de passe — à saisir dans Render
+        sync: false
+      - key: RYSAO_SECRET     # secret de session, généré automatiquement
+        generateValue: true

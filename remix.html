@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RYSAO Studio — Remix IA</title>
+<meta name="description" content="Studio de remix génératif : importez vos musiques, laissez l'IA créer des remix et mashups, exportez en WAV. 100% dans votre navigateur.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2308080a' stroke='%23c9a771' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='50' fill='%23c9a771' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noir-fond:#08080a; --noir-panneau:#0e0e11; --noir-carte:#121215;
+  --ligne:rgba(201,167,113,.18); --ligne-vive:rgba(201,167,113,.4);
+  --or:#c9a771; --or-vif:#e7c98e; --or-mat:#9c8156;
+  --ivoire:#efe9da; --ivoire-doux:#cfc8b8; --gris:#8d8678; --gris-fonce:#5c574c;
+  --serif:"Cormorant Garamond","Times New Roman",serif;
+  --sans:"Jost","Helvetica Neue",Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--noir-fond);color:var(--ivoire);font-family:var(--sans);font-weight:300;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--or);text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+
+/* Header */
+header.top{border-bottom:1px solid var(--ligne);padding:22px 0;position:sticky;top:0;background:rgba(8,8,10,.82);backdrop-filter:blur(10px);z-index:20}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.logo{font-family:var(--serif);font-size:26px;letter-spacing:.28em;color:var(--ivoire)}
+.logo b{color:var(--or);font-weight:600}
+.tagtop{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--gris)}
+
+/* Hero */
+.hero{padding:64px 0 30px;text-align:center;border-bottom:1px solid var(--ligne)}
+.eyebrow{font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:var(--or-mat)}
+.hero h1{font-family:var(--serif);font-weight:500;font-size:clamp(38px,6vw,64px);letter-spacing:.02em;margin:14px 0 8px;line-height:1.05}
+.hero h1 span{color:var(--or)}
+.hero p{color:var(--ivoire-doux);max-width:620px;margin:6px auto 0;font-size:16px}
+.hero .note{color:var(--gris);font-size:13px;margin-top:18px;max-width:640px;margin-left:auto;margin-right:auto}
+
+/* Sections */
+section.block{padding:40px 0;border-bottom:1px solid var(--ligne)}
+.step{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.step .num{font-family:var(--serif);font-size:22px;color:var(--noir-fond);background:var(--or);width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:600;flex:0 0 auto}
+.step h2{font-family:var(--serif);font-weight:500;font-size:26px;letter-spacing:.02em}
+.step .sub{color:var(--gris);font-size:13px}
+
+/* Dropzone */
+.drop{border:1.5px dashed var(--ligne-vive);border-radius:14px;padding:44px 24px;text-align:center;background:var(--noir-panneau);cursor:pointer;transition:.2s}
+.drop:hover,.drop.over{border-color:var(--or);background:#141116}
+.drop .big{font-family:var(--serif);font-size:22px;color:var(--ivoire)}
+.drop .sm{color:var(--gris);font-size:13px;margin-top:6px}
+.drop svg{width:40px;height:40px;stroke:var(--or);fill:none;stroke-width:1.3;margin-bottom:12px}
+
+/* Track list */
+.tracks{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+.track{display:flex;align-items:center;gap:14px;background:var(--noir-carte);border:1px solid var(--ligne);border-radius:10px;padding:12px 16px}
+.track.sel{border-color:var(--ligne-vive);box-shadow:inset 0 0 0 1px rgba(201,167,113,.15)}
+.track .chk{width:20px;height:20px;border:1.5px solid var(--or-mat);border-radius:5px;flex:0 0 auto;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.track.sel .chk{background:var(--or);border-color:var(--or)}
+.track.sel .chk::after{content:"✓";color:var(--noir-fond);font-size:13px;font-weight:600}
+.track .meta{flex:1;min-width:0}
+.track .nm{font-size:14px;color:var(--ivoire);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.track .info{font-size:12px;color:var(--gris);margin-top:2px}
+.track .role{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--or-mat);border:1px solid var(--ligne);border-radius:20px;padding:3px 10px}
+.track .del{color:var(--gris-fonce);cursor:pointer;font-size:18px;padding:0 4px}
+.track .del:hover{color:#c96b5a}
+.wave{height:26px;flex:0 0 120px;display:flex;align-items:center;gap:1px}
+.wave i{display:block;flex:1;background:var(--or-mat);opacity:.6;border-radius:1px}
+
+/* Mode toggle */
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:26px}
+.mode{border:1px solid var(--ligne);border-radius:12px;padding:18px;cursor:pointer;background:var(--noir-panneau);transition:.2s}
+.mode:hover{border-color:var(--ligne-vive)}
+.mode.on{border-color:var(--or);background:#141116}
+.mode .t{font-family:var(--serif);font-size:20px;color:var(--ivoire)}
+.mode .d{font-size:13px;color:var(--gris);margin-top:4px}
+.mode .t span{color:var(--or)}
+
+/* Controls */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
+.ctrl label{display:flex;justify-content:space-between;font-size:13px;letter-spacing:.04em;color:var(--ivoire-doux);margin-bottom:8px}
+.ctrl label b{color:var(--or);font-weight:400}
+input[type=range]{-webkit-appearance:none;width:100%;height:3px;background:var(--ligne);border-radius:3px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--or);cursor:pointer;border:2px solid var(--noir-fond)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--or);cursor:pointer;border:2px solid var(--noir-fond)}
+select{width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:9px 12px;font-family:var(--sans);font-size:14px}
+.switch{display:flex;flex-wrap:wrap;gap:8px}
+.switch button{background:var(--noir-carte);border:1px solid var(--ligne);color:var(--gris);border-radius:20px;padding:6px 14px;font-family:var(--sans);font-size:13px;cursor:pointer;transition:.15s}
+.switch button.on{border-color:var(--or);color:var(--or);background:#141116}
+
+/* Buttons */
+.btnrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:30px}
+.btn{font-family:var(--sans);font-size:14px;letter-spacing:.06em;border-radius:30px;padding:14px 30px;cursor:pointer;border:1px solid var(--or);background:transparent;color:var(--or);transition:.2s;text-transform:uppercase}
+.btn:hover{background:var(--or);color:var(--noir-fond)}
+.btn.solid{background:var(--or);color:var(--noir-fond)}
+.btn.solid:hover{background:var(--or-vif);border-color:var(--or-vif)}
+.btn.ghost{border-color:var(--ligne);color:var(--ivoire-doux)}
+.btn.ghost:hover{background:var(--noir-carte);color:var(--ivoire);border-color:var(--ligne-vive)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:disabled:hover{background:transparent;color:var(--or)}
+
+/* Player */
+.player{margin-top:6px;background:var(--noir-panneau);border:1px solid var(--ligne);border-radius:14px;padding:22px 24px;display:none}
+.player.show{display:block}
+.player .title{font-family:var(--serif);font-size:22px;color:var(--ivoire)}
+.player .recipe{font-size:12px;color:var(--gris);margin:4px 0 16px;line-height:1.7}
+.player .recipe b{color:var(--or-mat);font-weight:400}
+.viz{width:100%;height:120px;display:block;margin:6px 0 18px;border:1px solid var(--ligne);border-radius:10px;background:linear-gradient(180deg,#0c0c0f,#0a0a0c)}
+.transport{display:flex;align-items:center;gap:16px}
+.play{width:52px;height:52px;border-radius:50%;border:1px solid var(--or);background:transparent;color:var(--or);cursor:pointer;flex:0 0 auto;display:grid;place-items:center;transition:.2s}
+.play:hover{background:var(--or);color:var(--noir-fond)}
+.play svg{width:20px;height:20px;fill:currentColor}
+.seek{flex:1}
+.seek .bar{height:5px;background:var(--ligne);border-radius:5px;position:relative;cursor:pointer;overflow:hidden}
+.seek .fill{position:absolute;top:0;left:0;height:100%;background:var(--or);width:0}
+.seek .time{display:flex;justify-content:space-between;font-size:12px;color:var(--gris);margin-top:6px;font-variant-numeric:tabular-nums}
+
+/* Status / toast */
+.status{margin-top:16px;font-size:13px;color:var(--gris);min-height:20px}
+.status.err{color:#d98a76}
+.status.ok{color:var(--or)}
+.bar-load{height:3px;background:var(--ligne);border-radius:3px;overflow:hidden;margin-top:10px;display:none}
+.bar-load.show{display:block}
+.bar-load i{display:block;height:100%;background:var(--or);width:0;transition:width .1s}
+
+footer{padding:40px 0 60px;text-align:center;color:var(--gris-fonce);font-size:12px;letter-spacing:.1em}
+.hide{display:none!important}
+.muted{color:var(--gris);font-size:13px}
+
+/* Backend status pill */
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ligne);border-radius:20px;padding:5px 12px;font-size:12px;letter-spacing:.06em;color:var(--gris)}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--gris-fonce);flex:0 0 auto}
+.pill.on{border-color:var(--ligne-vive);color:var(--or)}
+.pill.on .dot{background:var(--or);box-shadow:0 0 8px var(--or)}
+
+/* Écran de connexion (accès privé) */
+.overlay{position:fixed;inset:0;background:rgba(6,6,8,.9);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:24px}
+.overlay.show{display:flex}
+.login{background:var(--noir-panneau);border:1px solid var(--ligne-vive);border-radius:16px;padding:40px 34px;max-width:400px;width:100%;text-align:center}
+.login .lk{font-size:30px;margin-bottom:8px}
+.login h3{font-family:var(--serif);font-weight:500;font-size:26px;color:var(--ivoire);margin-bottom:6px}
+.login p{color:var(--gris);font-size:13px;margin-bottom:22px}
+.login input{width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:13px 14px;font-family:var(--sans);font-size:15px;text-align:center;letter-spacing:.05em}
+.login input:focus{outline:none;border-color:var(--or)}
+.login .btn{width:100%;margin-top:14px;justify-content:center}
+.login .err{color:#d98a76;font-size:13px;min-height:18px;margin-top:12px}
+.login .hint{color:var(--gris-fonce);font-size:11px;margin-top:16px;line-height:1.6}
+.track .stem{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--or);border:1px solid var(--ligne);border-radius:20px;padding:4px 11px;cursor:pointer;background:transparent;font-family:var(--sans);transition:.15s}
+.track .stem:hover{background:#141116;border-color:var(--or)}
+.track .stem:disabled{opacity:.4;cursor:default}
+.track .badge{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--noir-fond);background:var(--or-mat);border-radius:20px;padding:2px 8px}
+.engine{display:none;margin:8px 0 20px}
+.engine.show{display:block}
+.chkline{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ivoire-doux);cursor:pointer;margin-top:10px}
+.chkline input{accent-color:var(--or);width:16px;height:16px}
+.track .mix{display:flex;align-items:center;gap:8px;flex:0 0 132px}
+.track .mix input[type=range]{width:86px;height:3px}
+.track .mute{width:30px;height:30px;border-radius:50%;border:1px solid var(--ligne);background:transparent;color:var(--gris);cursor:pointer;font-size:13px;flex:0 0 auto;display:grid;place-items:center;transition:.15s}
+.track .mute:hover{border-color:var(--or);color:var(--or)}
+.track .mute.on{background:#3a1d1d;border-color:#c96b5a;color:#e08a76}
+.track .vval{font-size:11px;color:var(--gris);width:30px;text-align:right;font-variant-numeric:tabular-nums}
+.track.muted{opacity:.5}
+@media(max-width:720px){.track .wave,.track .mix .vval{display:none}}
+.track{flex-wrap:wrap}
+.track .eqbtn{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);border:1px solid var(--ligne);border-radius:20px;padding:4px 11px;cursor:pointer;background:transparent;font-family:var(--sans);transition:.15s}
+.track .eqbtn:hover,.track .eqbtn.on{border-color:var(--or);color:var(--or)}
+.eqpanel{flex:0 0 100%;display:none;gap:22px;margin-top:12px;padding-top:14px;border-top:1px solid var(--ligne)}
+.eqpanel.open{display:flex}
+.eqband{flex:1;min-width:120px}
+.eqband label{display:flex;justify-content:space-between;font-size:12px;color:var(--ivoire-doux);margin-bottom:6px}
+.eqband label b{color:var(--or);font-weight:400}
+.eqband input[type=range]{width:100%}
+.eqreset{align-self:flex-end;font-size:11px;color:var(--gris);background:transparent;border:1px solid var(--ligne);border-radius:20px;padding:5px 12px;cursor:pointer;font-family:var(--sans)}
+.eqreset:hover{color:var(--or);border-color:var(--or)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="logo">RY<b>S</b>AO</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="pill" id="beStatus" title="État du serveur">
+        <i class="dot"></i><span id="beText">Mode navigateur</span>
+      </span>
+      <div class="tagtop">Studio · Remix IA</div>
+    </div>
+  </div>
+</header>
+
+<!-- Écran de connexion (accès privé) -->
+<div class="overlay" id="loginOverlay">
+  <div class="login">
+    <div class="lk">🔒</div>
+    <h3>Accès privé</h3>
+    <p>Ce studio est protégé. Entrez votre mot de passe pour continuer.</p>
+    <input type="password" id="pwInput" placeholder="Mot de passe" autocomplete="current-password">
+    <button class="btn solid" id="loginBtn">Entrer</button>
+    <div class="err" id="loginErr"></div>
+    <div class="hint">Le mot de passe est celui du serveur (variable <b>RYSAO_PASSWORD</b>, ou celui affiché dans la console au démarrage).</div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Atelier sonore</span>
+    <h1>Remix <span>Génératif</span></h1>
+    <p>Importez vos musiques, laissez l'intelligence artificielle recomposer, ré-arranger et fusionner les morceaux — un seul titre ou plusieurs ensemble. Exportez le résultat en WAV.</p>
+    <p class="note">Tout se passe dans votre navigateur : aucun fichier n'est envoyé sur un serveur, votre musique reste privée.</p>
+  </div>
+</section>
+
+<!-- 1. IMPORT -->
+<section class="block">
+  <div class="wrap">
+    <div class="step">
+      <div class="num">1</div>
+      <div><h2>Importez vos musiques</h2><div class="sub">MP3, WAV, M4A, OGG… Ajoutez un ou plusieurs fichiers.</div></div>
+    </div>
+
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
+      <div class="big">Déposez vos fichiers audio ici</div>
+      <div class="sm">ou cliquez pour parcourir</div>
+      <input type="file" id="file" accept="audio/*" multiple class="hide">
+    </div>
+
+    <div class="tracks" id="tracks"></div>
+    <div class="status" id="importStatus"></div>
+  </div>
+</section>
+
+<!-- 2. MODE -->
+<section class="block" id="cfg" style="opacity:.45;pointer-events:none">
+  <div class="wrap">
+    <div class="step">
+      <div class="num">2</div>
+      <div><h2>Choisissez le mode</h2><div class="sub">Laissez l'IA décider, ou réglez le remix à votre goût.</div></div>
+    </div>
+
+    <div class="modes">
+      <div class="mode on" data-mode="ia">
+        <div class="t"><span>◈</span> Aléatoire — IA</div>
+        <div class="d">L'IA compose une recette de remix pour vous. Chaque génération est différente.</div>
+      </div>
+      <div class="mode" data-mode="manuel">
+        <div class="t">✦ Manuel</div>
+        <div class="d">Vous pilotez tempo, effets, découpe et intensité à la main.</div>
+      </div>
+    </div>
+
+    <!-- Moteur de rendu (visible si serveur connecté) -->
+    <div class="engine" id="engineBox">
+      <label style="font-size:13px;letter-spacing:.04em;color:var(--ivoire-doux);display:block;margin-bottom:8px">Moteur de rendu</label>
+      <div class="switch">
+        <button id="engBrowser" class="on" data-eng="browser">Navigateur (instantané)</button>
+        <button id="engServer" data-eng="server">Serveur — Pro (garde la hauteur)</button>
+      </div>
+      <label class="chkline" id="kpLine" style="display:none">
+        <input type="checkbox" id="keepPitch" checked>
+        Beatmatch en conservant la hauteur (vrai time-stretch)
+      </label>
+    </div>
+
+    <!-- Réglages communs -->
+    <div class="grid">
+      <div class="ctrl">
+        <label>Durée du remix <b><span id="vDur">30</span> s</b></label>
+        <input type="range" id="sDur" min="10" max="120" step="5" value="30">
+      </div>
+      <div class="ctrl">
+        <label>Tempo cible (BPM) <b><span id="vBpm">auto</span></b></label>
+        <input type="range" id="sBpm" min="70" max="180" step="1" value="120">
+        <div class="switch" style="margin-top:8px"><button id="bpmAuto" class="on">BPM auto</button></div>
+      </div>
+    </div>
+
+    <!-- Réglages manuels -->
+    <div id="manual" class="hide" style="margin-top:26px">
+      <div class="grid">
+        <div class="ctrl">
+          <label>Vitesse / hauteur <b><span id="vSpeed">1.00</span>×</b></label>
+          <input type="range" id="sSpeed" min="0.7" max="1.4" step="0.01" value="1">
+        </div>
+        <div class="ctrl">
+          <label>Découpe (temps / cellule) <b><span id="vSlice">1</span></b></label>
+          <input type="range" id="sSlice" min="1" max="4" step="1" value="1">
+        </div>
+        <div class="ctrl">
+          <label>Ré-arrangement <b><span id="vShuf">40</span>%</b></label>
+          <input type="range" id="sShuf" min="0" max="100" step="5" value="40">
+        </div>
+        <div class="ctrl">
+          <label>Reverb <b><span id="vRev">25</span>%</b></label>
+          <input type="range" id="sRev" min="0" max="100" step="5" value="25">
+        </div>
+        <div class="ctrl">
+          <label>Écho / delay <b><span id="vDel">20</span>%</b></label>
+          <input type="range" id="sDel" min="0" max="100" step="5" value="20">
+        </div>
+        <div class="ctrl">
+          <label>Stutter / répétitions <b><span id="vStut">20</span>%</b></label>
+          <input type="range" id="sStut" min="0" max="100" step="5" value="20">
+        </div>
+        <div class="ctrl">
+          <label>Reverse (segments à l'envers) <b><span id="vRevr">10</span>%</b></label>
+          <input type="range" id="sRevr" min="0" max="100" step="5" value="10">
+        </div>
+        <div class="ctrl">
+          <label>Filtre / balayage</label>
+          <select id="selFilter">
+            <option value="none">Aucun</option>
+            <option value="sweepup">Montée (build-up)</option>
+            <option value="sweepdown">Descente</option>
+            <option value="lowpass">Étouffé (lowpass)</option>
+            <option value="highpass">Aérien (highpass)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Réglages IA -->
+    <div id="iaBox" style="margin-top:26px">
+      <div class="ctrl" style="max-width:420px">
+        <label>Intensité créative de l'IA <b><span id="vEnergy">équilibré</span></b></label>
+        <input type="range" id="sEnergy" min="0" max="100" step="1" value="50">
+        <div class="muted" style="margin-top:8px">Bas = proche de l'original · Haut = remix audacieux, très transformé.</div>
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn solid" id="gen">✦ Générer le remix</button>
+      <button class="btn ghost hide" id="regen">↻ Autre version</button>
+    </div>
+    <div class="bar-load" id="loadbar"><i></i></div>
+    <div class="status" id="genStatus"></div>
+  </div>
+</section>
+
+<!-- CRÉATION IA (visible si serveur connecté) -->
+<section class="block" id="createBlock" style="display:none">
+  <div class="wrap">
+    <div class="step">
+      <div class="num" style="font-size:18px">✦</div>
+      <div><h2>Créer une musique (IA générative)</h2><div class="sub">Sans importer de fichier : l'IA compose un morceau original.</div></div>
+    </div>
+    <div class="grid">
+      <div class="ctrl">
+        <label>Ambiance</label>
+        <select id="genMood">
+          <option value="lofi">Lo-fi (chill)</option>
+          <option value="cinematique">Cinématique</option>
+          <option value="house">House</option>
+          <option value="trap">Trap</option>
+          <option value="ambient">Ambient</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Tonalité</label>
+        <select id="genKey">
+          <option>Do</option><option>Do#</option><option>Ré</option><option>Ré#</option>
+          <option>Mi</option><option>Fa</option><option>Fa#</option><option>Sol</option>
+          <option>Sol#</option><option selected>La</option><option>La#</option><option>Si</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Gamme</label>
+        <select id="genScale">
+          <option value="min">Mineure</option>
+          <option value="maj">Majeure</option>
+          <option value="dorien">Dorien</option>
+          <option value="penta">Pentatonique</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Durée <b><span id="vGenDur">30</span> s</b></label>
+        <input type="range" id="genDur" min="10" max="120" step="5" value="30">
+      </div>
+      <div class="ctrl">
+        <label>Intensité <b><span id="vGenInt">équilibré</span></b></label>
+        <input type="range" id="genInt" min="0" max="100" step="1" value="55">
+      </div>
+    </div>
+
+    <div id="neuralBox" class="hide" style="margin-top:20px">
+      <div class="ctrl">
+        <label>Description (IA neuronale — MusicGen)</label>
+        <select id="genEngine" style="max-width:280px;margin-bottom:10px">
+          <option value="algo">Moteur algorithmique (instantané)</option>
+          <option value="neural">Neuronal texte→musique (MusicGen)</option>
+        </select>
+        <input type="text" id="genPrompt" placeholder="ex : lofi hip hop piano mélancolique, pluie"
+          style="width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:14px">
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn solid" id="genMusic">✦ Composer</button>
+      <button class="btn ghost" id="genSurprise">🎲 Surprise</button>
+    </div>
+    <div class="bar-load" id="loadbar2"><i></i></div>
+    <div class="status" id="createStatus"></div>
+  </div>
+</section>
+
+<!-- 3. RESULT -->
+<section class="block" id="resultBlock" style="display:none">
+  <div class="wrap">
+    <div class="step">
+      <div class="num">3</div>
+      <div><h2>Votre remix</h2><div class="sub">Écoutez, régénérez ou téléchargez.</div></div>
+    </div>
+
+    <div class="player show" id="player">
+      <div class="title" id="rTitle">Remix RYSAO</div>
+      <div class="recipe" id="rRecipe"></div>
+      <canvas id="viz" class="viz" width="900" height="120"></canvas>
+      <div class="transport">
+        <button class="play" id="playBtn" aria-label="Lecture">
+          <svg id="pIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div class="seek">
+          <div class="bar" id="seekBar"><div class="fill" id="seekFill"></div></div>
+          <div class="time"><span id="tCur">0:00</span><span id="tTot">0:00</span></div>
+        </div>
+      </div>
+      <div class="btnrow" style="margin-top:22px">
+        <select id="dlFmt" style="width:auto;padding:13px 14px"><option value="wav">WAV</option></select>
+        <button class="btn solid" id="dl">⤓ Télécharger</button>
+        <button class="btn" id="regen2">↻ Générer une autre version</button>
+      </div>
+      <div class="status" id="dlStatus"></div>
+    </div>
+  </div>
+</section>
+
+<footer>RYSAO STUDIO — Remix génératif · 100% local · Web Audio</footer>
+
+<script>
+"use strict";
+/* ============================================================
+   RYSAO Studio — moteur de remix génératif (Web Audio API)
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const AC = window.AudioContext || window.webkitAudioContext;
+
+const state = {
+  tracks: [],          // {name, buffer, revBuffer, bpm, sel, role, peaks}
+  mode: "ia",
+  bpmAuto: true,
+  result: null,        // AudioBuffer rendu
+  recipeText: "",
+  playCtx: null, src: null, playing: false, startAt: 0, offset: 0, raf: 0
+};
+
+/* ---------- RNG déterministe ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ============================================================
+   BACKEND — détection & appels API (optionnel)
+   ============================================================ */
+const backend = {
+  on:false, base:"", caps:{}, engine:"browser", moods:[],
+  authRequired:false, authed:false, token:localStorage.getItem("rysao_token")||"",
+  async detect(){
+    const bases = location.protocol==="file:" ? ["http://127.0.0.1:8000"] : ["", "http://127.0.0.1:8000"];
+    for(const b of bases){
+      try{
+        const r=await fetch(b+"/api/health",{signal:AbortSignal.timeout(2500)});
+        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};
+          this.moods=j.moods||[];this.authRequired=!!j.auth_required;return true}
+      }catch(e){}
+    }
+    return false;
+  },
+  // fetch authentifié : ajoute le jeton (cookie + en-tête Bearer)
+  api(path,opts={}){
+    opts.headers=Object.assign({},opts.headers, this.token?{Authorization:"Bearer "+this.token}:{});
+    opts.credentials="include";
+    return fetch(this.base+path,opts);
+  },
+  async login(password){
+    const fd=new FormData(); fd.append("password",password);
+    const r=await fetch(this.base+"/api/login",{method:"POST",body:fd,credentials:"include"});
+    if(!r.ok)return false;
+    const j=await r.json(); this.token=j.token||""; this.authed=true;
+    if(this.token)localStorage.setItem("rysao_token",this.token);
+    return true;
+  },
+  async checkAuth(){
+    if(!this.authRequired){this.authed=true;return true}
+    try{ const r=await this.api("/api/me"); this.authed=r.ok; return r.ok; }
+    catch(e){ this.authed=false; return false; }
+  },
+  logout(){ this.token=""; this.authed=false; localStorage.removeItem("rysao_token"); },
+  async analyze(file){
+    const fd=new FormData(); fd.append("file",file);
+    const r=await this.api("/api/analyze",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("analyze "+r.status);
+    return r.json();
+  },
+  async separate(id){
+    const fd=new FormData(); fd.append("id",id);
+    const r=await this.api("/api/separate",{method:"POST",body:fd});
+    return r.json();
+  },
+  async remix(spec){
+    const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
+    const r=await this.api("/api/remix",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("remix "+r.status);
+    return r.json();
+  },
+  fileUrl(id){return this.base+"/api/file/"+id}
+};
+
+async function initBackend(){
+  const ok=await backend.detect();
+  const txt=$("beText");
+  if(!ok){ txt.textContent="Mode navigateur (serveur hors ligne)"; return; }
+  // serveur présent : faut-il se connecter ?
+  const authed=await backend.checkAuth();
+  if(authed) enableBackendFeatures();
+  else{ txt.textContent="Serveur — connexion requise"; showLogin(); }
+}
+
+function enableBackendFeatures(){
+  const pill=$("beStatus"), txt=$("beText");
+  pill.classList.add("on");
+  const extra=backend.caps.stem_separation?" · séparation IA":"";
+  txt.textContent="Serveur connecté"+extra;
+  $("loginOverlay").classList.remove("show");
+  $("engineBox").classList.add("show");
+  if(backend.caps.music_generation){
+    $("createBlock").style.display="block";
+    populateMoods();
+    if(backend.caps.neural_music) $("neuralBox").classList.remove("hide");
+  }
+  const fmtSel=$("dlFmt");
+  if(fmtSel && fmtSel.options.length<2){
+    if(backend.caps.mp3_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="mp3">MP3</option>');
+    if(backend.caps.ogg_export) fmtSel.insertAdjacentHTML("beforeend",'<option value="ogg">OGG</option>');
+  }
+}
+
+/* ---------- Écran de connexion (accès privé) ---------- */
+function showLogin(){ $("loginOverlay").classList.add("show"); setTimeout(()=>$("pwInput").focus(),100); }
+async function doLogin(){
+  const pw=$("pwInput").value;
+  if(!pw){ $("loginErr").textContent="Entrez le mot de passe."; return; }
+  $("loginBtn").disabled=true; $("loginErr").textContent="";
+  const ok=await backend.login(pw);
+  $("loginBtn").disabled=false;
+  if(ok){ $("pwInput").value=""; enableBackendFeatures(); }
+  else{ $("loginErr").textContent="Mot de passe incorrect."; $("pwInput").select(); }
+}
+
+/* ---------- Ambiances (peuplées depuis le serveur) ---------- */
+const MOOD_LABELS={lofi:"Lo-fi (chill)",cinematique:"Cinématique",house:"House",
+  trap:"Trap",ambient:"Ambient",synthwave:"Synthwave",boombap:"Boom-bap",
+  dnb:"Drum & Bass",afro:"Afrobeat",reggaeton:"Reggaeton"};
+function populateMoods(){
+  const sel=$("genMood"); if(!sel||!backend.moods.length)return;
+  const prev=sel.value;
+  sel.innerHTML=backend.moods.map(m=>`<option value="${m}">${MOOD_LABELS[m]||m}</option>`).join("");
+  if(backend.moods.includes(prev))sel.value=prev;
+}
+
+/* ---------- Génération de musique (backend) ---------- */
+async function generateMusic(reseed){
+  if(reseed) genState.seed=Math.floor(Math.random()*1e9);
+  else if(genState.seed==null) genState.seed=Math.floor(Math.random()*1e9);
+  const engine=($("genEngine")&&$("genEngine").value)||"algo";
+  const spec = engine==="neural"
+    ? {engine:"neural", prompt:$("genPrompt").value||"calm melodic lofi", duration:+$("genDur").value}
+    : {mood:$("genMood").value, key:$("genKey").value, scale:$("genScale").value,
+       duration:+$("genDur").value, intensity:+$("genInt").value/100, seed:genState.seed};
+  loading2(true); setStatus("createStatus","L'IA compose un morceau…");
+  $("genMusic").disabled=$("genSurprise").disabled=true;
+  try{
+    const fd=new FormData(); fd.append("spec",JSON.stringify(spec));
+    const r=await backend.api("/api/generate",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("generate "+r.status);
+    const out=await r.json();
+    if(out.error){ setStatus("createStatus",out.error+" "+(out.how_to||""),"err"); return; }
+    const blob=await (await backend.api("/api/file/"+out.id)).blob();
+    state.serverBlob=blob; state.serverName=out.file; state.lastKind="music";
+    const ctx=new AC(); state.result=await ctx.decodeAudioData(await blob.arrayBuffer()); ctx.close();
+    state._seed=genState.seed;
+    stopPlayback();
+    $("resultBlock").style.display="block";
+    $("rTitle").textContent = engine==="neural" ? "Création IA — MusicGen" : `Création IA — ${$("genMood").value}`;
+    $("rRecipe").innerHTML = engine==="neural"
+      ? `Modèle neuronal · « ${escapeHtml($("genPrompt").value||"")} »`
+      : `Ambiance <b>${$("genMood").value}</b> · tonalité <b>${$("genKey").value} ${$("genScale").value}</b> · durée <b>${$("genDur").value}s</b> · graine <b>#${genState.seed}</b>`;
+    $("tTot").textContent=fmtTime(state.result.duration);
+    $("tCur").textContent="0:00"; $("seekFill").style.width="0%";
+    $("resultBlock").scrollIntoView({behavior:"smooth"});
+    setStatus("createStatus","Morceau prêt ✦","ok");
+  }catch(e){
+    setStatus("createStatus","Erreur : "+e.message,"err");
+  }finally{
+    loading2(false); $("genMusic").disabled=$("genSurprise").disabled=false;
+  }
+}
+const genState={seed:null};
+function loading2(on){const b=$("loadbar2");b.classList.toggle("show",on);b.querySelector("i").style.width=on?"85%":"100%";if(!on)setTimeout(()=>{b.querySelector("i").style.width="0%"},300)}
+
+/* ============================================================
+   IMPORT + DÉCODAGE
+   ============================================================ */
+const drop=$("drop"), fileInput=$("file");
+drop.onclick=()=>fileInput.click();
+fileInput.onchange=e=>addFiles(e.target.files);
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
+
+async function addFiles(list){
+  const files=[...list].filter(f=>f.type.startsWith("audio")||/\.(mp3|wav|m4a|ogg|flac|aac)$/i.test(f.name));
+  if(!files.length){setStatus("importStatus","Aucun fichier audio reconnu.","err");return}
+  const ctx=new AC();
+  for(const f of files){
+    setStatus("importStatus",`Analyse de « ${f.name} »…`);
+    try{
+      const buf=await ctx.decodeAudioData(await f.arrayBuffer());
+      let bpm=estimateBPM(buf), id=null, key=null;
+      if(backend.authed){
+        try{ const meta=await backend.analyze(f); id=meta.id; bpm=meta.bpm||bpm; key=meta.key; }
+        catch(e){ /* le morceau reste utilisable en mode navigateur */ }
+      }
+      state.tracks.push({
+        name:f.name.replace(/\.[^.]+$/,""), buffer:buf, revBuffer:reverseBuffer(ctx,buf),
+        bpm, key, id, stem:null, sel:true, role:"auto", gain:1, mute:false,
+        eq:{low:0,mid:0,high:0}, eqOpen:false, peaks:peaksOf(buf,120)
+      });
+    }catch(err){ setStatus("importStatus",`Impossible de lire « ${f.name} ».`,"err"); }
+  }
+  ctx.close();
+  renderTracks();
+  refreshUI();
+  setStatus("importStatus",`${state.tracks.length} morceau(x) prêt(s).`,"ok");
+}
+
+function reverseBuffer(ctx,buf){
+  const r=ctx.createBuffer(buf.numberOfChannels,buf.length,buf.sampleRate);
+  for(let c=0;c<buf.numberOfChannels;c++){
+    const s=buf.getChannelData(c), d=r.getChannelData(c), n=buf.length;
+    for(let i=0;i<n;i++) d[i]=s[n-1-i];
+  }
+  return r;
+}
+
+/* ---------- Séparation IA d'une piste (backend) ---------- */
+async function separateTrack(i){
+  const t=state.tracks[i];
+  if(!t.id||!backend.authed)return;
+  setStatus("importStatus",`Séparation IA de « ${t.name} »… (cela peut prendre un moment)`);
+  try{
+    const res=await backend.separate(t.id);
+    if(!res.available){
+      setStatus("importStatus",res.reason+" "+(res.how_to||""),"err");return;
+    }
+    if(res.error){ setStatus("importStatus","Séparation : "+res.error,"err");return; }
+    const ctx=new AC();
+    const order=["vocals","drums","bass","other"];
+    for(const name of order){
+      const s=res.stems[name]; if(!s)continue;
+      const ab=await (await backend.api("/api/file/"+s.id)).arrayBuffer();
+      const buf=await ctx.decodeAudioData(ab);
+      state.tracks.push({
+        name:t.name, buffer:buf, revBuffer:reverseBuffer(ctx,buf),
+        bpm:s.bpm||t.bpm, key:s.key||t.key, id:s.id,
+        stem:(res.labels&&res.labels[name])||name,
+        sel:false, role:"auto", gain:1, mute:false,
+        eq:{low:0,mid:0,high:0}, eqOpen:false, peaks:peaksOf(buf,120)
+      });
+    }
+    ctx.close();
+    t.sel=false;           // on remplace l'original par ses pistes
+    renderTracks(); refreshUI();
+    setStatus("importStatus",`« ${t.name} » séparé : voix, batterie, basse, autres. Cochez ce que vous voulez remixer.`,"ok");
+  }catch(e){
+    setStatus("importStatus","Erreur de séparation : "+e.message,"err");
+  }
+}
+
+/* Peaks pour mini-waveform */
+function peaksOf(buf,n){
+  const d=buf.getChannelData(0), step=Math.floor(d.length/n), out=[];
+  for(let i=0;i<n;i++){let m=0;for(let j=0;j<step;j+=64){const v=Math.abs(d[i*step+j]||0);if(v>m)m=v}out.push(m)}
+  const mx=Math.max(...out,0.001); return out.map(v=>v/mx);
+}
+
+/* ---------- Estimation de tempo (BPM) ----------
+   Enveloppe d'énergie -> autocorrélation sur la plage 70-180 BPM. */
+function estimateBPM(buf){
+  const sr=buf.sampleRate, d=buf.getChannelData(0);
+  const win=Math.floor(sr*0.02); // 20ms
+  const env=[];
+  for(let i=0;i+win<d.length;i+=win){
+    let s=0; for(let j=0;j<win;j+=4){const v=d[i+j];s+=v*v}
+    env.push(Math.sqrt(s));
+  }
+  // différence positive (onsets)
+  const on=[]; for(let i=1;i<env.length;i++){const x=env[i]-env[i-1];on.push(x>0?x:0)}
+  const fps=sr/win;
+  const minLag=Math.floor(fps*60/180), maxLag=Math.ceil(fps*60/70);
+  let best=0,bestLag=minLag;
+  for(let lag=minLag;lag<=maxLag;lag++){
+    let s=0; for(let i=0;i+lag<on.length;i++) s+=on[i]*on[i+lag];
+    if(s>best){best=s;bestLag=lag}
+  }
+  let bpm=60*fps/bestLag;
+  while(bpm<70)bpm*=2; while(bpm>180)bpm/=2;
+  return Math.round(bpm);
+}
+
+/* ---------- Rendu liste ---------- */
+function renderTracks(){
+  const el=$("tracks"); el.innerHTML="";
+  state.tracks.forEach((t,i)=>{
+    const row=document.createElement("div");
+    row.className="track"+(t.sel?" sel":"")+(t.mute?" muted":"");
+    const wave=t.peaks.map(p=>`<i style="height:${Math.max(8,p*100)}%"></i>`).join("");
+    row.innerHTML=`
+      <div class="chk" data-i="${i}"></div>
+      <div class="meta">
+        <div class="nm">${escapeHtml(t.name)}</div>
+        <div class="info">${fmtTime(t.buffer.duration)} · ~${t.bpm} BPM${t.key?" · "+escapeHtml(t.key):""} · ${t.buffer.numberOfChannels>1?"stéréo":"mono"}</div>
+      </div>
+      <div class="wave">${wave}</div>
+      <div class="mix">
+        <button class="mute${t.mute?" on":""}" data-m="${i}" title="Muet">${t.mute?"🔇":"🔊"}</button>
+        <input type="range" class="vol" data-v="${i}" min="0" max="150" step="1" value="${Math.round((t.gain??1)*100)}">
+        <span class="vval" data-vv="${i}">${Math.round((t.gain??1)*100)}</span>
+      </div>
+      ${t.stem?`<span class="badge">${escapeHtml(t.stem)}</span>`:""}
+      ${(backend.authed && backend.caps.stem_separation && t.id && !t.stem)
+        ?`<button class="stem" data-s="${i}">⃝ Séparer IA</button>`:""}
+      <button class="eqbtn${t.eqOpen?" on":""}" data-e="${i}">EQ</button>
+      <div class="role" data-r="${i}">${roleLabel(t.role)}</div>
+      <div class="del" data-d="${i}">✕</div>
+      <div class="eqpanel${t.eqOpen?" open":""}">
+        ${["low","mid","high"].map(band=>{
+          const lbl={low:"Graves",mid:"Médiums",high:"Aigus"}[band];
+          const v=t.eq[band]||0;
+          return `<div class="eqband">
+            <label>${lbl} <b><span data-eqv="${i}-${band}">${v>0?"+":""}${v}</span> dB</b></label>
+            <input type="range" class="eqsl" data-eq="${i}" data-band="${band}" min="-12" max="12" step="1" value="${v}">
+          </div>`;
+        }).join("")}
+        <button class="eqreset" data-eqr="${i}">Réinit.</button>
+      </div>`;
+    el.appendChild(row);
+  });
+  el.querySelectorAll(".chk").forEach(c=>c.onclick=()=>{const i=+c.dataset.i;state.tracks[i].sel=!state.tracks[i].sel;renderTracks();refreshUI()});
+  el.querySelectorAll(".del").forEach(c=>c.onclick=()=>{state.tracks.splice(+c.dataset.d,1);renderTracks();refreshUI()});
+  el.querySelectorAll(".role").forEach(c=>c.onclick=()=>{cycleRole(+c.dataset.r);renderTracks()});
+  el.querySelectorAll(".stem").forEach(c=>c.onclick=()=>separateTrack(+c.dataset.s));
+  el.querySelectorAll(".mute").forEach(c=>c.onclick=()=>{const i=+c.dataset.m;state.tracks[i].mute=!state.tracks[i].mute;renderTracks()});
+  el.querySelectorAll(".vol").forEach(c=>c.oninput=()=>{const i=+c.dataset.v;state.tracks[i].gain=(+c.value)/100;el.querySelector(`[data-vv="${i}"]`).textContent=c.value});
+  el.querySelectorAll(".eqbtn").forEach(c=>c.onclick=()=>{const i=+c.dataset.e;state.tracks[i].eqOpen=!state.tracks[i].eqOpen;renderTracks()});
+  el.querySelectorAll(".eqsl").forEach(c=>c.oninput=()=>{const i=+c.dataset.eq,band=c.dataset.band,v=+c.value;
+    state.tracks[i].eq[band]=v;el.querySelector(`[data-eqv="${i}-${band}"]`).textContent=(v>0?"+":"")+v});
+  el.querySelectorAll(".eqreset").forEach(c=>c.onclick=()=>{const i=+c.dataset.eqr;state.tracks[i].eq={low:0,mid:0,high:0};renderTracks()});
+}
+function roleLabel(r){return {auto:"rôle auto",rythme:"rythme",melodie:"mélodie",accent:"accents"}[r]}
+function cycleRole(i){const o=["auto","rythme","melodie","accent"];const t=state.tracks[i];t.role=o[(o.indexOf(t.role)+1)%o.length]}
+
+function refreshUI(){
+  const n=state.tracks.filter(t=>t.sel).length;
+  const cfg=$("cfg");
+  if(n>0){cfg.style.opacity=1;cfg.style.pointerEvents="auto"}
+  else{cfg.style.opacity=.45;cfg.style.pointerEvents="none"}
+}
+
+/* ============================================================
+   CONTRÔLES UI
+   ============================================================ */
+document.querySelectorAll(".mode").forEach(m=>m.onclick=()=>{
+  document.querySelectorAll(".mode").forEach(x=>x.classList.remove("on"));
+  m.classList.add("on"); state.mode=m.dataset.mode;
+  $("manual").classList.toggle("hide",state.mode!=="manuel");
+  $("iaBox").classList.toggle("hide",state.mode!=="ia");
+});
+
+const bind=(sid,vid,fmt)=>{const s=$(sid),v=$(vid);const up=()=>v.textContent=fmt?fmt(s.value):s.value;s.oninput=up;up()};
+bind("sDur","vDur");
+bind("sSpeed","vSpeed",v=>(+v).toFixed(2));
+bind("sSlice","vSlice");
+bind("sShuf","vShuf");
+bind("sRev","vRev"); bind("sDel","vDel"); bind("sStut","vStut"); bind("sRevr","vRevr");
+$("sEnergy").oninput=e=>{const v=+e.target.value;$("vEnergy").textContent=v<33?"délicat":v<66?"équilibré":"audacieux"};
+$("bpmAuto").onclick=()=>{state.bpmAuto=!state.bpmAuto;$("bpmAuto").classList.toggle("on",state.bpmAuto);
+  $("vBpm").textContent=state.bpmAuto?"auto":$("sBpm").value};
+$("sBpm").oninput=e=>{if(!state.bpmAuto)$("vBpm").textContent=e.target.value};
+
+document.querySelectorAll("#engineBox .switch button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("#engineBox .switch button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); backend.engine=b.dataset.eng;
+  $("kpLine").style.display=backend.engine==="server"?"flex":"none";
+});
+
+$("gen").onclick=()=>generate();
+$("regen").onclick=()=>generate(true);
+$("regen2").onclick=()=>{ state.lastKind==="music"?generateMusic(true):generate(true); };
+
+// Contrôles de création
+bind("genDur","vGenDur");
+$("genInt").oninput=e=>{const v=+e.target.value;$("vGenInt").textContent=v<33?"doux":v<66?"équilibré":"intense"};
+$("genMusic").onclick=()=>generateMusic(false);
+$("genSurprise").onclick=()=>generateMusic(true);
+if($("genEngine")) $("genEngine").onchange=e=>$("genPrompt").style.opacity=e.target.value==="neural"?1:.5;
+
+/* ============================================================
+   CONSTRUCTION DE LA RECETTE (le "cerveau")
+   ============================================================ */
+function buildRecipe(reseed){
+  const sel=state.tracks.filter(t=>t.sel && !t.mute);
+  const seed=reseed?Math.floor(Math.random()*1e9):(state._seed??Math.floor(Math.random()*1e9));
+  state._seed=seed;
+  const rnd=mulberry32(seed);
+
+  // tempo cible
+  const primary=sel[0];
+  let bpm = state.bpmAuto ? primary.bpm : +$("sBpm").value;
+  const dur=+$("sDur").value;
+
+  let r;
+  if(state.mode==="manuel"){
+    r={
+      seed,bpm,dur,
+      speed:+$("sSpeed").value,
+      beatsPerCell:+$("sSlice").value,
+      shuffle:+$("sShuf").value/100,
+      reverb:+$("sRev").value/100,
+      delay:+$("sDel").value/100,
+      stutter:+$("sStut").value/100,
+      reverse:+$("sRevr").value/100,
+      filter:$("selFilter").value
+    };
+  }else{
+    const e=+$("sEnergy").value/100; // intensité
+    r={
+      seed,bpm,dur,
+      speed: +(0.94+rnd()*0.12+ (e-0.5)*0.15).toFixed(3),
+      beatsPerCell: [1,1,2,2,4][Math.floor(rnd()*5)],
+      shuffle: +(0.15+e*0.7).toFixed(2),
+      reverb: +(0.1+rnd()*0.4).toFixed(2),
+      delay: +(rnd()*0.5*e+0.1).toFixed(2),
+      stutter: +(e*0.5*rnd()+0.05).toFixed(2),
+      reverse: +(e*0.3*rnd()).toFixed(2),
+      filter: ["none","sweepup","lowpass","highpass","sweepdown"][Math.floor(rnd()* (e>0.4?5:2))]
+    };
+  }
+
+  // Rôles / couches
+  r.layers=sel.map((t,i)=>{
+    let role=t.role;
+    if(role==="auto"){
+      if(sel.length===1)role="rythme";
+      else role=i===0?"rythme":(i===1?"melodie":"accent");
+    }
+    const gain={rythme:1,melodie:0.85,accent:0.6}[role]*(t.gain??1);
+    const speed=(bpm/t.bpm)*r.speed;   // beatmatch auto
+    return {track:t,role,gain,speed};
+  });
+  return r;
+}
+
+/* ============================================================
+   RENDU HORS-LIGNE -> AudioBuffer
+   ============================================================ */
+async function renderRemix(r){
+  const sr=44100, len=Math.ceil(r.dur*sr);
+  const ctx=new OfflineAudioContext(2,len,sr);
+
+  // Master + envois (reverb / delay)
+  const master=ctx.createGain(); master.gain.value=0.9;
+
+  const convolver=ctx.createConvolver(); convolver.buffer=makeImpulse(ctx,2.2,2.5);
+  const revGain=ctx.createGain(); revGain.gain.value=r.reverb;
+  convolver.connect(revGain).connect(master);
+
+  const delay=ctx.createDelay(1.5); delay.delayTime.value=60/r.bpm*0.75; // dotted-ish
+  const fb=ctx.createGain(); fb.gain.value=Math.min(0.6,r.delay*0.7);
+  const delGain=ctx.createGain(); delGain.gain.value=r.delay;
+  delay.connect(fb).connect(delay); delay.connect(delGain).connect(master);
+
+  // Filtre global optionnel
+  let masterOut=master;
+  if(r.filter!=="none"){
+    const f=ctx.createBiquadFilter();
+    const T=r.dur;
+    if(r.filter==="lowpass"){f.type="lowpass";f.frequency.value=1200}
+    else if(r.filter==="highpass"){f.type="highpass";f.frequency.value=600}
+    else if(r.filter==="sweepup"){f.type="lowpass";f.frequency.setValueAtTime(300,0);f.frequency.exponentialRampToValueAtTime(16000,T)}
+    else if(r.filter==="sweepdown"){f.type="lowpass";f.frequency.setValueAtTime(16000,0);f.frequency.exponentialRampToValueAtTime(400,T)}
+    master.connect(f); f.connect(ctx.destination);
+  }else{
+    master.connect(ctx.destination);
+  }
+
+  const beatOut=60/r.bpm;
+  const cellDur=beatOut*r.beatsPerCell;
+  const totalCells=Math.ceil(r.dur/cellDur);
+  const rnd=mulberry32(r.seed^0x9e3779b9);
+
+  for(const layer of r.layers){
+    const t=layer.track, srcBeat=60/t.bpm;
+    const srcCells=Math.max(1,Math.floor(t.buffer.duration/(srcBeat*r.beatsPerCell*layer.speed)));
+    // arrangement de base (séquentiel bouclé) puis shuffle partiel
+    const arr=[];
+    for(let i=0;i<totalCells;i++)arr.push(i%srcCells);
+    for(let i=0;i<totalCells;i++){
+      if(rnd()<r.shuffle){const j=Math.floor(rnd()*totalCells);[arr[i],arr[j]]=[arr[j],arr[i]]}
+    }
+
+    const layerGain=ctx.createGain(); layerGain.gain.value=layer.gain;
+    layerGain.connect(master);                        // dry
+    const layerIn=ctx.createGain();                   // somme des cellules de la piste
+    const eq=makeEQ(ctx, t.eq);
+    let tap;                                           // point post-EQ (dry + envois)
+    if(eq){ layerIn.connect(eq.input); eq.output.connect(layerGain); tap=eq.output; }
+    else  { layerIn.connect(layerGain); tap=layerIn; }
+    tap.connect(convolver); tap.connect(delay);        // envois reverb/delay post-EQ
+
+    for(let i=0;i<totalCells;i++){
+      const when=i*cellDur;
+      if(when>=r.dur)break;
+      const reverse = rnd()<r.reverse;
+      const buf = reverse ? t.revBuffer : t.buffer;
+      let srcIdx=arr[i];
+      let srcOffset = srcIdx * cellDur * layer.speed;
+      if(reverse) srcOffset = Math.max(0, t.buffer.duration - srcOffset - cellDur*layer.speed);
+      srcOffset=Math.min(srcOffset, Math.max(0,t.buffer.duration-0.05));
+
+      const stutter = rnd()<r.stutter;
+      const reps = stutter ? [2,3,4][Math.floor(rnd()*3)] : 1;
+      const sub=cellDur/reps;
+      for(let k=0;k<reps;k++){
+        const s=ctx.createBufferSource(); s.buffer=buf; s.playbackRate.value=layer.speed;
+        const g=ctx.createGain();
+        const st=when+k*sub;
+        // enveloppe anti-clic
+        const a=Math.min(0.008,sub*0.2), rel=Math.min(0.02,sub*0.3);
+        g.gain.setValueAtTime(0,st);
+        g.gain.linearRampToValueAtTime(1,st+a);
+        g.gain.setValueAtTime(1,st+sub-rel);
+        g.gain.linearRampToValueAtTime(0,st+sub);
+        s.connect(g); g.connect(layerIn);
+        const consume=sub*layer.speed;
+        try{ s.start(st, srcOffset, consume+0.02); s.stop(st+sub+0.03); }catch(e){}
+      }
+    }
+  }
+
+  const rendered=await ctx.startRendering();
+  return rendered;
+}
+
+/* Égaliseur 3 bandes (graves/médiums/aigus) pour une piste */
+function makeEQ(ctx, eq){
+  if(!eq || (!eq.low && !eq.mid && !eq.high)) return null;
+  const low=ctx.createBiquadFilter(); low.type="lowshelf"; low.frequency.value=200; low.gain.value=eq.low||0;
+  const mid=ctx.createBiquadFilter(); mid.type="peaking"; mid.frequency.value=1000; mid.Q.value=1; mid.gain.value=eq.mid||0;
+  const high=ctx.createBiquadFilter(); high.type="highshelf"; high.frequency.value=4000; high.gain.value=eq.high||0;
+  low.connect(mid); mid.connect(high);
+  return {input:low, output:high};
+}
+
+/* Impulse response synthétique pour la reverb */
+function makeImpulse(ctx,dur,decay){
+  const sr=ctx.sampleRate,len=sr*dur,imp=ctx.createBuffer(2,len,sr);
+  for(let c=0;c<2;c++){const d=imp.getChannelData(c);
+    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay)}
+  return imp;
+}
+
+/* ============================================================
+   GÉNÉRATION (orchestration)
+   ============================================================ */
+async function generate(reseed){
+  const sel=state.tracks.filter(t=>t.sel && !t.mute);
+  if(!sel.length){
+    const anySel=state.tracks.some(t=>t.sel);
+    setStatus("genStatus", anySel?"Toutes les pistes sélectionnées sont muettes 🔇.":"Sélectionnez au moins un morceau.","err");
+    return;
+  }
+  stopPlayback();
+  state.serverBlob=null; state.serverName=null; state.lastKind="remix";
+  loading(true);
+  const server = backend.authed && backend.engine==="server";
+  setStatus("genStatus", server?"Rendu haute qualité sur le serveur…":"L'IA compose votre remix…");
+  $("gen").disabled=$("regen").disabled=true;
+  try{
+    const r=buildRecipe(reseed);
+    let buf;
+    if(server){
+      buf=await generateServer(r,sel);
+    }else{
+      await new Promise(res=>setTimeout(res,80));
+      buf=await renderRemix(r);
+    }
+    state.result=buf;
+    state.recipeText=describe(r,sel)+(server?'<br><b>Rendu serveur — Pro</b> · hauteur conservée : '+($("keepPitch").checked?"oui":"non"):"");
+    showResult(r,sel);
+    setStatus("genStatus","Remix prêt. Écoutez ci-dessous ✦","ok");
+  }catch(err){
+    console.error(err);
+    setStatus("genStatus","Erreur pendant la génération : "+err.message,"err");
+  }finally{
+    loading(false);
+    $("gen").disabled=$("regen").disabled=false;
+    $("regen").classList.remove("hide");
+  }
+}
+
+/* ---------- Rendu via le serveur (Pro) ---------- */
+async function generateServer(r,sel){
+  const missing=sel.filter(t=>!t.id);
+  if(missing.length) throw new Error("Certains morceaux ne sont pas sur le serveur. Ré-importez-les ou utilisez le moteur Navigateur.");
+  const spec={
+    recipe:{
+      bpm:r.bpm, dur:r.dur, beats_per_cell:r.beatsPerCell,
+      shuffle:r.shuffle, reverb:r.reverb, delay:r.delay,
+      stutter:r.stutter, reverse:r.reverse, filter:r.filter,
+      speed:r.speed, seed:r.seed, keep_pitch:$("keepPitch").checked
+    },
+    layers:r.layers.map(l=>({id:l.track.id, bpm:l.track.bpm, gain:l.gain, role:l.role, eq:l.track.eq}))
+  };
+  const out=await backend.remix(spec);
+  const blob=await (await backend.api("/api/file/"+out.id)).blob();
+  state.serverBlob=blob; state.serverName=out.file;
+  const ctx=new AC();
+  const buf=await ctx.decodeAudioData(await blob.arrayBuffer());
+  ctx.close();
+  return buf;
+}
+
+function describe(r,sel){
+  const names=sel.map(t=>t.name).join(" × ");
+  const layers=r.layers.map(l=>`${l.track.name} <b>[${l.role}]</b>`).join(", ");
+  return `Sources : ${layers}<br>
+    Tempo <b>${r.bpm} BPM</b> · vitesse <b>${r.speed.toFixed(2)}×</b> · cellules de <b>${r.beatsPerCell} temps</b><br>
+    Ré-arrangement <b>${Math.round(r.shuffle*100)}%</b> · reverb <b>${Math.round(r.reverb*100)}%</b> · delay <b>${Math.round(r.delay*100)}%</b> · stutter <b>${Math.round(r.stutter*100)}%</b> · reverse <b>${Math.round(r.reverse*100)}%</b><br>
+    Filtre <b>${r.filter}</b> · graine <b>#${r.seed}</b>`;
+}
+
+function showResult(r,sel){
+  $("resultBlock").style.display="block";
+  $("rTitle").textContent = sel.length>1 ? `Mashup — ${sel.map(t=>t.name).join(" × ")}` : `Remix — ${sel[0].name}`;
+  $("rRecipe").innerHTML=state.recipeText;
+  $("tTot").textContent=fmtTime(state.result.duration);
+  $("tCur").textContent="0:00";
+  $("seekFill").style.width="0%";
+  $("resultBlock").scrollIntoView({behavior:"smooth"});
+}
+
+/* ============================================================
+   LECTEUR
+   ============================================================ */
+$("playBtn").onclick=()=>{state.playing?stopPlayback():playFrom(state.offset||0)};
+$("seekBar").onclick=e=>{
+  if(!state.result)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  const p=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+  playFrom(p*state.result.duration);
+};
+function playFrom(off){
+  if(!state.result)return;
+  stopPlayback();
+  state.playCtx=state.playCtx||new AC();
+  const ctx=state.playCtx;
+  if(!state.analyser){ state.analyser=ctx.createAnalyser(); state.analyser.fftSize=1024;
+    state.analyser.smoothingTimeConstant=0.8; state.analyser.connect(ctx.destination); }
+  const s=ctx.createBufferSource(); s.buffer=state.result; s.connect(state.analyser);
+  s.start(0,off); state.src=s; state.playing=true; state.offset=off;
+  state.startAt=ctx.currentTime-off;
+  setPlayIcon(true);
+  s.onended=()=>{ if(state.playing){ state.playing=false;state.offset=0;setPlayIcon(false);
+    $("seekFill").style.width="0%";$("tCur").textContent="0:00"; cancelAnimationFrame(state.raf); clearSpectrum();} };
+  tick();
+}
+function stopPlayback(){
+  if(state.src){try{state.src.onended=null;state.src.stop()}catch(e){}}
+  if(state.playing&&state.playCtx) state.offset=Math.min(state.result.duration,state.playCtx.currentTime-state.startAt);
+  state.playing=false; setPlayIcon(false); cancelAnimationFrame(state.raf);
+}
+function tick(){
+  if(!state.playing)return;
+  const cur=state.playCtx.currentTime-state.startAt;
+  const d=state.result.duration;
+  $("seekFill").style.width=Math.min(100,cur/d*100)+"%";
+  $("tCur").textContent=fmtTime(Math.min(cur,d));
+  drawSpectrum();
+  state.raf=requestAnimationFrame(tick);
+}
+
+/* Visualisation spectrale (analyseur FFT) */
+function drawSpectrum(){
+  const cv=$("viz"), an=state.analyser; if(!cv||!an)return;
+  const ctx=cv.getContext("2d");
+  const w=cv.width, h=cv.height;
+  const n=an.frequencyBinCount, data=new Uint8Array(n);
+  an.getByteFrequencyData(data);
+  ctx.clearRect(0,0,w,h);
+  const bars=64, step=Math.floor(n*0.7/bars);
+  const bw=w/bars;
+  for(let i=0;i<bars;i++){
+    let m=0; for(let j=0;j<step;j++)m=Math.max(m,data[i*step+j]||0);
+    const bh=Math.pow(m/255,1.4)*h;
+    const g=ctx.createLinearGradient(0,h,0,h-bh);
+    g.addColorStop(0,"#9c8156"); g.addColorStop(1,"#e7c98e");
+    ctx.fillStyle=g;
+    ctx.fillRect(i*bw+1,h-bh,bw-2,bh);
+  }
+}
+function clearSpectrum(){const cv=$("viz");if(cv)cv.getContext("2d").clearRect(0,0,cv.width,cv.height)}
+function setPlayIcon(p){$("pIcon").innerHTML=p?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':'<path d="M8 5v14l11-7z"/>'}
+
+/* ============================================================
+   EXPORT WAV
+   ============================================================ */
+function dlName(ext){
+  const sel=state.tracks.filter(t=>t.sel);
+  const base = state.lastKind==="music" ? ("creation-"+($("genMood")?$("genMood").value:"ia"))
+    : ("remix-"+sel.map(t=>t.name).join("-").slice(0,40));
+  return `rysao-${base}-${state._seed}.${ext}`;
+}
+function saveBlob(blob,name){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+$("dl").onclick=async()=>{
+  if(!state.result)return;
+  const fmt=($("dlFmt")&&$("dlFmt").value)||"wav";
+  const wavBlob = state.serverBlob || new Blob([bufferToWav(state.result)],{type:"audio/wav"});
+  if(fmt==="wav"){ saveBlob(wavBlob,dlName("wav")); return; }
+  // MP3 / OGG : encodage par le serveur
+  if(!backend.authed){ setStatus("dlStatus","L'export "+fmt.toUpperCase()+" nécessite le serveur (connexion).","err"); return; }
+  setStatus("dlStatus","Encodage "+fmt.toUpperCase()+"…");
+  $("dl").disabled=true;
+  try{
+    const fd=new FormData();
+    fd.append("file", new File([wavBlob],"audio.wav",{type:"audio/wav"}));
+    fd.append("fmt", fmt);
+    const r=await backend.api("/api/encode",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("encode "+r.status);
+    saveBlob(await r.blob(), dlName(fmt));
+    setStatus("dlStatus","Téléchargement "+fmt.toUpperCase()+" prêt ✦","ok");
+  }catch(e){ setStatus("dlStatus","Erreur d'encodage : "+e.message,"err"); }
+  finally{ $("dl").disabled=false; }
+};
+function bufferToWav(buf){
+  const nCh=buf.numberOfChannels, sr=buf.sampleRate, n=buf.length;
+  const bytes=n*nCh*2, out=new ArrayBuffer(44+bytes), v=new DataView(out);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  ws(0,"RIFF");v.setUint32(4,36+bytes,true);ws(8,"WAVE");ws(12,"fmt ");
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,nCh,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*nCh*2,true);v.setUint16(32,nCh*2,true);v.setUint16(34,16,true);
+  ws(36,"data");v.setUint32(40,bytes,true);
+  const ch=[];for(let c=0;c<nCh;c++)ch.push(buf.getChannelData(c));
+  let o=44;
+  for(let i=0;i<n;i++)for(let c=0;c<nCh;c++){
+    let x=Math.max(-1,Math.min(1,ch[c][i]));
+    v.setInt16(o,x<0?x*0x8000:x*0x7FFF,true);o+=2;
+  }
+  return out;
+}
+
+/* ============================================================
+   UTILITAIRES
+   ============================================================ */
+function setStatus(id,msg,cls){const el=$(id);el.textContent=msg;el.className="status"+(cls?" "+cls:"")}
+function loading(on){const b=$("loadbar");b.classList.toggle("show",on);b.querySelector("i").style.width=on?"85%":"100%";
+  if(!on)setTimeout(()=>{b.querySelector("i").style.width="0%"},300)}
+function fmtTime(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+// état initial des panneaux mode
+$("manual").classList.add("hide");
+
+// connexion (accès privé)
+$("loginBtn").onclick=doLogin;
+$("pwInput").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+
+// détection du serveur (débloque séparation IA + rendu Pro si présent)
+initBackend();
+</script>
+</body>
+</html>
