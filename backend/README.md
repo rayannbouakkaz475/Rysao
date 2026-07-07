@@ -11,6 +11,7 @@ peut pas** offrir :
 | Boost de basses + contrôle du tempo (BPM) | ✅ | ✅ |
 | Puissance / distorsion réglable | ✅ | ✅ |
 | Mode DJ : durée du set + nombre de drops réglables | ✅ | ✅ |
+| Ambiance/reverb globale + fondu de fin propre | ✅ | ✅ |
 | Visualisation spectrale à la lecture | ✅ | ✅ |
 | Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |

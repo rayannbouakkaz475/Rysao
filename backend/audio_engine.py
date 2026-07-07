@@ -281,6 +281,17 @@ def _biquad_sos(kind: str, f0: float, gain_db: float, Q: float = 1.0):
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
 
 
+def fade_out(x: np.ndarray, seconds: float = 1.2) -> np.ndarray:
+    """Fondu de fin propre (limité à 25 % de la durée)."""
+    n = int(min(seconds, len(x)/SR*0.25) * SR)
+    if n <= 0:
+        return x
+    x = x.copy()
+    ramp = np.linspace(1.0, 0.0, n)
+    x[-n:] *= ramp[:, None] if x.ndim == 2 else ramp
+    return x.astype(np.float32)
+
+
 def apply_drive(x: np.ndarray, amount: float) -> np.ndarray:
     """Puissance / distorsion (saturation tanh). amount 0..1."""
     amount = float(amount or 0)
@@ -477,7 +488,8 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
 
     # effets globaux
     mix = apply_filter(mix, recipe.get("filter", "none"))
-    mix = apply_reverb(mix, float(recipe.get("reverb", 0.0)))
+    reverb_amt = min(0.95, float(recipe.get("reverb", 0.0)) + float(recipe.get("ambiance", 0.0)))
+    mix = apply_reverb(mix, reverb_amt)                   # reverb + ambiance globale
     mix = apply_delay(mix, float(recipe.get("delay", 0.0)), bpm)
     mix = apply_bass(mix, recipe.get("bass", 0))          # boost de basses
     mix = apply_drive(mix, recipe.get("power", 0))        # puissance / distorsion
@@ -486,4 +498,5 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
     peak = np.abs(mix).max()
     if peak > 1e-6:
         mix = mix / peak * 0.97
+    mix = fade_out(mix, 1.2)                              # fondu de fin propre
     return mix.astype(np.float32)
