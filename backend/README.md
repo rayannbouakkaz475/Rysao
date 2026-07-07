@@ -118,6 +118,15 @@ uniquement la voix, faire un instrumental, etc.
 
 ---
 
+## Mode DJ IA
+
+Un bouton, et un « DJ IA » fait tout : il choisit un **persona** (style/scène —
+Big-room, Hardstyle, Phonk, Techno, Trance, Dubstep, Trap, Lo-fi), le tempo, et
+compose une **vraie structure produite** — intro filtrée → build-up (riser +
+snare roll) → **drop** → breakdown → 2e drop → outro. Sans morceau importé il
+**génère** un titre original ; avec des morceaux, il **remixe/mixe** (drop A→B
+si deux morceaux). Côté backend, `generate` accepte `dj: true` pour la structure.
+
 ## Créer une musique (IA générative)
 
 Deux moteurs, exposés dans la section « Créer une musique » du studio :
