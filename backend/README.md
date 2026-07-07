@@ -8,6 +8,7 @@ peut pas** offrir :
 | Import multi-morceaux, remix, effets, export WAV | ✅ | ✅ |
 | Mixage par piste (volume + mute) | ✅ | ✅ |
 | Égaliseur 3 bandes par piste (graves/médiums/aigus) | ✅ | ✅ |
+| Boost de basses + contrôle du tempo (BPM) | ✅ | ✅ |
 | Visualisation spectrale à la lecture | ✅ | ✅ |
 | Export MP3 / OGG | ❌ | ✅ |
 | Détection de tempo (BPM) | ✅ (approx.) | ✅ (+ tonalité) |

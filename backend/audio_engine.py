@@ -281,6 +281,14 @@ def _biquad_sos(kind: str, f0: float, gain_db: float, Q: float = 1.0):
     return np.array([[b0/a0, b1/a0, b2/a0, 1.0, a1/a0, a2/a0]])
 
 
+def apply_bass(x: np.ndarray, db: float) -> np.ndarray:
+    """Boost (ou coupe) de basses : low-shelf ~100 Hz, pour un son plus gros."""
+    db = float(db or 0)
+    if abs(db) < 0.1:
+        return x
+    return sosfilt(_biquad_sos("lowshelf", 100, db), x, axis=0).astype(np.float32)
+
+
 def apply_eq(x: np.ndarray, eq: dict) -> np.ndarray:
     """Égaliseur 3 bandes : graves (shelf 200Hz), médiums (peak 1kHz), aigus (shelf 4kHz)."""
     if not eq:
@@ -462,6 +470,7 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
     mix = apply_filter(mix, recipe.get("filter", "none"))
     mix = apply_reverb(mix, float(recipe.get("reverb", 0.0)))
     mix = apply_delay(mix, float(recipe.get("delay", 0.0)), bpm)
+    mix = apply_bass(mix, recipe.get("bass", 0))          # boost de basses
 
     # normalisation douce
     peak = np.abs(mix).max()
