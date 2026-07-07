@@ -621,7 +621,9 @@ async function doLogin(){
 /* ---------- Ambiances (peuplées depuis le serveur) ---------- */
 const MOOD_LABELS={lofi:"Lo-fi (chill)",cinematique:"Cinématique",house:"House",
   trap:"Trap",ambient:"Ambient",synthwave:"Synthwave",boombap:"Boom-bap",
-  dnb:"Drum & Bass",afro:"Afrobeat",reggaeton:"Reggaeton"};
+  dnb:"Drum & Bass",afro:"Afrobeat",reggaeton:"Reggaeton",
+  hardstyle:"💥 Hardstyle",hardcore:"👹 Hardcore (gabber)",phonk:"🕶️ Phonk",
+  techno:"Techno",dubstep:"🌀 Dubstep",trance:"Trance"};
 function populateMoods(){
   const sel=$("genMood"); if(!sel||!backend.moods.length)return;
   const prev=sel.value;
@@ -901,6 +903,14 @@ const PRESETS=[
    speed:1.0,slice:1,shuf:0,rev:10,del:5,stut:0,revr:0,filter:"none"},
   {emoji:"🎲",name:"Créatif / Chaos",desc:"Très transformé, surprenant.",
    speed:1.0,slice:1,shuf:70,rev:30,del:30,stut:50,revr:25,filter:"sweepup"},
+  {emoji:"💥",name:"Hardstyle",desc:"Gros son rapide, montée et impact.",
+   speed:1.12,slice:1,shuf:40,rev:15,del:15,stut:40,revr:10,filter:"sweepup",keepPitch:false},
+  {emoji:"👹",name:"Hardcore",desc:"Encore plus rapide et agressif.",
+   speed:1.22,slice:1,shuf:55,rev:12,del:12,stut:55,revr:15,filter:"sweepup",keepPitch:false},
+  {emoji:"🕶️",name:"Phonk",desc:"Ralenti sombre, style Memphis.",
+   speed:0.9,slice:2,shuf:25,rev:35,del:20,stut:25,revr:5,filter:"lowpass",keepPitch:false},
+  {emoji:"🌀",name:"Dubstep",desc:"Lourd, saccadé, gros drops.",
+   speed:1.0,slice:1,shuf:40,rev:20,del:25,stut:45,revr:10,filter:"sweepdown"},
 ];
 function renderPresets(){
   const g=$("presetGrid"); if(!g)return;
