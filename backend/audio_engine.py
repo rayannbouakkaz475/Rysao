@@ -349,11 +349,24 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
     mix = np.zeros((out_len, 2), dtype=np.float32)
     cell_s = int(cell * SR)
 
+    # Transition / drop : le morceau A joue, puis bascule vers B au milieu.
+    trans = recipe.get("arrangement") == "transition" and len(layers) >= 2
+    drop_t = dur * float(recipe.get("dropAt", 0.5))
+    drop_cell = int(drop_t / cell)
+
     for li, layer in enumerate(layers):
         src = layer["samples"]
         src_bpm = float(layer.get("bpm") or bpm)
         gain = float(layer.get("gain", 1.0))
         rng = _rng(seed + li * 101)
+
+        # fenêtre de temps de la couche (transition)
+        win_start, win_end = 0.0, dur
+        if trans:
+            if li == 0:
+                win_start, win_end = 0.0, drop_t
+            else:
+                win_start, win_end = drop_t, dur
 
         # beatmatch : amener src_bpm -> bpm * speed
         target = bpm * speed
@@ -369,7 +382,12 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
         src_cell = int(cell_s * play_speed)
         src_cells = max(1, work.shape[0] // max(1, src_cell))
 
-        arrangement = [i % src_cells for i in range(n_cells)]
+        # B démarre depuis son intro au moment du drop
+        if trans and li >= 1:
+            arrangement = [((i - drop_cell) % src_cells + src_cells) % src_cells
+                           for i in range(n_cells)]
+        else:
+            arrangement = [i % src_cells for i in range(n_cells)]
         shuffle = float(recipe.get("shuffle", 0.0))
         for i in range(n_cells):
             if rng.random_sample() < shuffle:
@@ -381,6 +399,9 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
             start = i * cell_s
             if start >= out_len:
                 break
+            when = i * cell
+            if trans and (when < win_start - 1e-6 or when >= win_end):
+                continue                        # hors fenêtre de la couche
             reverse = rng.random_sample() < float(recipe.get("reverse", 0.0))
             idx = arrangement[i]
             src_off = idx * src_cell
@@ -413,6 +434,28 @@ def render_remix(layers: list[dict], recipe: dict) -> np.ndarray:
             layer_buf[start:start + L] += seg
 
         layer_buf = apply_eq(layer_buf, layer.get("eq"))
+
+        # fondus / montée de transition
+        if trans:
+            ws, we = int(win_start * SR), min(out_len, int(win_end * SR))
+            if li == 0:
+                # build-up : les 2,2 s avant le drop s'étouffent (lowpass descendant)
+                bu = min(we, out_len)
+                bs = max(0, bu - int(2.2 * SR))
+                if bu - bs > 64:
+                    layer_buf[bs:bu] = apply_filter(layer_buf[bs:bu], "sweepdown")
+                # fondu de sortie sur 0,5 s
+                fo = int(0.5 * SR)
+                if we - fo > 0:
+                    ramp = np.linspace(1, 0, min(fo, we))[:, None]
+                    layer_buf[we - len(ramp):we] *= ramp
+            else:
+                # le drop entre franc : petit fondu d'entrée de 0,12 s
+                fi = int(0.12 * SR)
+                if ws + fi <= out_len:
+                    ramp = np.linspace(0, 1, fi)[:, None]
+                    layer_buf[ws:ws + fi] *= ramp
+
         mix += layer_buf * gain
 
     # effets globaux
