@@ -15,11 +15,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Accès privé : choisissez votre mot de passe (sinon un mot de passe
-      # aléatoire est généré et affiché dans les logs au démarrage).
-      - RYSAO_PASSWORD=changez-moi
+      # Accès privé : définissez votre mot de passe avant de lancer, ex :
+      #   RYSAO_PASSWORD="mon-secret" docker compose up --build
+      # (sinon la valeur par défaut ci-dessous est utilisée).
+      - RYSAO_PASSWORD=${RYSAO_PASSWORD:-rysao}
       # Secret de session fixe pour rester connecté après un redémarrage.
-      - RYSAO_SECRET=changez-ce-secret-aussi
+      - RYSAO_SECRET=${RYSAO_SECRET:-rysao-secret-local}
     volumes:
       - model-cache:/root/.cache          # modèles Demucs / MusicGen persistés
       - ./backend/uploads:/app/backend/uploads
