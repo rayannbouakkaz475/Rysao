@@ -971,7 +971,7 @@ async function separateTrack(i){
     if(!res.available){
       setStatus("importStatus",res.reason+" "+(res.how_to||""),"err");return;
     }
-    if(res.error){ setStatus("importStatus","Séparation : "+res.error,"err");return; }
+    if(res.error){ setStatus("importStatus","Séparation : "+res.error+(res.detail?" — "+res.detail.slice(-160):""),"err");return; }
     const ctx=new AC();
     const order=["vocals","drums","bass","other"];
     for(const name of order){

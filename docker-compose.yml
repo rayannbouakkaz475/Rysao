@@ -21,6 +21,9 @@ services:
       - RYSAO_PASSWORD=${RYSAO_PASSWORD:-rysao}
       # Secret de session fixe pour rester connecté après un redémarrage.
       - RYSAO_SECRET=${RYSAO_SECRET:-rysao-secret-local}
+      # Modèle de séparation. Sur un Mac 8 Go, mettez mdx_extra_q (plus léger) :
+      #   RYSAO_DEMUCS_MODEL=mdx_extra_q RYSAO_PASSWORD="..." docker compose up
+      - RYSAO_DEMUCS_MODEL=${RYSAO_DEMUCS_MODEL:-htdemucs}
     volumes:
       - model-cache:/root/.cache          # modèles Demucs / MusicGen persistés
       - ./backend/uploads:/app/backend/uploads
