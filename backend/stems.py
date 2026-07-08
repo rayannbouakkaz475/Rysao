@@ -51,17 +51,29 @@ def separate(input_path: str, out_dir: str, model: str = "htdemucs") -> dict:
 
     os.makedirs(out_dir, exist_ok=True)
     # On appelle demucs en sous-processus : plus robuste, libère la mémoire.
+    # Modèle configurable : mettez RYSAO_DEMUCS_MODEL=mdx_extra_q pour moins
+    # de mémoire (utile sur un Mac 8 Go), htdemucs par défaut (meilleure qualité).
+    model = os.environ.get("RYSAO_DEMUCS_MODEL", model)
     cmd = [
         sys.executable, "-m", "demucs",
         "-n", model,
+        "-d", "cpu",
+        "--segment", "7",          # limite la mémoire par tranche
+        "-j", "1",
         "--out", out_dir,
         input_path,
     ]
     try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=1800)
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=3600)
     except subprocess.CalledProcessError as e:
-        return {"available": True, "error": "Échec de la séparation.",
-                "detail": (e.stderr or e.stdout or "")[-800:]}
+        detail = (e.stderr or e.stdout or "")[-800:]
+        if e.returncode and e.returncode < 0:      # tué par un signal (souvent OOM)
+            return {"available": True,
+                    "error": "Séparation interrompue — mémoire probablement insuffisante. "
+                             "Donnez plus de RAM à Docker, ou utilisez un modèle plus léger "
+                             "(RYSAO_DEMUCS_MODEL=mdx_extra_q), ou un morceau plus court.",
+                    "detail": detail}
+        return {"available": True, "error": "Échec de la séparation.", "detail": detail}
     except subprocess.TimeoutExpired:
         return {"available": True, "error": "Séparation trop longue (timeout)."}
 
