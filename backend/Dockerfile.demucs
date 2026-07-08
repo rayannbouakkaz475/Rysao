@@ -13,9 +13,10 @@ WORKDIR /app/backend
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2) PyTorch (CPU) + Demucs pour la séparation de pistes
-#    (roue CPU allégée ; retirez --index-url pour la version GPU/CUDA par défaut)
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+# 2) PyTorch + Demucs pour la séparation de pistes.
+#    On installe torch depuis PyPI par défaut : compatible à la fois Intel
+#    (x86_64) et Apple Silicon (arm64, Mac M1/M2/M3…).
+RUN pip install --no-cache-dir torch \
     && pip install --no-cache-dir demucs
 
 # 3) (OPTIONNEL) génération neuronale texte->musique (gros modèle) :
