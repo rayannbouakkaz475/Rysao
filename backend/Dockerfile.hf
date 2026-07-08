@@ -1,0 +1,33 @@
+# RYSAO Studio — Hugging Face Space (Docker) AVEC séparation de pistes IA (Demucs).
+#
+# À coller dans un Space Docker sur https://huggingface.co/spaces
+# (le Space récupère le code tout seul depuis le dépôt public GitHub).
+# Voir backend/DEPLOY-HF.md pour le pas-à-pas.
+FROM python:3.11-slim
+
+# libsndfile (décodage audio), ffmpeg, git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 ffmpeg git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Hugging Face exécute le conteneur en UID 1000 -> dossiers de cache dans /tmp
+ENV HOME=/tmp \
+    TORCH_HOME=/tmp/torch \
+    XDG_CACHE_HOME=/tmp/cache \
+    PORT=7860
+
+# Récupère le studio (dépôt public). Changez la branche si besoin.
+RUN git clone --depth 1 https://github.com/rayannbouakkaz475/Rysao.git /app
+
+WORKDIR /app/backend
+
+# Dépendances légères + PyTorch (CPU) + Demucs
+RUN pip install --no-cache-dir -r requirements.txt \
+ && pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu \
+ && pip install --no-cache-dir demucs
+
+# tout doit être inscriptible par l'utilisateur du Space
+RUN mkdir -p uploads outputs && chmod -R 777 /app /tmp
+
+EXPOSE 7860
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-7860}"]

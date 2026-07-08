@@ -106,7 +106,13 @@ un GPU NVIDIA, décommentez la section `deploy` de `docker-compose.yml`.
 
 Isole voix, batterie, basse et « autres » grâce à
 [Demucs](https://github.com/facebookresearch/demucs). Non installé par défaut
-(gros modèle). Pour l'activer :
+(gros modèle).
+
+> **En ligne gratuitement :** voir **[DEPLOY-HF.md](DEPLOY-HF.md)** pour
+> l'activer sur un Space Hugging Face (assez puissant pour l'IA, contrairement
+> au plan gratuit de Render).
+
+Pour l'activer en local :
 
 ```bash
 pip install demucs torch
