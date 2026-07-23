@@ -236,7 +236,7 @@ const Q = [
   ]},
 
   { n:"02", t:"Objectif du coaching", f:[
-    {k:"objectif", q:"Quel est ton objectif principal ?", type:"radio", other:true, opts:[
+    {k:"objectif", q:"Quel est ton objectif principal ? (tu peux en cocher plusieurs)", type:"check", other:true, opts:[
       "Perte de poids","Perte de graisse","Prise de masse musculaire","Recomposition corporelle",
       "Amélioration des performances","Préparation pour une compétition","Amélioration de la santé et du bien-être"]},
     {k:"resultat", q:"Quel résultat aimerais-tu obtenir concrètement ?", type:"textarea"},
@@ -385,7 +385,7 @@ const Q = [
       "Suivre quotidiennement ton nombre de pas"]},
     {k:"balance", q:"Possèdes-tu une balance de cuisine ?", type:"text"},
     {k:"jour_bilan", q:"Quel jour souhaites-tu effectuer ton bilan hebdomadaire ?", type:"text"},
-    {k:"type_plan", q:"Préfères-tu un plan alimentaire avec :", type:"radio", opts:[
+    {k:"type_plan", q:"Préfères-tu un plan alimentaire avec : (tu peux en cocher plusieurs)", type:"check", opts:[
       "Des repas fixes et précis","Plusieurs choix pour chaque repas",
       "Des calories et macros à gérer librement","Un mélange entre repas fixes et flexibilité"]},
     {k:"info_importante", q:"Y a-t-il une information importante que je dois connaître avant de préparer ton coaching ?", type:"textarea"},
@@ -456,7 +456,7 @@ Q.forEach(sec=>{
         opts += `<label class="opt"><input type="${multi?"checkbox":"radio"}" name="${id}" value="${esc(o)}"><span class="marque"></span><span>${esc(o)}</span></label>`;
       });
       if(f.other){
-        opts += `<label class="opt"><input type="radio" name="${id}" value="Autre"><span class="marque"></span><span>Autre</span></label>
+        opts += `<label class="opt"><input type="${multi?"checkbox":"radio"}" name="${id}" value="Autre"><span class="marque"></span><span>Autre</span></label>
           <input type="text" class="autre-inline" id="${id}_autre" name="${id}_autre" placeholder="Précise…">`;
       }
       h += `<div class="champ"><label class="q">${esc(f.q)}</label>
