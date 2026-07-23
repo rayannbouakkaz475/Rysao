@@ -43,6 +43,14 @@
     padding:12px 15px;font-size:.82rem;color:#6a5a34;display:flex;gap:10px;align-items:flex-start;
   }
   .info-inner b{font-weight:500;color:#4d4021;}
+  .brouillon-actions{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+  .btn-lien{
+    flex:1;min-width:150px;font-family:var(--sans);font-size:.84rem;font-weight:500;color:#7a6428;
+    background:#fff;border:1px solid #e6d3a3;border-radius:10px;padding:11px 12px;cursor:pointer;
+    transition:background .12s,transform .1s;
+  }
+  .btn-lien:active{transform:scale(.97);}
+  .btn-lien:hover{background:#fdf6e6;}
 
   /* ---------- Conteneur ---------- */
   main{max-width:760px;margin:0 auto;padding:8px 16px 0;}
@@ -188,8 +196,13 @@
 <div class="info">
   <div class="info-inner">
     <span>✓</span>
-    <div><b>Tout est enregistré automatiquement</b> sur ce téléphone au fur et à mesure. Tu peux fermer la page et revenir plus tard. Une fois terminé, appuie sur <b>« Enregistrer en PDF »</b> en bas pour sauvegarder dans tes fichiers.</div>
+    <div><b>Tout est enregistré automatiquement</b> sur ce téléphone au fur et à mesure. Tu peux quitter à tout moment et revenir plus tard : tu retrouveras tes réponses. Pour être sûr de ne rien perdre (ou continuer sur un autre téléphone), enregistre un brouillon :</div>
   </div>
+  <div class="brouillon-actions">
+    <button class="btn-lien" id="btn-brouillon">💾 Enregistrer un brouillon</button>
+    <button class="btn-lien" id="btn-reprendre">📂 Reprendre un brouillon</button>
+  </div>
+  <input type="file" id="fichier-brouillon" accept=".json,application/json" hidden>
 </div>
 
 <main id="form"><!-- rendu par JS --></main>
@@ -499,7 +512,7 @@ function marquerSauve(){
   tmr=setTimeout(()=>{statut.textContent="Enregistré";},1200);
 }
 
-function sauver(){
+function collecter(){
   const data={};
   document.querySelectorAll("#form input, #form textarea").forEach(el=>{
     if(el.type==="radio"||el.type==="checkbox"){
@@ -508,24 +521,33 @@ function sauver(){
       if(el.value) data[el.name]=el.value;
     }
   });
-  try{ localStorage.setItem(PREFIX+"data", JSON.stringify(data)); }catch(e){}
-  marquerSauve();
+  return data;
 }
 
-function charger(){
-  let data;
-  try{ data=JSON.parse(localStorage.getItem(PREFIX+"data")||"{}"); }catch(e){ data={}; }
+let blocageSauve=false;
+function sauver(silencieux){
+  if(blocageSauve) return;
+  try{ localStorage.setItem(PREFIX+"data", JSON.stringify(collecter())); }catch(e){}
+  if(!silencieux) marquerSauve();
+}
+
+function appliquer(data){
   document.querySelectorAll("#form input, #form textarea").forEach(el=>{
     const v=data[el.name];
-    if(v===undefined) return;
     if(el.type==="radio"||el.type==="checkbox"){
-      if(Array.isArray(v)&&v.includes(el.value)) el.checked=true;
-    } else {
+      el.checked = Array.isArray(v) && v.includes(el.value);
+    } else if(v!==undefined){
       el.value=v;
       if(el.tagName==="TEXTAREA") autoGrow(el);
     }
   });
   syncSel();
+}
+
+function charger(){
+  let data;
+  try{ data=JSON.parse(localStorage.getItem(PREFIX+"data")||"{}"); }catch(e){ data={}; }
+  appliquer(data);
 }
 
 /* état visuel des options cochées */
@@ -539,7 +561,50 @@ function syncSel(){
 form.addEventListener("input", ()=>{ sauver(); });
 form.addEventListener("change", ()=>{ syncSel(); sauver(); });
 
+/* Sauvegarde forcée si tu quittes ou mets la page en arrière-plan */
+window.addEventListener("pagehide", ()=>sauver(true));
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") sauver(true); });
+
 charger();
+
+/* ============================================================
+   Brouillon : enregistrer / reprendre (fichier)
+   ============================================================ */
+function nomFichier(){
+  const nom=((document.getElementById(PREFIX+"nom")||{}).value||"").trim()
+    .replace(/[^\p{L}\p{N} _-]/gu,"").replace(/\s+/g,"-");
+  return "brouillon-coaching" + (nom?"-"+nom:"") + ".json";
+}
+document.getElementById("btn-brouillon").addEventListener("click", ()=>{
+  sauver(true);
+  const contenu = JSON.stringify({_app:"questionnaire-coaching", date:new Date().toISOString(), data:collecter()}, null, 2);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([contenu],{type:"application/json"}));
+  a.download=nomFichier();
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1000);
+  statut.textContent="Brouillon enregistré ✓";
+  clearTimeout(tmr); tmr=setTimeout(()=>{statut.textContent="Enregistré";},2500);
+});
+const fichierInput=document.getElementById("fichier-brouillon");
+document.getElementById("btn-reprendre").addEventListener("click", ()=>fichierInput.click());
+fichierInput.addEventListener("change", e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const parsed=JSON.parse(r.result);
+      const data=parsed && parsed.data ? parsed.data : parsed;
+      if(typeof data!=="object"||data===null) throw 0;
+      appliquer(data); sauver(true);
+      statut.textContent="Brouillon repris ✓";
+      clearTimeout(tmr); tmr=setTimeout(()=>{statut.textContent="Enregistré";},2500);
+      window.scrollTo({top:0,behavior:"smooth"});
+    }catch(err){ alert("Ce fichier ne semble pas être un brouillon valide."); }
+    fichierInput.value="";
+  };
+  r.readAsText(f);
+});
 
 /* ============================================================
    Enregistrement PDF
@@ -562,6 +627,7 @@ modale.addEventListener("click", e=>{ if(e.target===modale) modale.classList.rem
    ============================================================ */
 document.getElementById("btn-reset").addEventListener("click", ()=>{
   if(confirm("Effacer toutes tes réponses sur cet appareil ?")){
+    blocageSauve=true;                 // empêche la sauvegarde-au-départ de tout réécrire
     localStorage.removeItem(PREFIX+"data");
     location.reload();
   }
