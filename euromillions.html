@@ -107,6 +107,28 @@
   .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:10px}
   .legend span{display:inline-flex; align-items:center; gap:6px}
   .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+  /* Grilles de la semaine */
+  #weekBlock{border:2px solid var(--accent); background:linear-gradient(180deg,#1a1c14,var(--panel))}
+  #weekBlock > h2{color:var(--accent)}
+  .grid-row{display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px dashed var(--line)}
+  .grid-row:last-child{border-bottom:none}
+  .grid-idx{width:34px; height:34px; flex:0 0 34px; border-radius:50%; background:var(--accent); color:#111;
+            display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px}
+  .grid-body{flex:1}
+  .grid-strat{font-size:12.5px; color:var(--muted); margin-bottom:6px}
+  #weekInfo{color:var(--accent)}
+
+  @media print{
+    body{background:#fff; color:#000}
+    .wrap>*:not(#weekBlock){display:none !important}
+    #weekBlock{border:1px solid #000; background:#fff}
+    #weekBlock > h2, .grid-idx{background:#fff; color:#000}
+    .grid-idx{border:1px solid #000}
+    .ball{background:#fff; border-color:#000; color:#000}
+    .ball .n{color:#000}
+    .cbtns{display:none !important}
+  }
 </style>
 </head>
 <body>
@@ -145,6 +167,21 @@
     <div class="grow"></div>
     <div id="status" class="status"><span class="dot"></span><span id="statusTxt">Chargement…</span></div>
   </div>
+
+  <section class="block" id="weekBlock">
+    <h2>🎯 Mes 5 grilles de la semaine</h2>
+    <p class="hint">5 grilles diversifiées, calculées sur les <b>20 dernières années</b> de
+       tirages (fréquences, retards, profil statistique). <span id="weekInfo"></span><br>
+       Elles restent identiques toute la semaine et se renouvellent automatiquement à la
+       semaine de tirage suivante. <b>Rappel :</b> statistiquement, aucune méthode ne bat
+       le pur hasard — c'est pour jouer avec méthode et plaisir.</p>
+    <div id="weekGrids"></div>
+    <div class="cbtns">
+      <button class="primary" id="regen">↻ Générer 5 nouvelles grilles</button>
+      <button id="copyGrids">📋 Copier</button>
+      <button id="printGrids">🖨 Imprimer</button>
+    </div>
+  </section>
 
   <div class="grid" id="kpis"></div>
 
@@ -447,7 +484,8 @@ function render(){
     <td><div class="balls">${d.main.map(n=>ballHtml(n,null,'main')).join('')}</div></td>
     <td><div class="balls">${d.star.map(n=>ballHtml(n,null,'star')).join('')}</div></td></tr>`).join("");
 
-  window._stats = s; // pour le générateur
+  window._stats = s; // pour le générateur ponctuel (section « suggestion »)
+  renderWeek(false);  // grilles de la semaine (basées sur 20 ans, mises en cache)
 }
 
 function topN(count, max, n){
@@ -507,6 +545,138 @@ function generate(strat){
     </div>`;
 }
 
+/* ============================================================
+   5 GRILLES DE LA SEMAINE
+   - Toujours calculées sur les 20 dernières années (indépendamment
+     du sélecteur de période, qui ne sert qu'à l'exploration).
+   - Stables toute la semaine (mémorisées via localStorage par
+     semaine ISO), renouvelées automatiquement chaque nouvelle semaine.
+   ============================================================ */
+const WEEK_YEARS = 20;
+const WK_KEY = "em_week_grids_v1";
+
+// Clé de semaine = date (YYYY-MM-DD) du lundi de la semaine courante.
+function isoWeekKey(d){
+  const x = new Date(d); const day=(x.getDay()+6)%7; // lundi=0
+  x.setDate(x.getDate()-day); x.setHours(0,0,0,0);
+  return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;
+}
+// Prochains tirages EuroMillions : mardi (2) et vendredi (5) à venir.
+function upcomingDraws(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const nextDow=dow=>{ const d=new Date(today); d.setDate(d.getDate()+((dow-d.getDay()+7)%7)); return d; };
+  return [nextDow(2), nextDow(5)].sort((a,b)=>a-b);
+}
+
+// Statistiques restreintes à N dernières années.
+function statsForYears(n){
+  const sorted=[...DRAWS].sort((a,b)=>b.date-a.date);
+  const cutoff=new Date(); cutoff.setFullYear(cutoff.getFullYear()-n);
+  const sub=sorted.filter(d=>d.date>=cutoff);
+  return {sub: sub.length?sub:sorted, s: stats(sub.length?sub:sorted)};
+}
+
+function gridSig(g){ return g.main.join(',')+'|'+g.star.join(','); }
+function makeGrid(mainW, starW, constraintFn){
+  let last=null;
+  for(let t=0;t<500;t++){
+    const g={main:pickWeighted(mainW,MAIN_PICK,[]), star:pickWeighted(starW,STAR_PICK,[])};
+    last=g;
+    if(!constraintFn || constraintFn(g.main,g.star)) return g;
+  }
+  return last; // contrainte trop stricte : on renvoie la dernière tentée
+}
+
+function generateFiveGrids(){
+  const {sub, s} = statsForYears(WEEK_YEARS);
+  if(!sub.length) return [];
+  // Distribution des sommes historiques (pour le profil « réaliste »).
+  const sums=sub.map(d=>d.main.reduce((a,b)=>a+b,0));
+  const mean=sums.reduce((a,b)=>a+b,0)/sums.length;
+  const sd=Math.sqrt(sums.reduce((a,b)=>a+(b-mean)**2,0)/sums.length)||1;
+
+  const freqW  = s.mainCount.map(c=>Math.pow(c+1,3));
+  const freqWs = s.starCount.map(c=>Math.pow(c+1,3));
+  const overW  = s.mainLast.map((g,i)=> i===0?0 : (g===null? s.total : g)+1);
+  const overWs = s.starLastGap.map((g,i)=> i===0?0 : (g===null? s.total : g)+1);
+  const balW   = s.mainCount.map((c,i)=> i===0?0 : (c+1)*(1+ (s.mainLast[i]===null?2:s.mainLast[i]/20)));
+  const balWs  = s.starCount.map((c,i)=> i===0?0 : (c+1)*(1+ (s.starLastGap[i]===null?2:s.starLastGap[i]/10)));
+  const lightW = s.mainCount.map((c,i)=> i===0?0 : c+3);
+  const lightWs= s.starCount.map((c,i)=> i===0?0 : c+3);
+
+  // Profil « réaliste » : somme proche de la moyenne historique, parité et
+  // répartition bas/haut équilibrées (motifs les plus fréquents des vrais tirages).
+  const realistic=(main)=>{
+    const sum=main.reduce((a,b)=>a+b,0);
+    const odd=main.filter(n=>n%2).length;
+    const low=main.filter(n=>n<=25).length;
+    return Math.abs(sum-mean)<=sd*1.1 && odd>=2 && odd<=3 && low>=2 && low<=3;
+  };
+
+  const specs=[
+    {label:"🔥 Numéros les plus fréquents",        mW:freqW,  sW:freqWs,  cf:null},
+    {label:"❄️ Numéros les plus en retard",         mW:overW,  sW:overWs,  cf:null},
+    {label:"⚖️ Équilibré (fréquence × retard)",     mW:balW,   sW:balWs,   cf:null},
+    {label:"📊 Profil statistique réaliste",        mW:freqW,  sW:freqWs,  cf:realistic},
+    {label:"🎲 Aléatoire pondéré",                  mW:lightW, sW:lightWs, cf:null},
+  ];
+
+  const seen=new Set(), out=[];
+  for(const sp of specs){
+    let g;
+    for(let t=0;t<80;t++){ g=makeGrid(sp.mW,sp.sW,sp.cf); if(!seen.has(gridSig(g))) break; }
+    seen.add(gridSig(g));
+    out.push({label:sp.label, main:g.main, star:g.star});
+  }
+  return out;
+}
+
+// Renvoie les grilles de la semaine (depuis le cache si possible), ou en
+// génère de nouvelles si la semaine a changé, si la source de données a changé,
+// ou si `force` est vrai.
+function weekGrids(force){
+  const wk=isoWeekKey(new Date());
+  let store=null;
+  try{ store=JSON.parse(localStorage.getItem(WK_KEY)); }catch(e){}
+  if(!force && store && store.week===wk && store.mode===MODE &&
+     Array.isArray(store.grids) && store.grids.length===5) return store.grids;
+  const grids=generateFiveGrids();
+  try{ localStorage.setItem(WK_KEY, JSON.stringify({week:wk, mode:MODE, grids})); }catch(e){}
+  return grids;
+}
+
+function renderWeek(force){
+  const grids=weekGrids(force);
+  const [d1,d2]=upcomingDraws();
+  const fmt=d=>d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const info=document.getElementById("weekInfo");
+  const el=document.getElementById("weekGrids");
+  if(!grids.length){ if(info) info.textContent=""; el.innerHTML='<p class="hint">Pas assez de données pour générer les grilles.</p>'; return; }
+  if(info) info.innerHTML = `Prochains tirages : <b>${fmt(d1)}</b> &amp; <b>${fmt(d2)}</b>.`;
+  el.innerHTML = grids.map((g,i)=>`
+    <div class="grid-row">
+      <div class="grid-idx">${i+1}</div>
+      <div class="grid-body">
+        <div class="grid-strat">${g.label}</div>
+        <div class="gen-line">
+          <div class="balls">${g.main.map(n=>ballHtml(n,null,'main')).join('')}</div>
+          <span class="sep">★</span>
+          <div class="balls">${g.star.map(n=>ballHtml(n,null,'star')).join('')}</div>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function gridsAsText(){
+  const grids=weekGrids(false);
+  const [d1,d2]=upcomingDraws();
+  let t=`Mes 5 grilles EuroMillions\nTirages : ${d1.toLocaleDateString('fr-FR')} & ${d2.toLocaleDateString('fr-FR')}\n(calculées sur 20 ans de tirages — outil éducatif, le hasard reste le hasard)\n\n`;
+  grids.forEach((g,i)=>{
+    t += `${i+1}. Numéros : ${g.main.join(' - ')}   |   Étoiles : ${g.star.join(' - ')}\n`;
+  });
+  return t;
+}
+
 /* ---------- Init ---------- */
 async function boot(){
   const txt=document.getElementById("statusTxt");
@@ -521,6 +691,20 @@ async function boot(){
 document.getElementById("period").addEventListener("change", ()=>{ render(); });
 document.getElementById("refresh").addEventListener("click", boot);
 document.querySelectorAll("[data-strat]").forEach(b=>b.addEventListener("click", ()=>generate(b.dataset.strat)));
+
+document.getElementById("regen").addEventListener("click", ()=>renderWeek(true));
+document.getElementById("printGrids").addEventListener("click", ()=>window.print());
+document.getElementById("copyGrids").addEventListener("click", async ()=>{
+  const txt=gridsAsText();
+  try{ await navigator.clipboard.writeText(txt); flash("copyGrids","✓ Copié !"); }
+  catch(e){
+    // repli si le presse-papiers est indisponible
+    const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+    ta.select(); try{document.execCommand("copy"); flash("copyGrids","✓ Copié !");}catch(_){alert(txt);}
+    document.body.removeChild(ta);
+  }
+});
+function flash(id,msg){ const b=document.getElementById(id); const o=b.textContent; b.textContent=msg; setTimeout(()=>b.textContent=o,1600); }
 document.getElementById("csv").addEventListener("change", e=>{
   const f=e.target.files[0]; if(!f) return;
   const rd=new FileReader();
