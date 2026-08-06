@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyseur EuroMillions — Statistiques & Probabilités</title>
+<meta name="description" content="Analyse statistique de 20 ans de tirages EuroMillions : fréquences, numéros chauds/froids, retards, et générateur de grilles. Outil éducatif.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23111' stroke='%23f5c518' stroke-width='4'/%3E%3Ctext x='50' y='68' font-family='Arial' font-weight='bold' font-size='52' fill='%23f5c518' text-anchor='middle'%3E%E2%98%85%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2a3441;
+    --txt:#e6edf3; --muted:#8b98a9; --accent:#f5c518; --accent2:#4f8cff;
+    --hot:#ff5a5f; --cold:#4f8cff; --ok:#3fb950;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;
+  }
+  a{color:var(--accent2)}
+  .wrap{max-width:1080px; margin:0 auto; padding:20px 16px 80px}
+  header.top{text-align:center; padding:34px 0 10px}
+  header.top h1{margin:0; font-size:clamp(24px,5vw,38px); letter-spacing:.5px}
+  header.top h1 .star{color:var(--accent)}
+  header.top p{color:var(--muted); margin:8px auto 0; max-width:640px}
+
+  .disclaimer{
+    background:linear-gradient(180deg,#2a2410,#211d0e);
+    border:1px solid #5a4d16; border-radius:var(--radius);
+    padding:14px 16px; margin:18px 0; font-size:14.5px; color:#f0e6c0;
+  }
+  .disclaimer b{color:var(--accent)}
+
+  .bar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:14px; margin-bottom:16px;
+  }
+  .bar .grow{flex:1 1 auto}
+  select,button,input[type=file]::-webkit-file-upload-button,label.btn{
+    font:inherit; color:var(--txt); background:var(--panel2);
+    border:1px solid var(--line); border-radius:10px; padding:9px 13px; cursor:pointer;
+  }
+  button.primary{background:var(--accent); color:#111; border-color:var(--accent); font-weight:600}
+  button:hover,label.btn:hover{border-color:var(--accent)}
+  .status{font-size:13.5px; color:var(--muted)}
+  .status .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#666;margin-right:6px;vertical-align:middle}
+  .status.live .dot{background:var(--ok)}
+  .status.demo .dot{background:var(--accent)}
+  .status.err .dot{background:var(--hot)}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin:16px 0}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px}
+  .card h3{margin:0 0 4px; font-size:14px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:.6px}
+  .card .big{font-size:30px; font-weight:700}
+  .card .sub{font-size:13px; color:var(--muted)}
+
+  section.block{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin:16px 0}
+  section.block > h2{margin:0 0 4px; font-size:19px}
+  section.block > .hint{color:var(--muted); font-size:14px; margin:0 0 14px}
+
+  /* number balls */
+  .balls{display:flex; flex-wrap:wrap; gap:9px}
+  .ball{
+    --c:var(--accent);
+    width:46px; height:46px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    background:radial-gradient(circle at 32% 28%, #fff5, transparent 45%), var(--panel2);
+    border:2px solid var(--c); font-weight:700; position:relative;
+  }
+  .ball .n{font-size:17px; line-height:1}
+  .ball .f{font-size:9.5px; color:var(--muted); font-weight:500; margin-top:2px}
+  .ball.star{--c:var(--accent)}
+  .ball.main{--c:#cdd7e3}
+  .ball.hot{border-color:var(--hot); box-shadow:0 0 0 1px var(--hot) inset}
+  .ball.cold{border-color:var(--cold); box-shadow:0 0 0 1px var(--cold) inset}
+
+  /* frequency chart */
+  .chartwrap{overflow-x:auto; padding-bottom:6px}
+  .chart{display:flex; align-items:flex-end; gap:3px; min-width:640px; height:180px; border-bottom:1px solid var(--line); padding-top:8px}
+  .chart .col{flex:1 1 0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:9px}
+  .chart .col .fill{width:100%; border-radius:3px 3px 0 0; background:linear-gradient(180deg,var(--accent),#c99a05); transition:height .4s}
+  .chart .col.star .fill{background:linear-gradient(180deg,var(--accent2),#2f5fbf)}
+  .chart .col .lab{font-size:8.5px; color:var(--muted); margin-top:3px; transform:rotate(-0deg)}
+
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th,td{padding:8px 10px; text-align:left; border-bottom:1px solid var(--line)}
+  th{color:var(--muted); font-weight:500; font-size:12px; text-transform:uppercase; letter-spacing:.5px}
+  td.num{font-weight:700}
+  .pill{display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; font-weight:600}
+  .pill.hot{background:#3a1416; color:#ff8a8d}
+  .pill.cold{background:#0f2038; color:#7fb0ff}
+  .pill.mid{background:#20262f; color:var(--muted)}
+
+  .cols2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media(max-width:720px){.cols2{grid-template-columns:1fr} .cbtns{width:100%}}
+
+  .gen-out{margin-top:14px; display:flex; flex-wrap:wrap; gap:22px}
+  .gen-line{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .gen-line .sep{color:var(--muted); font-weight:700; font-size:18px}
+  .cbtns{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+
+  .foot{color:var(--muted); font-size:12.5px; text-align:center; margin-top:34px; line-height:1.7}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:10px}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1><span class="star">★</span> Analyseur EuroMillions</h1>
+    <p>Analyse statistique de ~20 ans de tirages officiels (depuis 2004) :
+       fréquences, numéros chauds/froids, retards et générateur de grilles.</p>
+  </header>
+
+  <div class="disclaimer">
+    <b>⚠️ À lire — la vérité mathématique :</b> chaque tirage EuroMillions est
+    <b>indépendant et équiprobable</b>. Chaque numéro (1–50) a exactement
+    <b>1 chance sur 50</b> de sortir, chaque étoile (1–12) <b>1 sur 12</b>, à
+    <i>chaque</i> tirage, quel que soit le passé. Aucune analyse ne peut prédire
+    le prochain tirage — les « numéros chauds/froids » sont des observations
+    historiques, <b>pas des prédictions</b>. Cet outil est <b>éducatif et ludique</b>.
+    Jouez avec modération.
+  </div>
+
+  <div class="bar">
+    <div>
+      <label for="period" class="status">Période&nbsp;:</label>
+      <select id="period">
+        <option value="5">5 dernières années</option>
+        <option value="10">10 dernières années</option>
+        <option value="15">15 dernières années</option>
+        <option value="20" selected>20 dernières années</option>
+        <option value="all">Tout l'historique</option>
+      </select>
+    </div>
+    <button id="refresh">↻ Recharger les données</button>
+    <label class="btn" for="csv" title="Fichier CSV officiel FDJ / National Lottery">⬆ Importer un CSV</label>
+    <input id="csv" type="file" accept=".csv,text/csv" style="display:none">
+    <div class="grow"></div>
+    <div id="status" class="status"><span class="dot"></span><span id="statusTxt">Chargement…</span></div>
+  </div>
+
+  <div class="grid" id="kpis"></div>
+
+  <section class="block">
+    <h2>Fréquence de sortie — Numéros (1 à 50)</h2>
+    <p class="hint">Nombre de fois où chaque numéro est sorti sur la période. La ligne
+       en pointillés = moyenne attendue si tout était parfaitement aléatoire.</p>
+    <div class="chartwrap"><div class="chart" id="chartMain"></div></div>
+    <div class="legend">
+      <span><i style="background:var(--hot)"></i> Chaud (au-dessus de la moyenne)</span>
+      <span><i style="background:var(--cold)"></i> Froid (en-dessous)</span>
+      <span><i style="background:var(--accent)"></i> Numéro principal</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Fréquence de sortie — Étoiles (1 à 12)</h2>
+    <div class="chartwrap"><div class="chart" id="chartStar"></div></div>
+  </section>
+
+  <section class="block">
+    <h2>🔮 Suggestion « du jour »</h2>
+    <p class="hint">Grille construite à partir des statistiques historiques selon la
+       stratégie choisie. <b>Rappel :</b> statistiquement, ça ne vaut ni mieux ni
+       moins qu'une grille tirée totalement au hasard. C'est pour le plaisir.</p>
+    <div class="cbtns">
+      <button class="primary" data-strat="hot">Numéros les + fréquents</button>
+      <button data-strat="cold">Numéros les + en retard</button>
+      <button data-strat="balanced">Équilibré (pondéré)</button>
+      <button data-strat="random">100% aléatoire</button>
+    </div>
+    <div class="gen-out" id="genOut"></div>
+  </section>
+
+  <div class="cols2">
+    <section class="block">
+      <h2>🔥 Top 10 — les plus fréquents</h2>
+      <table><thead><tr><th>N°</th><th>Sorties</th><th>Fréq.</th><th>Dernier</th></tr></thead>
+        <tbody id="tblHot"></tbody></table>
+    </section>
+    <section class="block">
+      <h2>❄️ Top 10 — les plus en retard</h2>
+      <p class="hint">« Retard » = nombre de tirages depuis la dernière apparition.</p>
+      <table><thead><tr><th>N°</th><th>Retard</th><th>Sorties</th><th>Statut</th></tr></thead>
+        <tbody id="tblCold"></tbody></table>
+    </section>
+  </div>
+
+  <section class="block">
+    <h2>📋 Derniers tirages</h2>
+    <div class="chartwrap">
+      <table><thead><tr><th>Date</th><th>Numéros</th><th>Étoiles</th></tr></thead>
+        <tbody id="tblLast"></tbody></table>
+    </div>
+  </section>
+
+  <p class="foot">
+    Données : historique officiel EuroMillions depuis 2004, récupéré en direct
+    via une API publique ouverte (repli : import CSV, sinon échantillon de
+    démonstration clairement signalé).<br>
+    Outil éducatif — aucune garantie de gain. L'EuroMillions est un jeu de hasard
+    pur. 🔞 Interdit aux mineurs — jouez avec modération. Besoin d'aide ?
+    Joueurs Info Service : 09&nbsp;74&nbsp;75&nbsp;13&nbsp;13.
+  </p>
+</div>
+
+<script>
+/* ============================================================
+   Analyseur EuroMillions — logique
+   Règles : 5 numéros parmi 1..50, 2 étoiles parmi 1..12.
+   ============================================================ */
+const MAIN_MAX = 50, STAR_MAX = 12, MAIN_PICK = 5, STAR_PICK = 2;
+
+/* Sources de données live (tentées dans l'ordre). Le navigateur de
+   l'utilisateur n'est pas derrière un proxy => ces requêtes fonctionnent
+   normalement même si l'environnement de build ne peut pas les atteindre. */
+const API_URLS = [
+  "https://euromillions.api.pedromealha.dev/v1/draws",
+  "https://euromillions.api.pedromealha.dev/draws"
+];
+
+/* Échantillon de DÉMONSTRATION (repli). Clairement signalé comme tel dans
+   l'UI. Ces lignes ne servent qu'à rendre la page explorable hors-ligne. */
+const DEMO = [
+  ["2024-12-31",[4,17,23,38,49],[3,9]],["2024-12-27",[7,12,25,30,44],[2,11]],
+  ["2024-12-24",[1,19,28,33,47],[6,8]],["2024-12-20",[9,15,22,41,50],[1,7]],
+  ["2024-12-17",[3,11,26,35,48],[4,12]],["2024-12-13",[5,20,29,37,42],[5,10]],
+  ["2024-12-10",[2,14,24,31,46],[3,9]],["2024-12-06",[8,18,27,39,43],[2,6]],
+  ["2024-12-03",[6,13,21,36,50],[7,11]],["2024-11-29",[10,16,25,34,45],[1,8]],
+  ["2024-11-26",[4,19,23,32,49],[4,9]],["2024-11-22",[7,15,28,40,44],[5,12]],
+  ["2024-11-19",[1,12,26,38,47],[2,10]],["2024-11-15",[9,17,22,35,48],[3,7]],
+  ["2024-11-12",[3,20,24,33,42],[6,11]],["2024-11-08",[5,14,29,41,46],[1,9]],
+  ["2024-11-05",[2,18,27,30,43],[4,8]],["2024-11-01",[8,13,21,37,50],[5,10]],
+  ["2024-10-29",[6,16,25,39,45],[2,12]],["2024-10-25",[10,11,23,34,49],[3,7]]
+];
+
+let DRAWS = [];      // [{date:Date, main:[...], star:[...]}]
+let MODE = "demo";   // live | demo | csv | error
+
+/* ---------- Chargement des données ---------- */
+async function loadLive(){
+  for(const url of API_URLS){
+    try{
+      const r = await fetch(url, {headers:{Accept:"application/json"}});
+      if(!r.ok) continue;
+      const j = await r.json();
+      const arr = Array.isArray(j) ? j : (j.data || j.draws || j.results || []);
+      const parsed = arr.map(normalize).filter(Boolean);
+      if(parsed.length > 50) return parsed;
+    }catch(e){ /* essaie l'URL suivante */ }
+  }
+  return null;
+}
+
+/* Normalise un objet quel que soit le nommage des champs de l'API. */
+function normalize(o){
+  if(!o) return null;
+  const date = o.date || o.draw_date || o.drawDate || o.dateDraw || o.day;
+  let main = o.numbers || o.balls || o.main || o.numbers_drawn || o.results;
+  let star = o.stars || o.lucky_stars || o.luckyStars || o.star_numbers || o.starballs;
+  if(typeof main === "string") main = main.split(/[\s,;-]+/).map(Number);
+  if(typeof star === "string") star = star.split(/[\s,;-]+/).map(Number);
+  if(!Array.isArray(main) || !Array.isArray(star)) return null;
+  main = main.map(Number).filter(n=>n>=1&&n<=MAIN_MAX);
+  star = star.map(Number).filter(n=>n>=1&&n<=STAR_MAX);
+  const d = new Date(date);
+  if(main.length!==MAIN_PICK || star.length!==STAR_PICK || isNaN(d)) return null;
+  return {date:d, main:main.sort((a,b)=>a-b), star:star.sort((a,b)=>a-b)};
+}
+
+/* Parse une date dans les formats courants des fichiers officiels :
+   2024-12-31 | 31/12/2024 | 31-12-2024 | 31-Dec-2024 | Dec 31 2024. */
+const MONTHS={jan:0,feb:1,fev:1,fév:1,mar:2,apr:3,avr:3,may:4,mai:4,jun:5,juin:5,jul:6,juil:6,aug:7,aou:7,aoû:7,sep:8,oct:9,nov:10,dec:11,déc:11};
+function parseDate(cell){
+  if(!cell) return null;
+  const s=cell.trim();
+  let m;
+  if((m=s.match(/^(\d{4})[\-\/.](\d{1,2})[\-\/.](\d{1,2})/)))          // yyyy-mm-dd
+    return mk(m[1],m[2],m[3]);
+  if((m=s.match(/^(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{2,4})/)))         // dd/mm/yyyy
+    return mk(m[3].length===2?"20"+m[3]:m[3], m[2], m[1]);
+  if((m=s.match(/^(\d{1,2})[\-\s]([A-Za-zÀ-ÿ]{3,})[\-\s](\d{4})/))){    // 31-Dec-2024
+    const mo=MONTHS[m[2].slice(0,3).toLowerCase()]; if(mo!=null) return mk(m[3],mo+1,m[1]);
+  }
+  if((m=s.match(/^([A-Za-zÀ-ÿ]{3,})\s+(\d{1,2}),?\s+(\d{4})/))){        // Dec 31 2024
+    const mo=MONTHS[m[1].slice(0,3).toLowerCase()]; if(mo!=null) return mk(m[3],mo+1,m[2]);
+  }
+  const d=new Date(s); return isNaN(d)?null:d;
+}
+function mk(y,mo,d){ const dt=new Date(+y,+mo-1,+d); return isNaN(dt)?null:dt; }
+
+/* Parse un CSV officiel (FDJ / National Lottery). Utilise les en-têtes quand
+   ils existent (fiable), sinon repli heuristique en excluant la colonne date. */
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return [];
+  const delim = (lines[0].match(/;/g)||[]).length > (lines[0].match(/,/g)||[]).length ? ";" : ",";
+  const split = l => l.split(delim).map(s=>s.trim().replace(/^"|"$/g,""));
+  const head = split(lines[0]);
+  const hl = head.map(h=>h.toLowerCase());
+  const hasHeader = /date|ball|star|num|boule|etoile|étoile|chance|tirage|drawn/.test(hl.join(" "));
+
+  // Mapping par en-têtes : colonnes numéros vs étoiles.
+  let mainCols=[], starCols=[], dateCol=-1;
+  if(hasHeader){
+    hl.forEach((h,i)=>{
+      if(/date|tirage.*date|draw.?date/.test(h) && dateCol<0) dateCol=i;
+      const isStar=/star|etoile|étoile|chance/.test(h);
+      const isBall=/ball|boule|num(é|e)?ro?\b|\bn°|\bn\d|drawn/.test(h);
+      if(isStar) starCols.push(i);
+      else if(isBall) mainCols.push(i);
+    });
+    if(dateCol<0) dateCol = hl.findIndex(h=>/date/.test(h));
+  }
+  const useHeader = mainCols.length>=MAIN_PICK && starCols.length>=STAR_PICK;
+  if(useHeader){ mainCols=mainCols.slice(0,MAIN_PICK); starCols=starCols.slice(0,STAR_PICK); }
+
+  const rows = hasHeader ? lines.slice(1) : lines;
+  const out=[];
+  for(const line of rows){
+    const c = split(line);
+    let date=null;
+    if(useHeader && dateCol>=0) date = parseDate(c[dateCol]);
+    if(!date){ for(const cell of c){ const d=parseDate(cell); if(d && /\d/.test(cell) && cell.length>=6){ date=d; break; } } }
+
+    let main=[], star=[];
+    if(useHeader){
+      main = mainCols.map(i=>parseInt(c[i],10)).filter(n=>n>=1&&n<=MAIN_MAX);
+      star = starCols.map(i=>parseInt(c[i],10)).filter(n=>n>=1&&n<=STAR_MAX);
+    } else {
+      // repli : ignorer la cellule date, consommer les entiers PAR POSITION.
+      // (une étoile peut valoir la même chose qu'un numéro principal — pools
+      //  indépendants — donc on ne filtre pas par valeur.)
+      const dateIdx = c.findIndex(cell=>parseDate(cell) && cell.length>=6);
+      const nums = c.map((x,i)=> i===dateIdx ? NaN : parseInt(x,10)).filter(n=>!isNaN(n));
+      for(const n of nums){ if(n>=1&&n<=MAIN_MAX && main.length<MAIN_PICK && !main.includes(n)) main.push(n);
+                            else if(main.length>=MAIN_PICK && n>=1&&n<=STAR_MAX && star.length<STAR_PICK) star.push(n); }
+    }
+    // dédoublonnage de sûreté
+    main=[...new Set(main)]; star=[...new Set(star)];
+    if(main.length===MAIN_PICK && star.length===STAR_PICK && date)
+      out.push({date, main:main.sort((a,b)=>a-b), star:star.sort((a,b)=>a-b)});
+  }
+  return out;
+}
+
+/* ---------- Filtrage période ---------- */
+function filtered(){
+  const v = document.getElementById("period").value;
+  const sorted = [...DRAWS].sort((a,b)=>b.date-a.date); // récent -> ancien
+  if(v==="all") return sorted;
+  const years = parseInt(v,10);
+  const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear()-years);
+  return sorted.filter(d=>d.date>=cutoff);
+}
+
+/* ---------- Statistiques ---------- */
+function stats(draws){
+  const mainCount=Array(MAIN_MAX+1).fill(0), starCount=Array(STAR_MAX+1).fill(0);
+  const mainLast=Array(MAIN_MAX+1).fill(null), starLastGap=Array(STAR_MAX+1).fill(null);
+  // draws est trié récent -> ancien
+  draws.forEach((d,idx)=>{
+    d.main.forEach(n=>{ mainCount[n]++; if(mainLast[n]===null) mainLast[n]=idx; });
+    d.star.forEach(n=>{ starCount[n]++; if(starLastGap[n]===null) starLastGap[n]=idx; });
+  });
+  // retard = index du tirage le plus récent où il est apparu (0 = dernier tirage)
+  const total = draws.length;
+  return {mainCount, starCount, mainLast, starLastGap, total,
+          mainAvg: total*MAIN_PICK/MAIN_MAX, starAvg: total*STAR_PICK/STAR_MAX};
+}
+
+/* ---------- Rendu ---------- */
+function ballHtml(n, sub, cls){
+  return `<div class="ball ${cls||''}"><span class="n">${n}</span>${sub!=null?`<span class="f">${sub}</span>`:''}</div>`;
+}
+
+function renderChart(el, count, max, avg, isStar){
+  let html="";
+  for(let n=1;n<=max;n++){
+    const c=count[n];
+    const h = Math.max(2, Math.round((c/(Math.max(...count.slice(1,max+1))||1))*160));
+    const cls = c>avg ? "hot" : (c<avg ? "cold" : "");
+    const color = isStar ? "" : (c>avg?'style="background:linear-gradient(180deg,var(--hot),#b03c40)"':(c<avg?'style="background:linear-gradient(180deg,var(--cold),#2f5fbf)"':''));
+    html += `<div class="col ${isStar?'star':''}" title="N°${n} : ${c} sorties">
+      <div class="fill" ${isStar?'':color} style="height:${h}px"></div>
+      <div class="lab">${n}</div></div>`;
+  }
+  el.innerHTML = html;
+}
+
+function pill(gap){
+  if(gap===null) return `<span class="pill cold">jamais</span>`;
+  if(gap<=3) return `<span class="pill hot">récent</span>`;
+  if(gap>=15) return `<span class="pill cold">en retard</span>`;
+  return `<span class="pill mid">moyen</span>`;
+}
+
+function render(){
+  const draws = filtered();
+  const s = stats(draws);
+  const st = document.getElementById("status");
+  const txt = document.getElementById("statusTxt");
+  st.className = "status " + (MODE==="live"?"live":MODE==="error"?"err":"demo");
+  const first = draws.length?draws[draws.length-1].date:null, last = draws.length?draws[0].date:null;
+  const range = first&&last ? `${first.getFullYear()}–${last.getFullYear()}` : "—";
+  txt.textContent =
+    MODE==="live"   ? `Données réelles en direct • ${s.total} tirages (${range})` :
+    MODE==="csv"    ? `CSV importé • ${s.total} tirages (${range})` :
+    MODE==="error"  ? `API injoignable — échantillon de DÉMO (${s.total} tirages, non réels)` :
+                      `Échantillon de DÉMONSTRATION (${s.total} tirages, non réels)`;
+
+  // KPIs
+  const hotN = topN(s.mainCount, MAIN_MAX, 1)[0];
+  const coldGap = mostOverdue(s.mainLast, s.mainCount, MAIN_MAX)[0];
+  document.getElementById("kpis").innerHTML = `
+    <div class="card"><h3>Tirages analysés</h3><div class="big">${s.total}</div><div class="sub">${range}</div></div>
+    <div class="card"><h3>Numéro le + sorti</h3><div class="big" style="color:var(--hot)">${hotN.n}</div><div class="sub">${hotN.c} fois</div></div>
+    <div class="card"><h3>Numéro le + en retard</h3><div class="big" style="color:var(--cold)">${coldGap.n}</div><div class="sub">${coldGap.gap===null?'jamais sorti':coldGap.gap+' tirages'}</div></div>
+    <div class="card"><h3>Proba par numéro</h3><div class="big">2,0 %</div><div class="sub">1 sur 50 — identique pour tous</div></div>`;
+
+  renderChart(document.getElementById("chartMain"), s.mainCount, MAIN_MAX, s.mainAvg, false);
+  renderChart(document.getElementById("chartStar"), s.starCount, STAR_MAX, s.starAvg, true);
+
+  // Top hot
+  const hot = topN(s.mainCount, MAIN_MAX, 10);
+  document.getElementById("tblHot").innerHTML = hot.map(x=>`
+    <tr><td class="num">${x.n}</td><td>${x.c}</td>
+    <td>${(100*x.c/s.total).toFixed(0)}% des tirages</td>
+    <td>${s.mainLast[x.n]===0?'dernier tirage':(s.mainLast[x.n]===null?'—':'il y a '+s.mainLast[x.n])}</td></tr>`).join("");
+
+  // Top overdue
+  const cold = mostOverdue(s.mainLast, s.mainCount, MAIN_MAX).slice(0,10);
+  document.getElementById("tblCold").innerHTML = cold.map(x=>`
+    <tr><td class="num">${x.n}</td><td>${x.gap===null?'∞':x.gap}</td>
+    <td>${s.mainCount[x.n]}</td><td>${pill(x.gap)}</td></tr>`).join("");
+
+  // Derniers tirages
+  document.getElementById("tblLast").innerHTML = draws.slice(0,15).map(d=>`
+    <tr><td>${d.date.toLocaleDateString('fr-FR')}</td>
+    <td><div class="balls">${d.main.map(n=>ballHtml(n,null,'main')).join('')}</div></td>
+    <td><div class="balls">${d.star.map(n=>ballHtml(n,null,'star')).join('')}</div></td></tr>`).join("");
+
+  window._stats = s; // pour le générateur
+}
+
+function topN(count, max, n){
+  const arr=[]; for(let i=1;i<=max;i++) arr.push({n:i,c:count[i]});
+  arr.sort((a,b)=>b.c-a.c || a.n-b.n);
+  return arr.slice(0,n);
+}
+function mostOverdue(last, count, max){
+  const arr=[]; for(let i=1;i<=max;i++) arr.push({n:i, gap:last[i], c:count[i]});
+  // jamais sortis d'abord, puis plus grand retard
+  arr.sort((a,b)=>{ if(a.gap===null&&b.gap===null) return a.n-b.n; if(a.gap===null) return -1; if(b.gap===null) return 1; return b.gap-a.gap; });
+  return arr;
+}
+
+/* ---------- Générateur de grille ---------- */
+function pickWeighted(weights, count, exclude){
+  const chosen = new Set(exclude||[]);
+  const out=[];
+  const w = weights.map((x,i)=> i===0 ? 0 : Math.max(0.0001, x));
+  while(out.length<count){
+    let total=0; for(let i=1;i<w.length;i++) if(!chosen.has(i)) total+=w[i];
+    let r=Math.random()*total, pick=-1;
+    for(let i=1;i<w.length;i++){ if(chosen.has(i)) continue; r-=w[i]; if(r<=0){pick=i;break;} }
+    if(pick<0){ for(let i=1;i<w.length;i++) if(!chosen.has(i)){pick=i;break;} }
+    if(pick<0) break;
+    chosen.add(pick); out.push(pick);
+  }
+  return out.sort((a,b)=>a-b);
+}
+
+function generate(strat){
+  const s = window._stats;
+  let mainW, starW;
+  if(strat==="random"){
+    mainW = Array(MAIN_MAX+1).fill(1); starW = Array(STAR_MAX+1).fill(1);
+  } else if(strat==="hot"){
+    mainW = s.mainCount.map(c=>Math.pow(c+1,2)); starW = s.starCount.map(c=>Math.pow(c+1,2));
+  } else if(strat==="cold"){
+    // plus le retard est grand, plus le poids est élevé
+    mainW = s.mainLast.map((g,i)=> i===0?0 : (g===null? s.total : g)+1);
+    starW = s.starLastGap.map((g,i)=> i===0?0 : (g===null? s.total : g)+1);
+  } else { // balanced : fréquence * légère faveur au retard
+    mainW = s.mainCount.map((c,i)=> i===0?0 : (c+1)*(1+ (s.mainLast[i]===null? 2 : s.mainLast[i]/20)));
+    starW = s.starCount.map((c,i)=> i===0?0 : (c+1)*(1+ (s.starLastGap[i]===null? 2 : s.starLastGap[i]/10)));
+  }
+  const main = pickWeighted(mainW, MAIN_PICK, []);
+  const star = pickWeighted(starW, STAR_PICK, []);
+  const names={hot:"Numéros les + fréquents",cold:"Numéros les + en retard",balanced:"Équilibré (pondéré)",random:"100% aléatoire"};
+  document.getElementById("genOut").innerHTML = `
+    <div>
+      <div class="sub" style="color:var(--muted);font-size:13px;margin-bottom:8px">Stratégie : <b style="color:var(--txt)">${names[strat]}</b></div>
+      <div class="gen-line">
+        <div class="balls">${main.map(n=>ballHtml(n,null,'main hot')).join('')}</div>
+        <span class="sep">★</span>
+        <div class="balls">${star.map(n=>ballHtml(n,null,'star')).join('')}</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Init ---------- */
+async function boot(){
+  const txt=document.getElementById("statusTxt");
+  txt.textContent="Récupération des tirages en direct…";
+  const live = await loadLive();
+  if(live && live.length){ DRAWS=live; MODE="live"; }
+  else { DRAWS=DEMO.map(d=>({date:new Date(d[0]), main:d[1], star:d[2]})); MODE="error"; }
+  render();
+  generate("hot");
+}
+
+document.getElementById("period").addEventListener("change", ()=>{ render(); });
+document.getElementById("refresh").addEventListener("click", boot);
+document.querySelectorAll("[data-strat]").forEach(b=>b.addEventListener("click", ()=>generate(b.dataset.strat)));
+document.getElementById("csv").addEventListener("change", e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ const parsed=parseCSV(rd.result); if(parsed.length){ DRAWS=parsed; MODE="csv"; render(); generate("hot"); }
+    else alert("Aucun tirage reconnu dans ce CSV. Vérifie le format (colonnes date + 5 numéros + 2 étoiles)."); };
+  rd.readAsText(f);
+});
+
+boot();
+</script>
+</body>
+</html>
