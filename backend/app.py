@@ -17,7 +17,7 @@ import json
 import asyncio
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request, Response
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -268,6 +268,58 @@ def api_file(fid: str, _: bool = Depends(require_auth)):
 @app.get("/")
 def index():
     return FileResponse(os.path.join(ROOT, "remix.html"))
+
+
+# ---- Analyseur EuroMillions : ACCÈS PRIVÉ (même mot de passe RYSAO_PASSWORD) ----
+# La page n'est renvoyée qu'avec un cookie de session valide. Sinon, on affiche
+# une page de connexion. Ces routes sont déclarées AVANT le mount /site pour
+# qu'elles aient priorité et que le fichier ne soit jamais servi en clair.
+_LOGIN_HTML = """<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accès privé — EuroMillions</title>
+<style>
+ body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+ .box{background:#161b22;border:1px solid #2a3441;border-radius:14px;padding:28px 26px;width:min(92vw,340px);text-align:center}
+ h1{font-size:20px;margin:0 0 4px}.s{color:#8b98a9;font-size:13.5px;margin:0 0 18px}
+ input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #2a3441;background:#1c2330;color:#e6edf3;font-size:15px}
+ button{width:100%;margin-top:12px;padding:11px;border-radius:10px;border:0;background:#f5c518;color:#111;font-weight:700;font-size:15px;cursor:pointer}
+ .err{color:#ff8a8d;font-size:13px;min-height:18px;margin-top:10px}
+</style></head><body>
+<form class="box" onsubmit="return login(event)">
+ <h1>★ Accès privé</h1>
+ <p class="s">Analyseur EuroMillions — réservé au propriétaire.</p>
+ <input id="pw" type="password" placeholder="Mot de passe" autofocus autocomplete="current-password">
+ <button type="submit">Entrer</button>
+ <div class="err" id="err"></div>
+</form>
+<script>
+async function login(e){e.preventDefault();
+ const err=document.getElementById('err');err.textContent='';
+ const fd=new FormData();fd.append('password',document.getElementById('pw').value);
+ try{const r=await fetch('/api/login',{method:'POST',body:fd});
+  if(r.ok){location.href='/euromillions';}else{err.textContent='Mot de passe incorrect.';}
+ }catch(_){err.textContent='Erreur de connexion.';}
+ return false;}
+</script></body></html>"""
+
+
+def _serve_euromillions(request: Request):
+    token = request.cookies.get("rysao_auth") or ""
+    if not auth.verify_token(token):
+        return HTMLResponse(_LOGIN_HTML, status_code=401)
+    return FileResponse(os.path.join(ROOT, "euromillions.html"))
+
+
+@app.get("/euromillions")
+def euromillions_page(request: Request):
+    return _serve_euromillions(request)
+
+
+# Empêche l'accès public au fichier via le mount /site (route prioritaire).
+@app.get("/site/euromillions.html")
+def euromillions_static(request: Request):
+    return _serve_euromillions(request)
 
 
 # Le reste du dépôt (site vitrine, images…) reste accessible sous /site
