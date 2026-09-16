@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RYSAO — Atelier Maillots 3D</title>
+<meta name="description" content="Atelier de création de maillots de football complets (maillot, short, chaussettes) avec aperçu 3D temps réel, patterns, presets de couleurs mondiaux et export.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2308080a' stroke='%23c9a771' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='42' fill='%23c9a771' text-anchor='middle'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noir-fond:#08080a; --panneau:#0e0e11; --carte:#141418;
+  --ligne:rgba(201,167,113,.18); --ligne-vive:rgba(201,167,113,.42);
+  --or:#c9a771; --or-vif:#e7c98e; --ivoire:#efe9da; --gris:#8d8678;
+  --serif:"Cormorant Garamond",serif; --sans:"Jost",Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--noir-fond);color:var(--ivoire);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;overflow:hidden;height:100vh}
+h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:.01em}
+.app{display:grid;grid-template-columns:340px 1fr;height:100vh}
+
+/* Panneau de contrôle */
+.panneau{background:var(--panneau);border-right:1px solid var(--ligne);overflow-y:auto;padding:0 0 40px}
+.panneau::-webkit-scrollbar{width:8px}
+.panneau::-webkit-scrollbar-thumb{background:var(--ligne-vive);border-radius:4px}
+.entete{position:sticky;top:0;z-index:5;background:linear-gradient(var(--panneau),var(--panneau) 70%,transparent);padding:22px 24px 14px;border-bottom:1px solid var(--ligne)}
+.entete .marque{font-size:.68rem;letter-spacing:.32em;text-transform:uppercase;color:var(--or)}
+.entete h1{font-size:1.5rem;margin-top:4px}
+.entete p{font-size:.78rem;color:var(--gris);margin-top:3px}
+
+.bloc{padding:18px 24px;border-bottom:1px solid var(--ligne)}
+.bloc h3{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--or);font-family:var(--sans);font-weight:500;margin-bottom:14px}
+.champ{margin-bottom:14px}
+.champ:last-child{margin-bottom:0}
+.champ label{display:block;font-size:.74rem;letter-spacing:.08em;color:var(--ivoire);margin-bottom:6px;text-transform:uppercase}
+.champ input[type=text],.champ input[type=number],.champ select{
+  width:100%;background:var(--carte);border:1px solid var(--ligne);color:var(--ivoire);
+  font-family:var(--sans);font-size:.9rem;padding:9px 11px;border-radius:3px;outline:none}
+.champ input:focus,.champ select:focus{border-color:var(--or)}
+.champ select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a771'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+
+/* couleurs */
+.couleurs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pastille{text-align:center}
+.pastille span{display:block;font-size:.62rem;letter-spacing:.1em;color:var(--gris);text-transform:uppercase;margin-bottom:6px}
+.pastille input[type=color]{width:100%;height:42px;border:1px solid var(--ligne);border-radius:4px;background:none;cursor:pointer;padding:2px}
+.pastille input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.pastille input[type=color]::-webkit-color-swatch{border:none;border-radius:2px}
+
+/* presets */
+.presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.preset{display:flex;align-items:center;gap:8px;background:var(--carte);border:1px solid var(--ligne);border-radius:4px;padding:7px 9px;cursor:pointer;transition:border-color .2s;font-size:.74rem;color:var(--ivoire)}
+.preset:hover{border-color:var(--or)}
+.preset .swatch{display:flex;gap:0;border-radius:3px;overflow:hidden;flex:0 0 26px;height:16px;border:1px solid rgba(255,255,255,.15)}
+.preset .swatch i{flex:1;height:100%}
+
+/* toggles */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0}
+.toggle-row span{font-size:.8rem;color:var(--ivoire)}
+.switch{position:relative;width:42px;height:22px;flex:0 0 42px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:var(--carte);border:1px solid var(--ligne);border-radius:22px;cursor:pointer;transition:.2s}
+.slider:before{content:"";position:absolute;width:14px;height:14px;left:3px;top:3px;background:var(--gris);border-radius:50%;transition:.2s}
+.switch input:checked+.slider{border-color:var(--or)}
+.switch input:checked+.slider:before{transform:translateX(20px);background:var(--or)}
+
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.btn{background:var(--carte);border:1px solid var(--ligne-vive);color:var(--or-vif);font-family:var(--sans);font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;padding:11px;border-radius:3px;cursor:pointer;transition:.2s}
+.btn:hover{background:var(--or);color:#0a0a0a;border-color:var(--or)}
+.btn.plein{grid-column:1/3;background:var(--or);color:#0a0a0a;border-color:var(--or)}
+.btn.plein:hover{background:var(--or-vif)}
+
+/* Scène */
+.scene{position:relative;background:radial-gradient(circle at 50% 35%,#1a1a20 0%,#0a0a0c 70%)}
+#gl{width:100%;height:100%;display:block}
+.scene-topbar{position:absolute;top:16px;left:0;right:0;display:flex;justify-content:center;gap:8px;pointer-events:none;z-index:3}
+.vue-btn{pointer-events:auto;background:rgba(14,14,17,.8);backdrop-filter:blur(6px);border:1px solid var(--ligne);color:var(--ivoire);font-family:var(--sans);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:8px 14px;border-radius:20px;cursor:pointer;transition:.2s}
+.vue-btn:hover,.vue-btn.actif{border-color:var(--or);color:var(--or-vif)}
+.hint{position:absolute;bottom:16px;left:0;right:0;text-align:center;font-size:.72rem;color:var(--gris);letter-spacing:.08em;pointer-events:none}
+.legende-preset{margin-bottom:10px;font-size:.7rem;color:var(--gris);line-height:1.5}
+
+@media (max-width:860px){
+  body{overflow:auto;height:auto}
+  .app{grid-template-columns:1fr;height:auto}
+  .scene{height:64vh;order:-1;position:sticky;top:0;z-index:10}
+  .panneau{border-right:none;border-top:1px solid var(--ligne)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= PANNEAU ================= -->
+  <aside class="panneau">
+    <div class="entete">
+      <div class="marque">RYSAO · Atelier</div>
+      <h1>Maillots 3D</h1>
+      <p>Maillot · Short · Chaussettes — aperçu en temps réel</p>
+    </div>
+
+    <div class="bloc">
+      <h3>Couleurs</h3>
+      <div class="couleurs">
+        <label class="pastille"><span>Principale</span><input type="color" id="c_primary" value="#0a2f6e"></label>
+        <label class="pastille"><span>Secondaire</span><input type="color" id="c_secondary" value="#c8102e"></label>
+        <label class="pastille"><span>Accent / Col</span><input type="color" id="c_accent" value="#e7c98e"></label>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Presets du monde</h3>
+      <div class="legende-preset">Schémas de couleurs inspirés d'équipes mondiales. Sans logos ni marques déposées — à personnaliser librement.</div>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="bloc">
+      <h3>Maillot</h3>
+      <div class="champ">
+        <label for="pattern">Motif</label>
+        <select id="pattern">
+          <option value="uni">Uni</option>
+          <option value="rayures">Rayures verticales</option>
+          <option value="cercle">Cerclé (horizontal)</option>
+          <option value="echarpe">Écharpe (diagonale)</option>
+          <option value="moities">Deux moitiés</option>
+          <option value="quarts">Quarts</option>
+          <option value="degrade">Dégradé</option>
+          <option value="fines">Fines rayures</option>
+          <option value="chevron">Chevrons</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label for="manches">Manches</label>
+        <select id="manches">
+          <option value="assorti">Assorties au corps</option>
+          <option value="accent">Accent / contraste</option>
+          <option value="secondaire">Couleur secondaire</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Short & Chaussettes</h3>
+      <div class="champ">
+        <label for="short_col">Couleur du short</label>
+        <select id="short_col">
+          <option value="principale">Principale</option>
+          <option value="secondaire" selected>Secondaire</option>
+          <option value="blanc">Blanc</option>
+          <option value="noir">Noir</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label for="chauss_col">Couleur des chaussettes</label>
+        <select id="chauss_col">
+          <option value="principale" selected>Principale</option>
+          <option value="secondaire">Secondaire</option>
+          <option value="accent">Accent</option>
+          <option value="blanc">Blanc</option>
+          <option value="noir">Noir</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <span>Bande d'accent aux chaussettes</span>
+        <label class="switch"><input type="checkbox" id="chauss_bande" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Flocage</h3>
+      <div class="champ"><label for="club">Nom du club</label><input type="text" id="club" maxlength="16" value="RYSAO FC"></div>
+      <div class="champ"><label for="sponsor">Sponsor</label><input type="text" id="sponsor" maxlength="16" value="RYSAO"></div>
+      <div class="couleurs" style="grid-template-columns:2fr 1fr">
+        <div class="champ" style="margin:0"><label for="joueur">Nom du joueur</label><input type="text" id="joueur" maxlength="12" value="MBEMBA"></div>
+        <div class="champ" style="margin:0"><label for="numero">N°</label><input type="number" id="numero" min="1" max="99" value="10"></div>
+      </div>
+      <div class="champ" style="margin-top:14px">
+        <label for="txt_col">Couleur du flocage</label>
+        <select id="txt_col">
+          <option value="auto">Automatique (contraste)</option>
+          <option value="accent">Accent</option>
+          <option value="blanc">Blanc</option>
+          <option value="noir">Noir</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Scène</h3>
+      <div class="toggle-row">
+        <span>Rotation automatique</span>
+        <label class="switch"><input type="checkbox" id="autorotate" checked><span class="slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span>Sol & reflets</span>
+        <label class="switch"><input type="checkbox" id="sol" checked><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <div class="bloc">
+      <h3>Export</h3>
+      <div class="actions">
+        <button class="btn" id="btn_png">Image PNG</button>
+        <button class="btn" id="btn_export">Exporter JSON</button>
+        <button class="btn plein" id="btn_import">Importer un design (JSON)</button>
+        <input type="file" id="file_import" accept="application/json" hidden>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= SCÈNE 3D ================= -->
+  <main class="scene">
+    <div class="scene-topbar">
+      <button class="vue-btn actif" data-vue="face">Face</button>
+      <button class="vue-btn" data-vue="dos">Dos</button>
+      <button class="vue-btn" data-vue="trois">3/4</button>
+    </div>
+    <canvas id="gl"></canvas>
+    <div class="hint">Cliquer-glisser pour tourner · molette pour zoomer</div>
+  </main>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script>
+/* ============================================================
+   RYSAO — Atelier Maillots 3D
+   Génère maillot + short + chaussettes en 3D à partir de
+   géométries extrudées, texturées via des canvas dynamiques.
+   ============================================================ */
+
+// ---------- Presets de couleurs inspirés de références mondiales ----------
+// (schémas de couleurs uniquement ; aucun logo/blason/marque)
+const PRESETS = [
+  {nom:"Bleu Ciel & Marine",   p:"#6caddf", s:"#0b1e3f", a:"#ffffff", pat:"rayures"},
+  {nom:"Rouge & Bleu",         p:"#a50044", s:"#004d98", a:"#edbb00", pat:"moities"},
+  {nom:"Rouge Total",          p:"#c8102e", s:"#ffffff", a:"#f6eb61", pat:"uni"},
+  {nom:"Blanc Merengue",       p:"#ffffff", s:"#dcb857", a:"#00296b", pat:"uni"},
+  {nom:"Noir & Blanc",         p:"#000000", s:"#ffffff", a:"#c0c0c0", pat:"rayures"},
+  {nom:"Bleu Nuit (Bleus)",    p:"#1a2c56", s:"#c8102e", a:"#ffffff", pat:"uni"},
+  {nom:"Orange Oranje",        p:"#f36c21", s:"#0a2240", a:"#ffffff", pat:"uni"},
+  {nom:"Vert & Or",            p:"#00843d", s:"#ffcd00", a:"#ffffff", pat:"cercle"},
+  {nom:"Grenat & Bleu",        p:"#7a263a", s:"#1e3a6e", a:"#f0c419", pat:"echarpe"},
+  {nom:"Rouge & Noir",         p:"#c8102e", s:"#111111", a:"#ffffff", pat:"rayures"},
+  {nom:"Bleu Azur & Blanc",    p:"#0057b8", s:"#ffffff", a:"#dcb857", pat:"cercle"},
+  {nom:"Jaune Canari",         p:"#ffd500", s:"#009b3a", a:"#0a2240", pat:"uni"},
+  {nom:"Bordeaux",             p:"#5c0a2e", s:"#f2c14e", a:"#ffffff", pat:"uni"},
+  {nom:"Turquoise",           p:"#00a99d", s:"#0a2240", a:"#ffffff", pat:"chevron"},
+  {nom:"Violet & Or",          p:"#4b2e83", s:"#e7c98e", a:"#ffffff", pat:"echarpe"},
+  {nom:"Vert Sapin",           p:"#0b3d2e", s:"#ffffff", a:"#c9a771", pat:"fines"},
+];
+
+// ---------- État ----------
+const S = {
+  primary:"#0a2f6e", secondary:"#c8102e", accent:"#e7c98e",
+  pattern:"uni", manches:"assorti",
+  short_col:"secondaire", chauss_col:"principale", chauss_bande:true,
+  club:"RYSAO FC", sponsor:"RYSAO", joueur:"MBEMBA", numero:"10", txt_col:"auto",
+  autorotate:true, sol:true
+};
+
+// ---------- Utilitaires couleur ----------
+function pick(name){ // résout un mot-clé vers une couleur
+  switch(name){
+    case "principale": return S.primary;
+    case "secondaire": return S.secondary;
+    case "accent": return S.accent;
+    case "blanc": return "#f4f4f2";
+    case "noir": return "#101012";
+    default: return name;
+  }
+}
+function luminance(hex){
+  const c=hex.replace('#',''); const r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  return (0.299*r+0.587*g+0.114*b)/255;
+}
+function contraste(hex){ return luminance(hex)>0.55 ? "#101014" : "#f4f4f2"; }
+function mix(hex,amt){ // éclaircit(+) / assombrit(-)
+  const c=hex.replace('#',''); let r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  const t=amt<0?0:255,p=Math.abs(amt);
+  r=Math.round((t-r)*p+r);g=Math.round((t-g)*p+g);b=Math.round((t-b)*p+b);
+  return "#"+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+//  DESSIN DES TEXTURES (canvas -> THREE.CanvasTexture)
+// ============================================================
+const CW=640, CH=800; // canvas maillot
+function newCanvas(w,h){ const c=document.createElement('canvas');c.width=w;c.height=h;return c; }
+
+function drawPattern(ctx,w,h,base,second,pat){
+  ctx.fillStyle=base; ctx.fillRect(0,0,w,h);
+  ctx.save();
+  switch(pat){
+    case "rayures":{ const n=7,bw=w/n; for(let i=0;i<n;i++){ctx.fillStyle=i%2?second:base;ctx.fillRect(i*bw,0,bw,h);} break; }
+    case "fines":{ const n=17,bw=w/n; for(let i=0;i<n;i++){ctx.fillStyle=i%2?second:base;ctx.fillRect(i*bw,0,bw,h);} break; }
+    case "cercle":{ const n=9,bh=h/n; for(let i=0;i<n;i++){ctx.fillStyle=i%2?second:base;ctx.fillRect(0,i*bh,w,bh);} break; }
+    case "echarpe":{ ctx.fillStyle=second; ctx.beginPath();ctx.moveTo(0,h*0.28);ctx.lineTo(w,h*0.62);ctx.lineTo(w,h*0.82);ctx.lineTo(0,h*0.48);ctx.closePath();ctx.fill(); break; }
+    case "moities":{ ctx.fillStyle=second; ctx.fillRect(w/2,0,w/2,h); break; }
+    case "quarts":{ ctx.fillStyle=second; ctx.fillRect(w/2,0,w/2,h/2); ctx.fillRect(0,h/2,w/2,h/2); break; }
+    case "degrade":{ const g=ctx.createLinearGradient(0,0,0,h); g.addColorStop(0,base);g.addColorStop(1,second); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); break; }
+    case "chevron":{ const n=8,bh=h/n; for(let i=0;i<n;i++){ if(i%2){ctx.fillStyle=second; ctx.beginPath();ctx.moveTo(0,i*bh);ctx.lineTo(w/2,i*bh+bh*0.6);ctx.lineTo(w,i*bh);ctx.lineTo(w,i*bh+bh);ctx.lineTo(w/2,i*bh+bh*1.6);ctx.lineTo(0,i*bh+bh);ctx.closePath();ctx.fill();} } break; }
+    default: break; // uni
+  }
+  ctx.restore();
+  // légère texture tissu
+  ctx.globalAlpha=0.05;
+  for(let i=0;i<h;i+=3){ctx.fillStyle=i%6?'#000':'#fff';ctx.fillRect(0,i,w,1);}
+  ctx.globalAlpha=1;
+}
+
+function jerseyTexture(){
+  const c=newCanvas(CW,CH),ctx=c.getContext('2d');
+  const body=S.primary, second=S.secondary;
+  drawPattern(ctx,CW,CH,body,second,S.pattern);
+
+  // couleur du col / accent
+  const accent=S.accent;
+  ctx.strokeStyle=accent; ctx.lineWidth=18;
+  ctx.beginPath(); ctx.arc(CW/2, 70, 78, 0.15*Math.PI, 0.85*Math.PI); ctx.stroke(); // col
+
+  const txt = S.txt_col==="auto" ? contraste(body) : pick(S.txt_col==="accent"?"accent":S.txt_col);
+
+  // sponsor
+  if(S.sponsor){ ctx.fillStyle=txt; ctx.font="600 46px Jost, sans-serif"; ctx.textAlign="center"; ctx.fillText(S.sponsor.toUpperCase(), CW/2, CH*0.44); }
+  // club (petit, en haut)
+  if(S.club){ ctx.fillStyle=accent; ctx.font="500 26px Jost, sans-serif"; ctx.textAlign="center"; ctx.fillText(S.club.toUpperCase(), CW/2, 150); }
+  // blason (emplacement)
+  ctx.strokeStyle=accent; ctx.lineWidth=4; ctx.fillStyle="rgba(255,255,255,0.06)";
+  roundRect(ctx, CW*0.16-34, 180, 62, 74, 8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=accent; ctx.font="600 30px Cormorant Garamond, serif"; ctx.textAlign="center";
+  ctx.fillText((S.club||"R")[0].toUpperCase(), CW*0.16-3, 230);
+  // numéro & nom (comme au dos, visible aussi sur le rendu)
+  ctx.fillStyle=txt; ctx.font="700 210px Jost, sans-serif"; ctx.textAlign="center";
+  ctx.fillText(String(S.numero||"").slice(0,2), CW/2, CH*0.80);
+  if(S.joueur){ ctx.font="600 44px Jost, sans-serif"; ctx.fillText(S.joueur.toUpperCase(), CW/2, CH*0.86); }
+
+  const t=new THREE.CanvasTexture(c); t.anisotropy=8; return t;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+function sleeveColor(){
+  if(S.manches==="accent") return S.accent;
+  if(S.manches==="secondaire") return S.secondary;
+  return S.primary;
+}
+
+// ============================================================
+//  GÉOMÉTRIES (silhouettes extrudées)
+// ============================================================
+function shapeJersey(){
+  const s=new THREE.Shape();
+  s.moveTo(-1.35,-3.0);
+  s.lineTo(-1.35, 1.2);
+  s.lineTo(-2.35, 1.15);
+  s.lineTo(-2.45, 2.05);
+  s.lineTo(-1.55, 2.6);
+  s.lineTo(-0.62, 2.72);
+  s.quadraticCurveTo(0,2.15, 0.62,2.72);
+  s.lineTo(1.55, 2.6);
+  s.lineTo(2.45, 2.05);
+  s.lineTo(2.35, 1.15);
+  s.lineTo(1.35, 1.2);
+  s.lineTo(1.35,-3.0);
+  s.closePath();
+  return s;
+}
+function shapeSleeveL(){ // patch manche gauche pour colorer différemment
+  const s=new THREE.Shape();
+  s.moveTo(-1.35,1.2); s.lineTo(-2.35,1.15); s.lineTo(-2.45,2.05); s.lineTo(-1.55,2.6); s.lineTo(-1.35,2.0); s.closePath(); return s;
+}
+function shapeSleeveR(){
+  const s=new THREE.Shape();
+  s.moveTo(1.35,1.2); s.lineTo(2.35,1.15); s.lineTo(2.45,2.05); s.lineTo(1.55,2.6); s.lineTo(1.35,2.0); s.closePath(); return s;
+}
+function shapeShort(){
+  const s=new THREE.Shape();
+  s.moveTo(-1.5,0.3); s.lineTo(1.5,0.3); s.lineTo(1.5,-1.7);
+  s.lineTo(0.95,-2.25); s.lineTo(0.25,-1.95); s.quadraticCurveTo(0,-1.35,-0.25,-1.95);
+  s.lineTo(-0.95,-2.25); s.lineTo(-1.5,-1.7); s.closePath(); return s;
+}
+function shapeSock(){
+  const s=new THREE.Shape();
+  s.moveTo(-0.34,0); s.lineTo(0.34,0); s.lineTo(0.34,-1.35);
+  s.lineTo(0.66,-1.5); s.lineTo(0.66,-1.85); s.lineTo(-0.34,-1.85); s.closePath(); return s;
+}
+
+const EX={depth:0.42, bevelEnabled:true, bevelThickness:0.12, bevelSize:0.12, bevelSegments:3};
+
+function normalizedTex(tex, geo){
+  geo.computeBoundingBox(); const b=geo.boundingBox;
+  const w=b.max.x-b.min.x, h=b.max.y-b.min.y;
+  tex.wrapS=tex.wrapT=THREE.ClampToEdgeWrapping;
+  tex.repeat.set(1/w, 1/h);
+  tex.offset.set(-b.min.x/w, -b.min.y/h);
+}
+function flatMat(color){ return new THREE.MeshStandardMaterial({color:new THREE.Color(color),roughness:.72,metalness:.05}); }
+
+// ============================================================
+//  SCÈNE THREE.JS
+// ============================================================
+const canvas=document.getElementById('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.1,100);
+camera.position.set(0,0.2,13.5);
+
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=.08;
+controls.minDistance=7; controls.maxDistance=26; controls.target.set(0,-0.3,0);
+
+// lumières
+scene.add(new THREE.AmbientLight(0xffffff,0.55));
+const key=new THREE.DirectionalLight(0xffffff,1.1); key.position.set(4,7,8); key.castShadow=true;
+key.shadow.mapSize.set(1024,1024); key.shadow.camera.near=1; key.shadow.camera.far=30; scene.add(key);
+const rim=new THREE.DirectionalLight(0xc9a771,0.6); rim.position.set(-6,3,-5); scene.add(rim);
+const fill=new THREE.PointLight(0xffffff,0.4); fill.position.set(0,-4,6); scene.add(fill);
+
+// sol
+let sol;
+function buildSol(){
+  if(sol){scene.remove(sol);sol.geometry.dispose();}
+  const g=new THREE.CircleGeometry(9,64);
+  const m=new THREE.MeshStandardMaterial({color:0x0c0c10,roughness:.35,metalness:.4});
+  sol=new THREE.Mesh(g,m); sol.rotation.x=-Math.PI/2; sol.position.y=-5.2; sol.receiveShadow=true;
+  scene.add(sol);
+}
+
+// groupe kit
+let kit=new THREE.Group(); scene.add(kit);
+function clearKit(){ kit.traverse(o=>{if(o.geometry)o.geometry.dispose(); if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map)m.map.dispose();m.dispose();});}}); scene.remove(kit); kit=new THREE.Group(); scene.add(kit); }
+
+function buildKit(){
+  clearKit();
+
+  // --- Maillot ---
+  const jGeo=new THREE.ExtrudeGeometry(shapeJersey(),EX);
+  const jTex=jerseyTexture(); normalizedTex(jTex,jGeo);
+  const jMat=new THREE.MeshStandardMaterial({map:jTex,roughness:.7,metalness:.04});
+  const jersey=new THREE.Mesh(jGeo,jMat); jersey.castShadow=true;
+  const jg=new THREE.Group(); jg.add(jersey);
+
+  // manches contrastées
+  if(S.manches!=="assorti"){
+    const scol=sleeveColor();
+    [shapeSleeveL(),shapeSleeveR()].forEach(sh=>{
+      const g=new THREE.ExtrudeGeometry(sh,{...EX,depth:0.44});
+      const m=new THREE.Mesh(g,flatMat(scol)); m.position.z=0.01; m.castShadow=true; jg.add(m);
+    });
+  }
+  jg.position.set(0,1.7,0); jg.scale.set(1.05,1.05,1); kit.add(jg);
+
+  // --- Short ---
+  const shGeo=new THREE.ExtrudeGeometry(shapeShort(),EX);
+  const shortCol=pick(S.short_col);
+  const shMesh=new THREE.Mesh(shGeo,flatMat(shortCol)); shMesh.castShadow=true;
+  // bande d'accent au short
+  const bandGeo=new THREE.BoxGeometry(0.14,2.2,0.5);
+  [-1.05,1.05].forEach(x=>{ const b=new THREE.Mesh(bandGeo,flatMat(S.accent)); b.position.set(x,-1.0,0.02); shMesh.add(b); });
+  const sg=new THREE.Group(); sg.add(shMesh); sg.position.set(0,-1.55,0); kit.add(sg);
+
+  // --- Chaussettes ---
+  const chCol=pick(S.chauss_col);
+  [-0.62,0.62].forEach(x=>{
+    const g=new THREE.ExtrudeGeometry(shapeSock(),{...EX,depth:0.4,bevelSize:0.08,bevelThickness:0.08});
+    const sock=new THREE.Mesh(g,flatMat(chCol)); sock.castShadow=true;
+    if(S.chauss_bande){ const band=new THREE.Mesh(new THREE.BoxGeometry(0.72,0.22,0.5),flatMat(S.accent)); band.position.set(0,-0.25,0.02); sock.add(band); }
+    const grp=new THREE.Group(); grp.add(sock); grp.position.set(x,-3.75,0); kit.add(grp);
+  });
+
+  kit.position.y=0.2; kit.scale.set(0.72,0.72,0.72);
+}
+
+// ---------- vues caméra ----------
+function setVue(v){
+  const d=13.5;
+  if(v==="face") camera.position.set(0,0.2,d);
+  if(v==="dos") camera.position.set(0,0.2,-d);
+  if(v==="trois") camera.position.set(d*0.6,1.6,d*0.65);
+  controls.target.set(0,-0.3,0); controls.update();
+}
+
+// ---------- boucle ----------
+function resize(){
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  if(canvas.width!==w*devicePixelRatio||canvas.height!==h*devicePixelRatio){
+    renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+}
+function loop(){
+  resize();
+  if(S.autorotate) kit.rotation.y+=0.006;
+  controls.update();
+  renderer.render(scene,camera);
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+//  LIAISON UI
+// ============================================================
+function bind(id,key,ev="input",transform=v=>v){
+  const el=document.getElementById(id);
+  el.addEventListener(ev,()=>{ S[key]=transform(el.type==="checkbox"?el.checked:el.value); onChange(key); });
+}
+function onChange(key){
+  if(key==="sol"){ sol.visible=S.sol; return; }
+  if(key==="autorotate"){ return; }
+  buildKit();
+}
+bind("c_primary","primary"); bind("c_secondary","secondary"); bind("c_accent","accent");
+bind("pattern","pattern","change"); bind("manches","manches","change");
+bind("short_col","short_col","change"); bind("chauss_col","chauss_col","change");
+bind("chauss_bande","chauss_bande"); bind("club","club"); bind("sponsor","sponsor");
+bind("joueur","joueur"); bind("numero","numero"); bind("txt_col","txt_col","change");
+bind("autorotate","autorotate"); bind("sol","sol");
+
+// presets
+const presetsWrap=document.getElementById("presets");
+PRESETS.forEach(pr=>{
+  const b=document.createElement("button"); b.className="preset";
+  b.innerHTML=`<span class="swatch"><i style="background:${pr.p}"></i><i style="background:${pr.s}"></i><i style="background:${pr.a}"></i></span>${pr.nom}`;
+  b.onclick=()=>{
+    S.primary=pr.p;S.secondary=pr.s;S.accent=pr.a;S.pattern=pr.pat;
+    document.getElementById("c_primary").value=pr.p;
+    document.getElementById("c_secondary").value=pr.s;
+    document.getElementById("c_accent").value=pr.a;
+    document.getElementById("pattern").value=pr.pat;
+    buildKit();
+  };
+  presetsWrap.appendChild(b);
+});
+
+// vues
+document.querySelectorAll(".vue-btn").forEach(b=>{
+  b.onclick=()=>{ document.querySelectorAll(".vue-btn").forEach(x=>x.classList.remove("actif")); b.classList.add("actif"); setVue(b.dataset.vue); };
+});
+
+// export PNG
+document.getElementById("btn_png").onclick=()=>{
+  renderer.render(scene,camera);
+  const a=document.createElement("a");
+  a.download=`maillot-${(S.club||'rysao').toLowerCase().replace(/\s+/g,'-')}.png`;
+  a.href=canvas.toDataURL("image/png"); a.click();
+};
+// export JSON
+document.getElementById("btn_export").onclick=()=>{
+  const a=document.createElement("a");
+  a.download=`design-${(S.club||'rysao').toLowerCase().replace(/\s+/g,'-')}.json`;
+  a.href="data:application/json,"+encodeURIComponent(JSON.stringify(S,null,2)); a.click();
+};
+// import JSON
+document.getElementById("btn_import").onclick=()=>document.getElementById("file_import").click();
+document.getElementById("file_import").onchange=e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ Object.assign(S,JSON.parse(r.result)); syncUI(); buildKit(); }catch(err){ alert("Fichier invalide"); } };
+  r.readAsText(f);
+};
+function syncUI(){
+  const map=["c_primary:primary","c_secondary:secondary","c_accent:accent","pattern:pattern","manches:manches","short_col:short_col","chauss_col:chauss_col","club:club","sponsor:sponsor","joueur:joueur","numero:numero","txt_col:txt_col"];
+  map.forEach(m=>{const[i,k]=m.split(":");const el=document.getElementById(i);if(el)el.value=S[k];});
+  document.getElementById("chauss_bande").checked=S.chauss_bande;
+  document.getElementById("autorotate").checked=S.autorotate;
+  document.getElementById("sol").checked=S.sol;
+}
+
+// ---------- init ----------
+buildSol(); buildKit(); loop();
+window.addEventListener("resize",resize);
+</script>
+</body>
+</html>
