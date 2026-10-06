@@ -8,6 +8,8 @@ navigateur ne peut pas offrir :
   POST /api/separate            id  -> pistes séparées (Demucs, optionnel)
   POST /api/process             id  -> time-stretch / pitch-shift (garde la hauteur)
   POST /api/remix               rendu serveur haute qualité -> WAV
+  POST /api/mix/decode          déchiffre un mix -> tâche (transitions + titres)
+  GET  /api/mix/job/{job}       progression / résultat du déchiffrage
   GET  /api/file/{name}         récupère un fichier généré/uploadé
 """
 from __future__ import annotations
@@ -15,6 +17,8 @@ import os
 import uuid
 import json
 import asyncio
+import threading
+import time
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
@@ -24,6 +28,7 @@ from fastapi.staticfiles import StaticFiles
 import audio_engine as ae
 import stems as stemmod
 import music_gen as mg
+import mix_decoder as mixdec
 import auth
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -103,6 +108,8 @@ def health():
             "neural_music": mg.neural_available(),
             "stem_separation": stemmod.AVAILABLE,
             "ffmpeg": stemmod.has_ffmpeg(),
+            "mix_decode": True,
+            "mix_identify": mixdec.id_available(),
         },
         "moods": mg.MOODS,
     }
@@ -257,6 +264,66 @@ async def api_encode(file: UploadFile = File(...), fmt: str = Form("mp3"),
     return FileResponse(dest, media_type=_MIME[fmt], filename=name)
 
 
+# ------------------------------------------------ déchiffreur de mix
+# Tâches en mémoire : job -> {status, progress, message, result, error}
+JOBS: dict[str, dict] = {}
+
+
+def _run_decode(job: str, path: str, opts: dict) -> None:
+    j = JOBS[job]
+
+    def prog(f: float, msg: str) -> None:
+        j["progress"] = round(float(f), 3)
+        j["message"] = msg
+
+    try:
+        j["result"] = mixdec.decode_mix(path, progress=prog, **opts)
+        j["status"] = "done"
+    except Exception as e:
+        j["status"] = "error"
+        j["error"] = str(e)
+    j["finished"] = time.time()
+
+
+@app.post("/api/mix/decode")
+async def api_mix_decode(file: UploadFile = File(None),
+                         id: str = Form(""),
+                         identify: bool = Form(True),
+                         min_len: float = Form(45.0),
+                         sensitivity: float = Form(0.5),
+                         step: float = Form(20.0),
+                         _: bool = Depends(require_auth)):
+    """Lance le déchiffrage d'un mix (fichier envoyé ou `id` déjà importé)."""
+    if file is not None and file.filename:
+        ext = os.path.splitext(file.filename)[1] or ".bin"
+        path = os.path.join(UP, uuid.uuid4().hex[:12] + ext)
+        with open(path, "wb") as f:
+            f.write(await file.read())
+    elif id:
+        path = _path(id)
+    else:
+        raise HTTPException(400, "Envoyez un fichier audio ou un id.")
+    # purge des vieilles tâches (> 2 h)
+    for k in [k for k, v in JOBS.items() if time.time() - v.get("finished", time.time()) > 7200]:
+        JOBS.pop(k, None)
+    job = uuid.uuid4().hex[:12]
+    JOBS[job] = {"status": "running", "progress": 0.0, "message": "En file d'attente…"}
+    opts = {"identify": identify,
+            "min_len": max(15.0, min(min_len, 600.0)),
+            "sensitivity": max(0.0, min(sensitivity, 1.0)),
+            "step": max(8.0, min(step, 120.0))}
+    threading.Thread(target=_run_decode, args=(job, path, opts), daemon=True).start()
+    return {"job": job}
+
+
+@app.get("/api/mix/job/{job}")
+def api_mix_job(job: str, _: bool = Depends(require_auth)):
+    j = JOBS.get(job)
+    if not j:
+        raise HTTPException(404, "Tâche inconnue")
+    return {k: v for k, v in j.items() if k != "finished"}
+
+
 # ------------------------------------------------------- récupération
 @app.get("/api/file/{fid}")
 def api_file(fid: str, _: bool = Depends(require_auth)):
@@ -268,6 +335,11 @@ def api_file(fid: str, _: bool = Depends(require_auth)):
 @app.get("/")
 def index():
     return FileResponse(os.path.join(ROOT, "remix.html"))
+
+
+@app.get("/dechiffrer")
+def dechiffrer():
+    return FileResponse(os.path.join(ROOT, "dechiffrer.html"))
 
 
 # Le reste du dépôt (site vitrine, images…) reste accessible sous /site

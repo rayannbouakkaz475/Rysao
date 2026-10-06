@@ -6,6 +6,10 @@ python-multipart>=0.0.9
 numpy>=1.24
 scipy>=1.10
 soundfile>=0.12        # décodage WAV/FLAC/OGG/MP3 via libsndfile
+# Déchiffreur de mix : identification des titres (empreinte type Shazam).
+# Léger ; nécessite un accès internet. Sans lui, le découpage marche quand même.
+shazamio>=0.6
+audioop-lts; python_version >= "3.13"   # requis par shazamio sur Python 3.13+
 
 # ---------------------------------------------------------------------------
 # OPTIONNEL — séparation de pistes par IA (voix / batterie / basse / autres).

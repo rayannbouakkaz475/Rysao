@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # code backend + frontend (remix.html à la racine du dépôt)
 COPY backend/ /app/backend/
-COPY remix.html /app/remix.html
+COPY remix.html dechiffrer.html /app/
 
 EXPOSE 8000
 # $PORT est fourni par l'hébergeur (Render, Railway, HF Spaces…) ; 8000 en local.

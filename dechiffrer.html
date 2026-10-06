@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RYSAO Studio — Déchiffreur de mix</title>
+<meta name="description" content="Déposez un mix ou un DJ set : RYSAO retrouve les transitions, les morceaux qui le composent, leur BPM et leur tonalité.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%2308080a' stroke='%23c9a771' stroke-width='2'/%3E%3Ctext x='50' y='66' font-family='Georgia,serif' font-size='50' fill='%23c9a771' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noir-fond:#08080a; --noir-panneau:#0e0e11; --noir-carte:#121215;
+  --ligne:rgba(201,167,113,.18); --ligne-vive:rgba(201,167,113,.4);
+  --or:#c9a771; --or-vif:#e7c98e; --or-mat:#9c8156;
+  --ivoire:#efe9da; --ivoire-doux:#cfc8b8; --gris:#8d8678; --gris-fonce:#5c574c;
+  --rouge:#d98a76;
+  --serif:"Cormorant Garamond","Times New Roman",serif;
+  --sans:"Jost","Helvetica Neue",Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--noir-fond);color:var(--ivoire);font-family:var(--sans);font-weight:300;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:var(--or);text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+@media(min-width:700px){.wrap{padding:0 24px}}
+.hide{display:none!important}
+
+header.top{border-bottom:1px solid var(--ligne);padding:18px 0;position:sticky;top:0;background:rgba(8,8,10,.86);backdrop-filter:blur(10px);z-index:20}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{font-family:var(--serif);font-size:24px;letter-spacing:.28em;color:var(--ivoire)}
+.logo b{color:var(--or);font-weight:600}
+.navlink{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gris);border:1px solid var(--ligne);border-radius:30px;padding:8px 14px}
+.navlink:hover{color:var(--or);border-color:var(--ligne-vive)}
+
+.hero{padding:56px 0 28px;text-align:center;border-bottom:1px solid var(--ligne)}
+.eyebrow{font-size:11px;letter-spacing:.38em;text-transform:uppercase;color:var(--or-mat)}
+.hero h1{font-family:var(--serif);font-weight:500;font-size:clamp(36px,6vw,60px);margin:12px 0 8px;line-height:1.05}
+.hero h1 span{color:var(--or)}
+.hero p{color:var(--ivoire-doux);max-width:640px;margin:6px auto 0;font-size:16px}
+
+section.block{padding:36px 0;border-bottom:1px solid var(--ligne)}
+.step{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.step .num{font-family:var(--serif);font-size:22px;color:var(--noir-fond);background:var(--or);width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:600;flex:0 0 auto}
+.step h2{font-family:var(--serif);font-weight:500;font-size:26px}
+.step .sub{color:var(--gris);font-size:13px}
+
+.drop{border:1.5px dashed var(--ligne-vive);border-radius:14px;padding:40px 20px;text-align:center;background:var(--noir-panneau);cursor:pointer;transition:.2s}
+.drop:hover,.drop.over{border-color:var(--or);background:#141116}
+.drop .big{font-family:var(--serif);font-size:22px}
+.drop .sm{color:var(--gris);font-size:13px;margin-top:6px}
+.drop svg{width:40px;height:40px;stroke:var(--or);fill:none;stroke-width:1.3;margin-bottom:10px}
+.filecard{margin-top:16px;display:flex;align-items:center;gap:12px;background:var(--noir-carte);border:1px solid var(--ligne-vive);border-radius:10px;padding:12px 16px}
+.filecard .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filecard .meta{color:var(--gris);font-size:13px;font-variant-numeric:tabular-nums}
+
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:20px}
+.opt{background:var(--noir-carte);border:1px solid var(--ligne);border-radius:10px;padding:14px 16px}
+.opt label{display:flex;justify-content:space-between;font-size:13px;color:var(--ivoire-doux);margin-bottom:8px;gap:8px}
+.opt label b{color:var(--or);font-weight:400;font-variant-numeric:tabular-nums}
+.opt .help{color:var(--gris-fonce);font-size:12px;margin-top:6px}
+input[type=range]{width:100%;accent-color:var(--or)}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px}
+.switch input{width:18px;height:18px;accent-color:var(--or)}
+
+.btn{display:inline-flex;align-items:center;gap:8px;font-family:var(--sans);font-size:12px;letter-spacing:.2em;text-transform:uppercase;border:1px solid var(--or);color:var(--or);background:transparent;border-radius:30px;padding:13px 24px;cursor:pointer;transition:.2s}
+.btn:hover{background:rgba(201,167,113,.1)}
+.btn.solid{background:var(--or);color:var(--noir-fond);font-weight:500}
+.btn.solid:hover{background:var(--or-vif)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{padding:8px 14px;font-size:11px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px;align-items:center}
+
+.progress{margin-top:20px}
+.bar{height:6px;background:var(--noir-carte);border-radius:6px;overflow:hidden;border:1px solid var(--ligne)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--or-mat),var(--or-vif));transition:width .4s}
+.pmsg{color:var(--ivoire-doux);font-size:13px;margin-top:8px}
+.status{color:var(--gris);font-size:13px;margin-top:12px;min-height:20px}
+.status.err{color:var(--rouge)}
+.notice{background:rgba(201,167,113,.07);border:1px solid var(--ligne);border-radius:10px;padding:12px 16px;color:var(--ivoire-doux);font-size:13px;margin-bottom:18px}
+
+/* Résultat */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:20px}
+.stat{background:var(--noir-carte);border:1px solid var(--ligne);border-radius:10px;padding:12px 14px}
+.stat .v{font-family:var(--serif);font-size:28px;color:var(--or);line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris)}
+
+.timeline{position:relative;background:var(--noir-panneau);border:1px solid var(--ligne);border-radius:12px;padding:10px;cursor:pointer}
+.timeline canvas{display:block;width:100%;height:120px}
+.tl-axis{display:flex;justify-content:space-between;color:var(--gris-fonce);font-size:11px;margin-top:4px;font-variant-numeric:tabular-nums}
+.player{display:flex;align-items:center;gap:12px;margin:14px 0 22px;flex-wrap:wrap}
+.play{width:46px;height:46px;border-radius:50%;border:1px solid var(--or);background:transparent;color:var(--or);cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+.play svg{width:18px;height:18px;fill:currentColor}
+.play:hover{background:rgba(201,167,113,.12)}
+.ptime{font-variant-numeric:tabular-nums;color:var(--ivoire-doux);font-size:14px}
+.pnow{color:var(--gris);font-size:13px;flex:1;min-width:160px}
+.pnow b{color:var(--ivoire);font-weight:400}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.seg{display:grid;grid-template-columns:auto 56px 1fr auto;align-items:center;gap:14px;background:var(--noir-carte);border:1px solid var(--ligne);border-left:4px solid var(--c,var(--or));border-radius:10px;padding:12px 14px;cursor:pointer;transition:.15s}
+.seg:hover{border-color:var(--ligne-vive)}
+.seg.now{background:#17141a;box-shadow:inset 0 0 0 1px rgba(201,167,113,.35)}
+.seg .ts{font-variant-numeric:tabular-nums;color:var(--or);font-size:14px;min-width:52px}
+.seg .cover{width:56px;height:56px;border-radius:6px;background:#1b1a1e center/cover;display:grid;place-items:center;color:var(--gris-fonce);font-family:var(--serif);font-size:22px}
+.seg .t{min-width:0}
+.seg .ti{font-size:16px;color:var(--ivoire);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg .ar{font-size:13px;color:var(--ivoire-doux);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg .ti.unk{color:var(--gris);font-style:italic}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chip{font-size:11px;color:var(--gris);border:1px solid var(--ligne);border-radius:20px;padding:1px 8px;font-variant-numeric:tabular-nums}
+.chip.ok{color:var(--or);border-color:var(--ligne-vive)}
+.seg .lnk{font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+@media(max-width:600px){
+  .seg{grid-template-columns:44px 1fr;grid-template-areas:"c t" "c t"}
+  .seg .ts{grid-column:2;order:-1;min-width:0}
+  .seg .cover{grid-row:1/3;width:44px;height:44px}
+  .seg .lnk{display:none}
+}
+.exports{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+pre.tl{margin-top:14px;background:var(--noir-panneau);border:1px solid var(--ligne);border-radius:10px;padding:14px;color:var(--ivoire-doux);font-size:13px;white-space:pre-wrap;word-break:break-word}
+
+.overlay{position:fixed;inset:0;background:rgba(5,5,7,.92);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.overlay.show{display:flex}
+.login{background:var(--noir-panneau);border:1px solid var(--ligne-vive);border-radius:16px;padding:36px 28px;max-width:400px;width:100%;text-align:center}
+.login h3{font-family:var(--serif);font-weight:500;font-size:26px;margin-bottom:6px}
+.login p{color:var(--gris);font-size:13px;margin-bottom:20px}
+.login input{width:100%;background:var(--noir-carte);color:var(--ivoire);border:1px solid var(--ligne);border-radius:8px;padding:13px 14px;font-family:var(--sans);font-size:15px;text-align:center}
+.login input:focus{outline:none;border-color:var(--or)}
+.login .btn{width:100%;margin-top:14px;justify-content:center}
+.login .err{color:var(--rouge);font-size:13px;min-height:18px;margin-top:12px}
+footer{padding:30px 0 50px;text-align:center;color:var(--gris-fonce);font-size:12px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="./">RY<b>S</b>AO</a>
+    <a class="navlink" href="./">← Studio remix</a>
+  </div>
+</header>
+
+<div class="overlay" id="loginOverlay">
+  <div class="login">
+    <div style="font-size:30px;margin-bottom:8px">🔒</div>
+    <h3>Accès privé</h3>
+    <p>Entrez le mot de passe du studio pour continuer.</p>
+    <input type="password" id="pwInput" placeholder="Mot de passe" autocomplete="current-password">
+    <button class="btn solid" id="loginBtn">Entrer</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Atelier sonore</span>
+    <h1>Déchiffreur <span>de mix</span></h1>
+    <p>Déposez un DJ set, un mashup ou n'importe quel enchaînement : RYSAO repère chaque transition, retrouve les morceaux qui le composent, leur BPM et leur tonalité — et vous donne la tracklist horodatée.</p>
+  </div>
+</section>
+
+<!-- 1. Import -->
+<section class="block">
+  <div class="wrap">
+    <div class="step">
+      <div class="num">1</div>
+      <div><h2>Importez votre mix</h2><div class="sub">MP3, WAV, M4A, FLAC, OGG… jusqu'à plusieurs heures.</div></div>
+    </div>
+    <div class="notice hide" id="noBackend">Le déchiffreur a besoin du serveur RYSAO (lancez <b>backend/run.sh</b> ou la version en ligne). Ouvrez ensuite cette page via le serveur, à l'adresse <b>/dechiffrer</b>.</div>
+    <div class="drop" id="drop">
+      <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5M5 20h14"/></svg>
+      <div class="big">Déposez votre mix ici</div>
+      <div class="sm">ou appuyez pour choisir un fichier</div>
+      <input type="file" id="file" accept="audio/*,.m4a,.flac" class="hide">
+    </div>
+    <div class="filecard hide" id="fileCard"><span>🎧</span><span class="nm" id="fileName"></span><span class="meta" id="fileMeta"></span></div>
+
+    <div class="opts">
+      <div class="opt">
+        <label class="switch"><input type="checkbox" id="optIdentify" checked> Identifier les titres (artiste, titre)</label>
+        <div class="help" id="idHelp">Envoie de courts extraits (12 s) au service de reconnaissance Shazam. Nécessite internet.</div>
+      </div>
+      <div class="opt">
+        <label>Durée minimale d'un morceau <b id="vMin">45 s</b></label>
+        <input type="range" id="optMin" min="20" max="180" step="5" value="45">
+        <div class="help">Baissez pour un mashup rapide, montez pour un long DJ set.</div>
+      </div>
+      <div class="opt">
+        <label>Sensibilité aux transitions <b id="vSens">50 %</b></label>
+        <input type="range" id="optSens" min="0" max="100" step="5" value="50">
+        <div class="help">Plus haut = détecte plus de changements (risque de faux positifs).</div>
+      </div>
+      <div class="opt">
+        <label>Précision de l'identification <b id="vStep">toutes les 20 s</b></label>
+        <input type="range" id="optStep" min="10" max="60" step="5" value="20">
+        <div class="help">Plus fréquent = plus précis mais plus long.</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn solid" id="goBtn" disabled>Déchiffrer le mix</button>
+    </div>
+    <div class="progress hide" id="progress"><div class="bar"><i id="barFill"></i></div><div class="pmsg" id="pmsg"></div></div>
+    <div class="status" id="status"></div>
+  </div>
+</section>
+
+<!-- 2. Résultat -->
+<section class="block hide" id="resultBlock">
+  <div class="wrap">
+    <div class="step">
+      <div class="num">2</div>
+      <div><h2>Ce que contient le mix</h2><div class="sub">Appuyez sur un morceau ou sur la frise pour l'écouter à cet endroit.</div></div>
+    </div>
+    <div class="notice hide" id="idNotice"></div>
+    <div class="summary" id="summary"></div>
+
+    <div class="timeline" id="timeline"><canvas id="tl"></canvas></div>
+    <div class="tl-axis" id="tlAxis"></div>
+
+    <div class="player">
+      <button class="play" id="playBtn" aria-label="Lecture"><svg id="playIco" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
+      <span class="ptime" id="ptime">0:00 / 0:00</span>
+      <span class="pnow" id="pnow"></span>
+      <audio id="audio" preload="metadata"></audio>
+    </div>
+
+    <div class="list" id="list"></div>
+
+    <div class="exports">
+      <button class="btn sm" id="copyBtn">Copier la tracklist</button>
+      <button class="btn sm" id="txtBtn">Télécharger .txt</button>
+      <button class="btn sm" id="csvBtn">Télécharger .csv</button>
+      <button class="btn sm" id="cueBtn">Télécharger .cue</button>
+    </div>
+    <pre class="tl" id="tlText"></pre>
+  </div>
+</section>
+
+<footer>RYSAO Studio — Déchiffreur de mix</footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const COLORS=["#c9a771","#7fa7c9","#b98fc9","#8fc9a0","#c98f8f","#c9c27f","#8fbfc9","#c9a08f"];
+const fmt=s=>{s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;
+  return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- Backend (même logique que le studio) ---------- */
+const backend={
+  on:false,base:"",caps:{},token:(()=>{try{return localStorage.getItem("rysao_token")||""}catch(e){return ""}})(),
+  async detect(){
+    const bases=location.protocol==="file:"?["http://127.0.0.1:8000"]:["","http://127.0.0.1:8000"];
+    for(const b of bases){
+      try{const r=await fetch(b+"/api/health",{signal:AbortSignal.timeout(2500)});
+        if(r.ok){const j=await r.json();this.on=true;this.base=b;this.caps=j.capabilities||{};return true}}catch(e){}
+    }
+    return false;
+  },
+  api(path,opts={}){
+    opts.headers=Object.assign({},opts.headers,this.token?{Authorization:"Bearer "+this.token}:{});
+    opts.credentials="include";
+    return fetch(this.base+path,opts);
+  },
+  async login(pw){
+    const fd=new FormData();fd.append("password",pw);
+    const r=await fetch(this.base+"/api/login",{method:"POST",body:fd,credentials:"include"});
+    if(!r.ok)return false;
+    const j=await r.json();this.token=j.token||"";
+    try{localStorage.setItem("rysao_token",this.token)}catch(e){}
+    return true;
+  },
+  async authed(){try{return (await this.api("/api/me")).ok}catch(e){return false}}
+};
+
+/* ---------- État ---------- */
+let file=null, result=null, objUrl="";
+
+/* ---------- Options ---------- */
+const syncOpts=()=>{
+  $("vMin").textContent=$("optMin").value+" s";
+  $("vSens").textContent=$("optSens").value+" %";
+  $("vStep").textContent="toutes les "+$("optStep").value+" s";
+  $("optStep").disabled=!$("optIdentify").checked;
+};
+["optMin","optSens","optStep","optIdentify"].forEach(id=>$(id).addEventListener("input",syncOpts));
+syncOpts();
+
+/* ---------- Import ---------- */
+const drop=$("drop");
+drop.addEventListener("click",()=>$("file").click());
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("over")});
+drop.addEventListener("dragleave",()=>drop.classList.remove("over"));
+drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("over");if(e.dataTransfer.files[0])setFile(e.dataTransfer.files[0])});
+$("file").addEventListener("change",e=>{if(e.target.files[0])setFile(e.target.files[0])});
+
+function setFile(f){
+  file=f;
+  $("fileCard").classList.remove("hide");
+  $("fileName").textContent=f.name;
+  $("fileMeta").textContent=(f.size/1048576).toFixed(1)+" Mo";
+  if(objUrl)URL.revokeObjectURL(objUrl);
+  objUrl=URL.createObjectURL(f);
+  const a=$("audio"); a.src=objUrl;
+  a.onloadedmetadata=()=>{$("fileMeta").textContent=fmt(a.duration)+" · "+(f.size/1048576).toFixed(1)+" Mo"};
+  $("goBtn").disabled=!backend.on;
+  $("status").textContent=""; $("status").classList.remove("err");
+}
+
+/* ---------- Lancement ---------- */
+$("goBtn").addEventListener("click",run);
+async function run(){
+  if(!file)return;
+  $("goBtn").disabled=true;
+  $("status").textContent=""; $("status").classList.remove("err");
+  $("progress").classList.remove("hide"); setProg(0,"Envoi du mix au serveur…");
+  try{
+    const fd=new FormData();
+    fd.append("file",file);
+    fd.append("identify",$("optIdentify").checked?"true":"false");
+    fd.append("min_len",$("optMin").value);
+    fd.append("sensitivity",String($("optSens").value/100));
+    fd.append("step",$("optStep").value);
+    const r=await backend.api("/api/mix/decode",{method:"POST",body:fd});
+    if(r.status===401){showLogin();throw new Error("Connexion requise.")}
+    if(!r.ok)throw new Error((await r.json().catch(()=>({}))).detail||("Erreur "+r.status));
+    const {job}=await r.json();
+    const res=await poll(job);
+    result=res; render();
+    $("progress").classList.add("hide");
+  }catch(e){
+    $("status").textContent="⚠ "+e.message; $("status").classList.add("err");
+    $("progress").classList.add("hide");
+  }finally{$("goBtn").disabled=false}
+}
+function setProg(f,msg){$("barFill").style.width=Math.round(f*100)+"%";$("pmsg").textContent=msg}
+async function poll(job){
+  let fails=0;
+  for(;;){
+    await new Promise(r=>setTimeout(r,1200));
+    let j;
+    try{const r=await backend.api("/api/mix/job/"+job); if(!r.ok)throw new Error(r.status); j=await r.json(); fails=0}
+    catch(e){if(++fails>8)throw new Error("Connexion au serveur perdue.");continue}
+    setProg(j.progress||0,j.message||"");
+    if(j.status==="done")return j.result;
+    if(j.status==="error")throw new Error(j.error||"Échec de l'analyse.");
+  }
+}
+
+/* ---------- Rendu ---------- */
+function label(s,i){
+  return s.track?{title:s.track.title,artist:s.track.artist}:{title:"Morceau "+(i+1)+" (non identifié)",artist:""};
+}
+function render(){
+  const R=result, segs=R.segments;
+  $("resultBlock").classList.remove("hide");
+  const ided=segs.filter(s=>s.track).length;
+  const notice=$("idNotice");
+  const msgs={unavailable:"Identification indisponible sur ce serveur (installez <b>shazamio</b> : <code>pip install shazamio</code>). Le découpage, les BPM et tonalités sont tout de même affichés.",
+    no_match:"Aucun titre n'a été reconnu (pas d'accès internet depuis le serveur, ou morceaux absents de la base : remix inédits, productions perso…). Le découpage reste valable."};
+  if(msgs[R.identification]){notice.innerHTML=msgs[R.identification];notice.classList.remove("hide")}else notice.classList.add("hide");
+
+  const bpms=segs.map(s=>s.bpm).filter(Boolean);
+  $("summary").innerHTML=[
+    [fmt(R.duration),"Durée"],[segs.length,"Morceaux détectés"],
+    [R.identification==="ok"?ided+" / "+segs.length:"—","Identifiés"],
+    [bpms.length?Math.round(Math.min(...bpms))+"–"+Math.round(Math.max(...bpms)):"—","BPM"]
+  ].map(([v,l])=>`<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+
+  $("list").innerHTML=segs.map((s,i)=>{
+    const L=label(s,i), c=COLORS[i%COLORS.length];
+    const cover=s.track&&s.track.cover?`style="background-image:url('${esc(s.track.cover)}')"`:"";
+    const chips=[fmt(s.duration),s.bpm?Math.round(s.bpm)+" BPM":"",s.key&&s.key!=="—"?s.key:"",
+      s.track?`<span class="chip ok">${Math.round((s.confidence||0)*100)} % sûr</span>`:""]
+      .filter(Boolean).map(x=>x.startsWith("<span")?x:`<span class="chip">${esc(x)}</span>`).join("");
+    const link=s.track&&s.track.url?`<a class="lnk" href="${esc(s.track.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Écouter ↗</a>`:"<span></span>";
+    return `<div class="seg" data-i="${i}" style="--c:${c}">
+      <span class="ts">${fmt(s.start)}</span>
+      <div class="cover" ${cover}>${cover?"":(i+1)}</div>
+      <div class="t"><div class="ti ${s.track?"":"unk"}">${esc(L.title)}</div>
+        ${L.artist?`<div class="ar">${esc(L.artist)}${s.track.album?" · "+esc(s.track.album):""}</div>`:""}
+        <div class="chips">${chips}</div></div>
+      ${link}</div>`;
+  }).join("");
+  document.querySelectorAll(".seg").forEach(el=>el.addEventListener("click",()=>seek(segs[+el.dataset.i].start,true)));
+
+  $("tlText").textContent=tracklistText();
+  const n=5;$("tlAxis").innerHTML=Array.from({length:n},(_,k)=>`<span>${fmt(R.duration*k/(n-1))}</span>`).join("");
+  drawTimeline();
+  $("resultBlock").scrollIntoView({behavior:"smooth"});
+}
+
+function drawTimeline(){
+  if(!result)return;
+  const cv=$("tl"), dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const g=cv.getContext("2d"); g.scale(dpr,dpr); g.clearRect(0,0,W,H);
+  const R=result, D=R.duration, x=t=>t/D*W;
+  R.segments.forEach((s,i)=>{g.fillStyle=COLORS[i%COLORS.length]+"22";g.fillRect(x(s.start),0,x(s.end)-x(s.start),H)});
+  const E=R.curve.energy, n=E.length;
+  g.beginPath(); g.moveTo(0,H);
+  E.forEach((v,k)=>g.lineTo(k/(n-1||1)*W,H-6-v*(H-16)));
+  g.lineTo(W,H); g.closePath();
+  const grd=g.createLinearGradient(0,0,0,H); grd.addColorStop(0,"rgba(201,167,113,.55)"); grd.addColorStop(1,"rgba(201,167,113,.05)");
+  g.fillStyle=grd; g.fill();
+  R.segments.forEach((s,i)=>{
+    g.fillStyle=COLORS[i%COLORS.length]; g.fillRect(x(s.start),0,x(s.end)-x(s.start),4);
+    if(i>0){g.strokeStyle="rgba(239,233,218,.5)";g.setLineDash([3,3]);g.beginPath();g.moveTo(x(s.start)+.5,0);g.lineTo(x(s.start)+.5,H);g.stroke();g.setLineDash([])}
+    if(x(s.end)-x(s.start)>26){g.fillStyle="rgba(239,233,218,.85)";g.font="12px Jost, sans-serif";g.fillText(String(i+1),x(s.start)+6,18)}
+  });
+  const a=$("audio");
+  if(a.duration){const px=x(a.currentTime);g.fillStyle="#efe9da";g.fillRect(px-1,0,2,H)}
+}
+window.addEventListener("resize",drawTimeline);
+$("timeline").addEventListener("click",e=>{
+  if(!result)return;const r=$("tl").getBoundingClientRect();
+  seek((e.clientX-r.left)/r.width*result.duration,true);
+});
+
+/* ---------- Lecture ---------- */
+const audio=$("audio");
+function seek(t,play){audio.currentTime=Math.max(0,t);if(play)audio.play()}
+$("playBtn").addEventListener("click",()=>audio.paused?audio.play():audio.pause());
+audio.addEventListener("play",()=>$("playIco").innerHTML='<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>');
+audio.addEventListener("pause",()=>$("playIco").innerHTML='<path d="M7 5v14l12-7z"/>');
+audio.addEventListener("timeupdate",()=>{
+  $("ptime").textContent=fmt(audio.currentTime)+" / "+fmt(audio.duration||0);
+  if(!result)return;
+  const i=result.segments.findIndex(s=>audio.currentTime>=s.start&&audio.currentTime<s.end);
+  document.querySelectorAll(".seg").forEach(el=>el.classList.toggle("now",+el.dataset.i===i));
+  if(i>=0){const L=label(result.segments[i],i);$("pnow").innerHTML=`En cours : <b>${esc(L.artist?L.artist+" – "+L.title:L.title)}</b>`}
+  drawTimeline();
+});
+
+/* ---------- Exports ---------- */
+const base=()=>(file?file.name.replace(/\.[^.]+$/,""):"mix");
+function tracklistText(){
+  return result.segments.map((s,i)=>{const L=label(s,i);
+    return fmt(s.start)+"  "+(L.artist?L.artist+" – ":"")+L.title+(s.bpm?"  ["+Math.round(s.bpm)+" BPM"+(s.key&&s.key!=="—"?", "+s.key:"")+"]":"")}).join("\n");
+}
+function download(name,text,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+$("copyBtn").addEventListener("click",async()=>{
+  try{await navigator.clipboard.writeText(tracklistText());$("copyBtn").textContent="Copié ✓"}
+  catch(e){$("copyBtn").textContent="Sélectionnez le texte ci-dessous"}
+  setTimeout(()=>$("copyBtn").textContent="Copier la tracklist",2000);
+});
+$("txtBtn").addEventListener("click",()=>download(base()+"_tracklist.txt",tracklistText(),"text/plain"));
+$("csvBtn").addEventListener("click",()=>{
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const rows=[["n","debut","fin","duree_s","artiste","titre","album","bpm","tonalite","confiance","lien"]];
+  result.segments.forEach((s,i)=>{const t=s.track||{};rows.push([i+1,fmt(s.start),fmt(s.end),s.duration,t.artist||"",t.title||"",t.album||"",s.bpm||"",s.key||"",s.confidence??"",t.url||""])});
+  download(base()+"_tracklist.csv","﻿"+rows.map(r=>r.map(q).join(";")).join("\n"),"text/csv");
+});
+$("cueBtn").addEventListener("click",()=>{
+  const cueT=t=>{const f=Math.round(t*75),m=Math.floor(f/4500),s=Math.floor(f%4500/75),fr=f%75;return [m,s,fr].map(v=>String(v).padStart(2,"0")).join(":")};
+  let c=`TITLE "${base()}"\nFILE "${file?file.name:"mix.mp3"}" MP3\n`;
+  result.segments.forEach((s,i)=>{const L=label(s,i);
+    c+=`  TRACK ${String(i+1).padStart(2,"0")} AUDIO\n    TITLE "${L.title.replace(/"/g,"'")}"\n    PERFORMER "${(L.artist||"").replace(/"/g,"'")}"\n    INDEX 01 ${cueT(s.start)}\n`});
+  download(base()+".cue",c,"application/x-cue");
+});
+
+/* ---------- Connexion ---------- */
+function showLogin(){$("loginOverlay").classList.add("show");setTimeout(()=>$("pwInput").focus(),100)}
+async function doLogin(){
+  const pw=$("pwInput").value; if(!pw){$("loginErr").textContent="Entrez le mot de passe.";return}
+  $("loginBtn").disabled=true;$("loginErr").textContent="";
+  const ok=await backend.login(pw); $("loginBtn").disabled=false;
+  if(ok){$("loginOverlay").classList.remove("show");$("pwInput").value=""}
+  else $("loginErr").textContent="Mot de passe incorrect.";
+}
+$("loginBtn").addEventListener("click",doLogin);
+$("pwInput").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin()});
+
+/* ---------- Démarrage ---------- */
+(async()=>{
+  if(!await backend.detect()){$("noBackend").classList.remove("hide");return}
+  if(!backend.caps.mix_identify){
+    $("idHelp").textContent="Non disponible sur ce serveur (pip install shazamio). Le découpage, BPM et tonalités fonctionnent quand même.";
+    $("optIdentify").checked=false; syncOpts();
+  }
+  if(!await backend.authed())showLogin();
+  if(file)$("goBtn").disabled=false;
+})();
+</script>
+</body>
+</html>
