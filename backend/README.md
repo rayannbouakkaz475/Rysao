@@ -24,6 +24,7 @@ peut pas** offrir :
 | **Séparation de pistes IA** (voix / batterie / basse / autres) | ❌ | ✅* |
 | **Création de musique** (compose un morceau original) | ❌ | ✅ |
 | **Génération neuronale texte→musique** (MusicGen) | ❌ | ✅** |
+| **Déchiffreur de mix** (transitions + titres d'un DJ set) | ❌ | ✅ |
 
 \* nécessite Demucs (inclus dans l'image Docker « full », voir plus bas).
 \** nécessite l'installation optionnelle d'audiocraft.
@@ -160,6 +161,24 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 
   ou décommentez la ligne `audiocraft` dans `backend/Dockerfile.demucs`.
 
+## Déchiffreur de mix
+
+Page **/dechiffrer** (lien « 🔎 Déchiffrer un mix » en haut du studio). Déposez
+un DJ set, un mashup ou un enchaînement de plusieurs musiques :
+
+1. **Transitions** (100 % local) : empreinte timbrale + harmonique seconde par
+   seconde, les changements brusques marquent le passage d'un morceau à l'autre.
+2. **BPM, tonalité, énergie** de chaque morceau.
+3. **Identification** (artiste, titre, pochette, lien) : des extraits de 12 s
+   sont reconnus via Shazam (`shazamio`, inclus dans `requirements.txt`,
+   nécessite internet). Les résultats corrigent aussi le découpage : un segment
+   contenant deux titres est coupé, deux segments du même titre sont fusionnés.
+
+Résultat : frise cliquable, lecture à chaque transition, tracklist horodatée à
+copier ou exporter en **.txt / .csv / .cue**. Réglages : durée minimale d'un
+morceau, sensibilité, fréquence d'identification. Les remix inédits ou
+productions perso ne seront pas identifiés, mais restent découpés et analysés.
+
 ## API
 
 | Méthode | Route | Rôle |
@@ -173,8 +192,11 @@ Deux moteurs, exposés dans la section « Créer une musique » du studio :
 | `POST` | `/api/remix` | `spec` (JSON) → remix rendu, WAV |
 | `POST` | `/api/generate` | `spec` (JSON) → musique générée, WAV |
 | `POST` | `/api/encode` | WAV + `fmt` → audio encodé (mp3/ogg/flac/wav) |
+| `POST` | `/api/mix/decode` | fichier (ou `id`) + réglages → `{job}` (déchiffrage en tâche de fond) |
+| `GET`  | `/api/mix/job/{job}` | progression + résultat (segments, titres, BPM, tonalité) |
 | `GET`  | `/api/file/{id}` | récupère un fichier généré |
 | `GET`  | `/` | le studio (`remix.html`) |
+| `GET`  | `/dechiffrer` | le déchiffreur de mix (`dechiffrer.html`) |
 
 Exemple `spec` pour `/api/remix` :
 

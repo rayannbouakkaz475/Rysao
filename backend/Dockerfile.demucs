@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir torch \
 
 # code + frontend
 COPY backend/ /app/backend/
-COPY remix.html /app/remix.html
+COPY remix.html dechiffrer.html /app/
 
 EXPOSE 8000
 # $PORT est fourni par l'hébergeur ; 8000 en local.
