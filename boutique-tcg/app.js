@@ -107,7 +107,7 @@
     },
     precommandes: {
       slogan: "Les prochaines sorties, réservées avant tout le monde.",
-      texte: "Réserve maintenant, on expédie dès l'arrivée du stock.",
+      texte: "Pokémon, One Piece et Yu-Gi-Oh réunis : réserve maintenant, on expédie dès l'arrivée du stock.",
       deco: `<span class="deco-sablier">${ICONES.sablier}</span>`
     }
   };
@@ -259,20 +259,44 @@
     $("#pagination").innerHTML = h;
   }
 
+  // Précommandes : page globale, regroupée par univers (tous les jeux, sans pagination).
+  function rendrePrecommandes(liste) {
+    return Object.entries(JEUX).map(([k, jeu]) => {
+      const items = liste.filter((p) => p.jeu === k);
+      return `<section class="groupe groupe-${k}">
+        <header class="groupe-tete banniere-${k}">
+          <span class="groupe-deco" aria-hidden="true">${UNIVERS[k].deco}</span>
+          <h2>${jeu.nom}</h2>
+          <span class="groupe-compte">${items.length ? `${items.length} précommande${items.length > 1 ? "s" : ""}` : "Bientôt"}</span>
+          <button class="groupe-lien" data-jeu="${k}">Tout l'univers ${jeu.nom} →</button>
+        </header>
+        ${items.length
+          ? `<div class="grille">${items.map(carte).join("")}</div>`
+          : `<p class="groupe-vide">Aucune précommande ${jeu.nom} pour le moment. Les prochaines sorties apparaîtront ici dès leur annonce.</p>`}
+      </section>`;
+    }).join("");
+  }
+
   function rendre() {
     const liste = produitsFiltres();
-    const nbPages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
+    const groupe = etat.jeu === "precommandes";
+    if (groupe) etat.page = 1;
+    const nbPages = groupe ? 1 : Math.max(1, Math.ceil(liste.length / PAR_PAGE));
     if (etat.page > nbPages) etat.page = nbPages;
     const debut = (etat.page - 1) * PAR_PAGE;
     const page = liste.slice(debut, debut + PAR_PAGE);
 
     rendreNav();
     rendreEntete();
-    $("#grille").innerHTML = page.map(carte).join("");
-    $("#vide").hidden = liste.length > 0;
-    $("#compte").textContent = liste.length
-      ? `Affichage de ${debut + 1}–${debut + page.length} sur ${liste.length} produit${liste.length > 1 ? "s" : ""}`
-      : "";
+    const grille = $("#grille");
+    grille.classList.toggle("groupes", groupe);
+    grille.innerHTML = groupe ? rendrePrecommandes(liste) : page.map(carte).join("");
+    $("#vide").hidden = groupe || liste.length > 0;
+    $("#compte").textContent = groupe
+      ? `${liste.length} précommande${liste.length > 1 ? "s" : ""}, tous univers confondus`
+      : liste.length
+        ? `Affichage de ${debut + 1}–${debut + page.length} sur ${liste.length} produit${liste.length > 1 ? "s" : ""}`
+        : "";
     $("#appliquer-filtres").textContent = `Voir les ${liste.length} résultat${liste.length > 1 ? "s" : ""}`;
     rendrePagination(nbPages);
     ecrireUrl();

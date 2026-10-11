@@ -23,3 +23,30 @@ services:
         sync: false
       - key: RYSAO_SECRET     # secret de session, généré automatiquement
         generateValue: true
+
+  # Boutique de cartes (dossier boutique-tcg) : site 100 % statique servi par le
+  # CDN de Render. Pas de serveur à faire tourner, pas de mise en veille, et la
+  # charge (des centaines de visiteurs simultanés) est absorbée par le CDN.
+  - type: web
+    name: rysao-cards
+    runtime: static
+    buildCommand: echo "Site statique, rien à construire"
+    staticPublishPath: ./boutique-tcg
+    headers:
+      # La page se met à jour tout de suite après chaque déploiement…
+      - path: /
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      # …et le CSS/JS est gardé en cache par les navigateurs et le CDN.
+      - path: /*.css
+        name: Cache-Control
+        value: public, max-age=300, stale-while-revalidate=86400
+      - path: /*.js
+        name: Cache-Control
+        value: public, max-age=300, stale-while-revalidate=86400
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff

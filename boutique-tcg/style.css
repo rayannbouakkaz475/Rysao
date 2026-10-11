@@ -151,7 +151,11 @@ h1, h2 { font-family: var(--titre); font-weight: 400; }
 .jeux .onglet-pokemon[aria-pressed="true"] { background: #ffcb05; border-color: #2a75bb; color: #1b3f7a; }
 .jeux .onglet-onepiece[aria-pressed="true"] { background: #b3261e; border-color: #5b1010; color: #f8eed4; }
 .jeux .onglet-yugioh[aria-pressed="true"] { background: #2a1a4a; border-color: #d4af37; color: #d4af37; }
-.jeux .onglet-precommandes { margin-left: auto; border-color: var(--jaune); background: #fff8d6; color: #14161f; }
+/* Précommandes : onglet global, toujours visible (collé à droite même quand la barre défile) */
+.jeux .onglet-precommandes {
+  margin-left: auto; border-color: var(--jaune); background: #fff8d6; color: #14161f;
+  position: sticky; right: 0; z-index: 1; box-shadow: -14px 0 12px -6px var(--carte);
+}
 .jeux .onglet-precommandes[aria-pressed="true"] { background: var(--jaune); }
 
 /* ---------- Page ---------- */
@@ -454,6 +458,29 @@ fieldset > div, fieldset > label { clear: both; }
 
 .vide { text-align: center; color: var(--doux); padding: 60px 0; }
 
+/* ---------- Précommandes regroupées par univers ---------- */
+.grille.groupes { display: flex; flex-direction: column; align-items: stretch; gap: 34px; }
+.groupe-tete {
+  position: relative; overflow: hidden; isolation: isolate; border-radius: 16px; color: #fff;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 14px; padding: 16px 20px; margin-bottom: 16px; min-height: 76px;
+}
+.groupe-tete h2 { margin: 0; font-size: 30px; line-height: 1; }
+.groupe-pokemon h2 { font-family: "Lilita One", sans-serif; color: #ffcb05; -webkit-text-stroke: 2px #1b3f7a; paint-order: stroke fill; text-shadow: 0 3px 0 #1b3f7a; }
+.groupe-onepiece h2 { font-family: "Pirata One", serif; color: #f8eed4; text-shadow: 0 2px 0 #2a1a0b; font-size: 34px; }
+.groupe-yugioh h2 { font-family: "Cinzel", serif; font-weight: 900; color: #e9c75a; }
+.groupe-compte { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; background: rgba(0,0,0,.35); padding: 4px 10px; border-radius: 999px; }
+.groupe-lien { margin-left: auto; border: 0; background: rgba(255,255,255,.92); color: #14161f; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 999px; }
+.groupe-deco { position: absolute; inset: 0; z-index: -1; opacity: .55; pointer-events: none; }
+.groupe-deco .deco-1 { font-size: 150px; right: 160px; top: -60px; }
+.groupe-deco .deco-2, .groupe-deco .deco-eclair { display: none; }
+.groupe-deco .deco-pavillon { right: 180px; top: 6px; width: 90px; height: 64px; padding: 5px 20px; }
+.groupe-deco .deco-vagues { height: 26px; background-size: 80px 26px; }
+.groupe-deco .deco-pyramide { width: 70px; height: 70px; right: 190px; }
+.groupe-vide {
+  margin: 0; padding: 22px; text-align: center; color: var(--doux); font-size: 14px;
+  border: 2px dashed var(--ligne); border-radius: var(--rayon);
+}
+
 /* ---------- Pagination ---------- */
 .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 30px; flex-wrap: wrap; }
 .pagination button { min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--ligne); background: var(--carte); font-weight: 600; }
@@ -571,7 +598,7 @@ fieldset > div, fieldset > label { clear: both; }
   .banniere .deco-eclair { width: 56px; height: 56px; right: 130px; top: 14px; }
   .banniere .deco-pavillon { right: 18px; top: 18px; width: 120px; height: 86px; padding: 8px 28px; }
   .banniere .deco-pyramide { width: 100px; height: 100px; right: 20px; top: 70px; }
-  .banniere .deco-sablier { width: 80px; height: 80px; right: 20px; top: 60px; }
+  .banniere .deco-sablier { display: none; }
 }
 @media (max-width: 560px) {
   .entete-int { flex-wrap: wrap; gap: 12px; }
@@ -580,5 +607,7 @@ fieldset > div, fieldset > label { clear: both; }
   .grille { grid-template-columns: 1fr; gap: 18px; }
   .tri span { display: none; }
   .compte { flex-basis: 100%; order: 3; }
+  .groupe-lien { margin-left: 0; }
+  .groupe-deco .deco-1, .groupe-deco .deco-pavillon, .groupe-deco .deco-pyramide { right: -20px; }
   .atouts, .pied-int { grid-template-columns: 1fr; }
 }
