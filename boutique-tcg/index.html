@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rysao Cards — Cartes à collectionner</title>
+<meta name="description" content="Boutique suisse de cartes à collectionner : Pokémon, One Piece et Yu-Gi-Oh. Displays, coffrets, Élite Trainer Box et accessoires.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%23fff' stroke='%23111' stroke-width='8'/%3E%3Cpath d='M4 50h92' stroke='%23111' stroke-width='8'/%3E%3Cpath d='M4 50a46 46 0 0 1 92 0z' fill='%23e3350d'/%3E%3Ccircle cx='50' cy='50' r='13' fill='%23fff' stroke='%23111' stroke-width='8'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bandeau">🚚 Livraison offerte en Suisse dès CHF 100 · Cartes 100 % authentiques · Envoi sous 48 h</div>
+
+<header class="entete">
+  <div class="entete-int">
+    <a href="#" class="logo" data-jeu="tous">
+      <span class="logo-ball" aria-hidden="true"></span>
+      <span>Rysao<b>Cards</b></span>
+    </a>
+    <label class="recherche">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" id="recherche" placeholder="Rechercher un produit…" autocomplete="off">
+    </label>
+    <button class="btn-panier" id="ouvrir-panier" aria-label="Ouvrir le panier">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
+      <span class="panier-compte" id="panier-compte">0</span>
+    </button>
+  </div>
+  <nav class="jeux" id="nav-jeux" aria-label="Catégories"></nav>
+</header>
+
+<main class="page">
+  <nav class="fil" id="fil" aria-label="Fil d'Ariane"></nav>
+
+  <section class="titre-cat">
+    <h1 id="titre">Tous les produits</h1>
+    <p id="sous-titre">Displays, coffrets et accessoires scellés, expédiés depuis la Suisse.</p>
+  </section>
+
+  <div class="disposition">
+    <aside class="filtres" id="filtres" aria-label="Filtres">
+      <div class="filtres-tete">
+        <h2>Filtres</h2>
+        <button class="lien" id="reset">Réinitialiser</button>
+      </div>
+
+      <fieldset>
+        <legend>Type de produit</legend>
+        <div id="f-types"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Prix (CHF)</legend>
+        <div class="prix-plage">
+          <input type="number" id="prix-min" placeholder="Min" min="0" inputmode="decimal">
+          <span>—</span>
+          <input type="number" id="prix-max" placeholder="Max" min="0" inputmode="decimal">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Disponibilité</legend>
+        <label class="case"><input type="checkbox" id="f-dispo"> En stock uniquement</label>
+        <label class="case"><input type="checkbox" id="f-precommande"> Précommandes</label>
+      </fieldset>
+
+      <button class="btn btn-plein fermer-filtres" id="appliquer-filtres">Voir les résultats</button>
+    </aside>
+
+    <section class="catalogue">
+      <div class="barre">
+        <button class="btn btn-contour btn-filtres" id="ouvrir-filtres">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg> Filtres
+        </button>
+        <p class="compte" id="compte"></p>
+        <label class="tri">
+          <span>Trier par</span>
+          <select id="tri">
+            <option value="defaut">Pertinence</option>
+            <option value="prix-asc">Prix croissant</option>
+            <option value="prix-desc">Prix décroissant</option>
+            <option value="nom">Nom (A–Z)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grille" id="grille"></div>
+      <p class="vide" id="vide" hidden>Aucun produit ne correspond à ces filtres.</p>
+      <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+    </section>
+  </div>
+
+  <section class="atouts">
+    <div><strong>✅ Authenticité garantie</strong><span>Produits officiels scellés, achetés chez les distributeurs.</span></div>
+    <div><strong>📦 Emballage soigné</strong><span>Protection renforcée pour chaque envoi.</span></div>
+    <div><strong>🇨🇭 Expédié de Suisse</strong><span>Pas de frais de douane, livraison rapide.</span></div>
+    <div><strong>🔒 Paiement sécurisé</strong><span>TWINT, carte bancaire et virement.</span></div>
+  </section>
+</main>
+
+<footer class="pied">
+  <div class="pied-int">
+    <div>
+      <a href="#" class="logo logo-pied" data-jeu="tous"><span class="logo-ball" aria-hidden="true"></span><span>Rysao<b>Cards</b></span></a>
+      <p>Boutique de cartes à collectionner en Suisse.</p>
+    </div>
+    <div>
+      <h3>Boutique</h3>
+      <ul id="pied-jeux"></ul>
+    </div>
+    <div>
+      <h3>Aide</h3>
+      <ul>
+        <li><a href="#">Livraison & retours</a></li>
+        <li><a href="#">Précommandes</a></li>
+        <li><a href="#">Conditions générales</a></li>
+        <li><a href="#">Politique de cookies</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3>Contact</h3>
+      <ul>
+        <li><a href="mailto:contact@example.ch">contact@example.ch</a></li>
+      </ul>
+    </div>
+  </div>
+  <p class="mention">© <span id="annee"></span> Rysao Cards. Pokémon, One Piece et Yu-Gi-Oh sont des marques de leurs propriétaires respectifs.</p>
+</footer>
+
+<!-- Vue rapide -->
+<dialog class="modale" id="vue-rapide">
+  <button class="fermer" data-fermer aria-label="Fermer">×</button>
+  <div class="modale-corps" id="vue-rapide-corps"></div>
+</dialog>
+
+<!-- Panier -->
+<div class="voile" id="voile" hidden></div>
+<aside class="tiroir" id="panier" aria-label="Panier" aria-hidden="true">
+  <div class="tiroir-tete">
+    <h2>Votre panier</h2>
+    <button class="fermer" id="fermer-panier" aria-label="Fermer">×</button>
+  </div>
+  <div class="tiroir-liste" id="panier-liste"></div>
+  <div class="tiroir-pied">
+    <div class="livraison" id="livraison"></div>
+    <div class="total"><span>Sous-total</span><strong id="panier-total">CHF 0.00</strong></div>
+    <button class="btn btn-plein btn-large" id="commander">Passer commande</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="produits.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
