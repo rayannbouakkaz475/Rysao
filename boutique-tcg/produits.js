@@ -1,7 +1,8 @@
 // Catalogue de la boutique. Pour ajouter un produit, copie une ligne et adapte-la.
 // type : display | etb | coffret | pokebox | accessoire | blister
 // stock : nombre d'exemplaires (0 = rupture, null = en stock sans quantité affichée). precommande : true si pas encore sorti.
-// image : chemin vers une photo (laisser vide pour la vignette générée).
+// image : chemin vers une photo (laisser vide pour le rendu 3D généré).
+// teinte : couleur du rendu 3D (0–360), optionnelle ; sinon choisie automatiquement.
 window.PRODUITS = [
   // Pokémon
   { id: "display-me5", nom: "Display ME5", jeu: "pokemon", type: "display", langue: "fr", prix: 199.90, stock: null, image: "",
@@ -23,7 +24,7 @@ window.PRODUITS = [
   { id: "coffret-superdofin", nom: "Coffret Superdofin", jeu: "pokemon", type: "coffret", langue: "fr", prix: 24.90, stock: 12, precommande: true, sortie: "21 juin", image: "",
     description: "4 boosters et 1 carte promo Superdofin." },
   { id: "tapis-pikachu", nom: "Tapis Pikachu", jeu: "pokemon", type: "accessoire", langue: "", prix: 24.90, stock: null, image: "",
-    description: "Tapis de jeu illustré Pikachu ⚡️." },
+    description: "Tapis de jeu illustré Pikachu." },
 
   // One Piece
   { id: "display-op12", nom: "Display OP12", jeu: "onepiece", type: "display", langue: "fr", prix: 124.90, stock: null, image: "",
@@ -39,9 +40,9 @@ window.PRODUITS = [
 ];
 
 window.JEUX = {
-  pokemon: { nom: "Pokémon", emoji: "🐉" },
-  onepiece: { nom: "One Piece", emoji: "🏴‍☠️" },
-  yugioh: { nom: "Yu-Gi-Oh", emoji: "🃏" }
+  pokemon: { nom: "Pokémon" },
+  onepiece: { nom: "One Piece" },
+  yugioh: { nom: "Yu-Gi-Oh" }
 };
 
 window.TYPES = {

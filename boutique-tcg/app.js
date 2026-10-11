@@ -15,11 +15,11 @@
   // Onglets : un par jeu, plus un onglet transversal pour les précommandes.
   const ONGLETS = {
     ...Object.fromEntries(Object.entries(JEUX).map(([k, j]) => [k, {
-      nom: j.nom, emoji: j.emoji, filtre: (p) => p.jeu === k,
+      nom: j.nom, filtre: (p) => p.jeu === k,
       sousTitre: `Tous nos produits scellés ${j.nom} : displays, coffrets et plus.`
     }])),
     precommandes: {
-      nom: "Précommandes", emoji: "⏳", filtre: (p) => p.precommande,
+      nom: "Précommandes", filtre: (p) => p.precommande,
       sousTitre: "Réserve les prochaines sorties, expédiées dès leur arrivée."
     }
   };
@@ -72,58 +72,79 @@
   }
 
   // ---------- Rendu ----------
-  // Décors dessinés en SVG (aucune image externe).
-  const ICONES = {
-    eclair: `<svg viewBox="0 0 24 24" class="ico"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor" stroke="none"/></svg>`,
-    crane: `<svg viewBox="0 0 100 100" class="ico" stroke="none">
-      <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M16 64 84 94M84 64 16 94"/></g>
-      <path d="M50 8C29 8 17 22 17 40c0 10 5 18 12 22v12h42V62c7-4 12-12 12-22 0-18-12-32-33-32z" fill="currentColor"/>
-      <circle cx="37" cy="42" r="8.5" fill="var(--trou, #13263a)"/><circle cx="63" cy="42" r="8.5" fill="var(--trou, #13263a)"/>
-      <path d="M50 51 44 61h12z" fill="var(--trou, #13263a)"/>
-      <path d="M38 74v-7M46 74v-7M54 74v-7M62 74v-7" stroke="var(--trou, #13263a)" stroke-width="3"/></svg>`,
-    pyramide: `<svg viewBox="0 0 100 100" class="ico" fill="none" stroke="currentColor">
-      <path d="M50 6 95 90H5z" stroke-width="5" stroke-linejoin="round"/>
-      <path d="M27 62q23-24 46 0q-23 24-46 0z" stroke-width="4"/>
-      <circle cx="50" cy="62" r="7" fill="currentColor" stroke="none"/>
-      <path d="M50 75v12M38 72l-5 10M62 72l5 10" stroke-width="3"/></svg>`,
-    sablier: `<svg viewBox="0 0 24 24" class="ico"><path d="M6 3h12M6 21h12M7 3c0 6 10 6 10 12v6M17 3c0 6-10 6-10 12v6"/></svg>`
+  // Packshots : chaque produit est dessiné comme une vraie boîte scellée en 3D (CSS),
+  // avec une teinte propre au produit, un reflet de film plastique et une ombre portée.
+  const MARQUES = {
+    pokemon: { marque: "POKÉMON", sous: "Jeu de cartes à collectionner" },
+    onepiece: { marque: "ONE PIECE", sous: "Card Game" },
+    yugioh: { marque: "YU-GI-OH!", sous: "Trading Card Game" }
+  };
+  // Teintes possibles par univers (hue HSL) : chaque produit en tire une, de façon stable.
+  const TEINTES = {
+    pokemon: [218, 262, 192, 352, 24, 140],
+    onepiece: [354, 212, 32, 168],
+    yugioh: [272, 228, 2, 44]
+  };
+  // Dimensions (en % de la largeur de la vignette) : largeur, hauteur, profondeur.
+  const FORMES = {
+    display: [60, 40, 33],
+    etb: [44, 51, 26],
+    coffret: [64, 42, 13],
+    pokebox: [48, 45, 18],
+    blister: [40, 60, 3],
+    accessoire: [72, 44, 1]
+  };
+  const hash = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+  const teinte = (p) => p.teinte ?? TEINTES[p.jeu][hash(p.id) % TEINTES[p.jeu].length];
+  const codeProduit = (p) => p.nom.replace(/^(Display|Élite Trainer Box|Coffret|Pokebox|Tapis|Blister)\s*/i, "") || p.nom;
+
+  // Emblèmes en traits fins (aucun logo officiel).
+  const EMBLEMES = {
+    pokemon: `<svg viewBox="0 0 100 100" class="ico"><circle cx="50" cy="50" r="46"/><path d="M4 50h30M66 50h30"/><circle cx="50" cy="50" r="16"/><circle cx="50" cy="50" r="7"/></svg>`,
+    onepiece: `<svg viewBox="0 0 100 100" class="ico"><circle cx="50" cy="50" r="44"/><circle cx="50" cy="50" r="34" stroke-dasharray="2 4"/><path d="M50 2v96M2 50h96M18 18l64 64M82 18 18 82" stroke-width=".8"/><path d="M50 10l7 40-7 40-7-40z" fill="currentColor" fill-opacity=".35"/><path d="M10 50l40-7 40 7-40 7z" fill="currentColor" fill-opacity=".2"/></svg>`,
+    yugioh: `<svg viewBox="0 0 100 100" class="ico"><path d="M50 6 94 88H6z"/><path d="M50 22 80 78H20z" stroke-width=".8"/><path d="M30 62q20-20 40 0q-20 20-40 0z"/><circle cx="50" cy="62" r="6" fill="currentColor"/></svg>`
   };
 
-  const UNIVERS = {
-    pokemon: {
-      slogan: "Pars à l'aventure, un booster après l'autre.",
-      texte: "Displays, Élite Trainer Box, coffrets et Pokebox en version française.",
-      deco: `<span class="pk-ball deco-1"></span><span class="pk-ball deco-2"></span><span class="deco-eclair">${ICONES.eclair}</span>`
-    },
-    onepiece: {
-      slogan: "Le trésor t'attend, moussaillon.",
-      texte: "Hisse le pavillon : displays du One Piece Card Game.",
-      deco: `<span class="deco-pavillon">${ICONES.crane}</span><span class="deco-vagues"></span>`
-    },
-    yugioh: {
-      slogan: "Prépare ton deck, le duel commence.",
-      texte: "Displays et blisters pour renforcer ton deck.",
-      deco: `<span class="deco-pyramide">${ICONES.pyramide}</span><span class="deco-etoiles"></span>`
-    },
-    precommandes: {
-      slogan: "Les prochaines sorties, réservées avant tout le monde.",
-      texte: "Pokémon, One Piece et Yu-Gi-Oh réunis : réserve maintenant, on expédie dès l'arrivée du stock.",
-      deco: `<span class="deco-sablier">${ICONES.sablier}</span>`
+  const booster = (i) => `<span class="booster" style="--i:${i}"><span class="booster-art"></span></span>`;
+
+  function faceAvant(p) {
+    const m = MARQUES[p.jeu];
+    const code = codeProduit(p);
+    const classeCode = `art-code${code.length > 8 ? " long" : ""}`;
+    const fenetre = p.type === "coffret" || p.type === "pokebox"
+      ? `<span class="fenetre">${booster(0)}${booster(1)}${booster(2)}</span>` : "";
+    if (p.type === "blister") {
+      return `<div class="art art-${p.jeu} art-blister">
+        <span class="trou"></span>
+        <span class="art-marque">${m.marque}</span>
+        <span class="bulle">${booster(0)}</span>
+        <span class="${classeCode}">${echapper(code)}</span>
+        <span class="reflet"></span>
+      </div>`;
     }
-  };
+    return `<div class="art art-${p.jeu} art-${p.type}">
+      <span class="embleme">${EMBLEMES[p.jeu]}</span>
+      <span class="art-tete"><span class="art-marque">${m.marque}</span><span class="art-sous">${m.sous}</span></span>
+      ${fenetre}
+      <span class="art-pied">
+        <span class="art-type">${TYPES[p.type]}</span>
+        <span class="${classeCode}">${echapper(code)}</span>
+      </span>
+      <span class="reflet"></span>
+    </div>`;
+  }
 
-  function vignette(p) {
+  function packshot(p) {
     if (p.image) return `<img src="${echapper(p.image)}" alt="${echapper(p.nom)}" loading="lazy">`;
-    const code = p.nom.replace(/^(Display|Élite Trainer Box|Coffret|Pokebox|Tapis|Blister)\s*/i, "") || p.nom;
-    const motif = {
-      pokemon: p.type === "accessoire" ? `<span class="art-eclair">${ICONES.eclair}</span>` : `<span class="pk-ball art-ball"></span>`,
-      onepiece: `<span class="art-crane">${ICONES.crane}</span>`,
-      yugioh: `<span class="art-pyramide">${ICONES.pyramide}</span>`
-    }[p.jeu];
-    return `<div class="vignette v-${p.jeu}">
-      ${motif}
-      <span class="type">${TYPES[p.type]}</span>
-      <span class="code">${echapper(code)}</span>
+    const [w, h, d] = FORMES[p.type] || FORMES.coffret;
+    const m = MARQUES[p.jeu];
+    return `<div class="scene scene-${p.jeu}" style="--t:${teinte(p)}" role="img" aria-label="${echapper(p.nom)}">
+      <div class="objet forme-${p.type}" style="--w:${w}em;--h:${h}em;--d:${d}em">
+        <div class="face avant">${faceAvant(p)}</div>
+        <div class="face cote"><span>${m.marque} · ${echapper(codeProduit(p))}</span></div>
+        <div class="face dessus"></div>
+      </div>
+      <div class="ombre" style="--w:${w}em;--h:${h}em;--d:${d}em"></div>
     </div>`;
   }
 
@@ -141,61 +162,31 @@
     return `<span class="stock${p.stock <= 3 ? " faible" : ""}">${p.stock} en stock</span>`;
   }
 
-  const drapeau = (p) => (p.langue === "fr" ? ` <span class="drapeau" title="Version française">🇫🇷</span>` : "");
+  const langue = (p) => (p.langue ? ` <span class="langue" title="Version française">${p.langue.toUpperCase()}</span>` : "");
 
   const visuel = (p) => `<button class="visuel" data-vue="${p.id}" aria-label="Vue rapide : ${echapper(p.nom)}">
-      ${vignette(p)}${badges(p)}<span class="vue-rapide-btn">Vue rapide</span></button>`;
-  const nom = (p) => `<button data-vue="${p.id}">${echapper(p.nom)}</button>`;
-  const ajout = (p, texte = "") => `<button class="btn btn-plein btn-ajout${texte ? " avec-texte" : ""}" data-ajout="${p.id}"
+      ${packshot(p)}${badges(p)}<span class="vue-rapide-btn">Vue rapide</span></button>`;
+  const ajout = (p) => `<button class="btn btn-plein btn-ajout" data-ajout="${p.id}"
       ${enRupture(p) ? "disabled" : ""} aria-label="Ajouter ${echapper(p.nom)} au panier">
-      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>${texte}</button>`;
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>`;
 
-  // Niveau façon Yu-Gi-Oh : plus le produit est gros, plus il a d'étoiles.
-  const NIVEAUX = { display: 8, etb: 7, coffret: 5, pokebox: 4, accessoire: 3, blister: 2 };
-
-  // Chaque jeu a son propre modèle de fiche produit.
-  const MODELES = {
-    pokemon: (p) => `<article class="produit u-pokemon"><div class="pk-cadre">
-      <div class="pk-tete">
-        <span class="pk-stade">${TYPES[p.type]}</span>
-        <h3 class="produit-nom">${nom(p)}</h3>
-        <span class="pk-pv"><small>CHF</small>${p.prix.toFixed(2)}<span class="pk-energie">${ICONES.eclair}</span></span>
+  const carte = (p) => `<article class="produit u-${p.jeu}">
+      ${visuel(p)}
+      <div class="produit-info">
+        <span class="produit-jeu">${JEUX[p.jeu].nom} · ${TYPES[p.type]}${langue(p)}</span>
+        <h3 class="produit-nom"><button data-vue="${p.id}">${echapper(p.nom)}</button></h3>
+        <div class="produit-bas">
+          <div class="produit-prix"><span class="prix">${chf(p.prix)}</span>${stock(p)}</div>
+          ${ajout(p)}
+        </div>
       </div>
-      ${visuel(p)}
-      <div class="pk-bande">Pokémon · ${TYPES[p.type]}${drapeau(p)}</div>
-      <p class="pk-desc">${echapper(p.description || "")}</p>
-      <div class="produit-bas">${stock(p)}${ajout(p)}</div>
-    </div></article>`,
-
-    onepiece: (p) => `<article class="produit u-onepiece"><div class="op-affiche">
-      <div class="op-wanted">WANTED</div>
-      ${visuel(p)}
-      <div class="op-dead">DEAD OR ALIVE</div>
-      <h3 class="produit-nom">${nom(p)}${drapeau(p)}</h3>
-      <div class="op-prime"><span class="op-berry">CHF</span>${p.prix.toFixed(2)}<span class="op-tiret">—</span></div>
-      <div class="produit-bas">${stock(p)}${ajout(p)}</div>
-      <span class="op-sceau">MARINE</span>
-    </div></article>`,
-
-    yugioh: (p) => `<article class="produit u-yugioh"><div class="yg-cadre yg-${p.type}">
-      <div class="yg-nom"><h3 class="produit-nom">${nom(p)}</h3><span class="yg-attr">${ICONES.pyramide}</span></div>
-      <div class="yg-niveau" aria-label="Niveau ${NIVEAUX[p.type]}">${"<i></i>".repeat(NIVEAUX[p.type])}</div>
-      ${visuel(p)}
-      <div class="yg-texte">
-        <b>[ ${TYPES[p.type]} / Effet ]</b>${drapeau(p)}
-        <p>${echapper(p.description || "")}</p>
-        <div class="yg-stats"><span>ATK/<b>${p.prix.toFixed(2)}</b></span><span>${stock(p)}</span></div>
-      </div>
-      <div class="produit-bas">${ajout(p, "Ajouter au deck")}</div>
-    </div></article>`
-  };
-  const carte = (p) => MODELES[p.jeu](p);
+    </article>`;
 
   function rendreNav() {
     const compte = (onglet) => PRODUITS.filter((p) => dansOnglet(p, onglet)).length;
-    const items = [["tous", "Tous", "🛍️"], ...Object.entries(ONGLETS).map(([k, o]) => [k, o.nom, o.emoji])];
-    $("#nav-jeux").innerHTML = items.map(([k, nom, emoji]) =>
-      `<button data-jeu="${k}" class="onglet-${k}" aria-pressed="${etat.jeu === k}">${emoji} ${nom} <small>${compte(k)}</small></button>`
+    const items = [["tous", "Tous"], ...Object.entries(ONGLETS).map(([k, o]) => [k, o.nom])];
+    $("#nav-jeux").innerHTML = items.map(([k, nom]) =>
+      `<button data-jeu="${k}" class="onglet-${k}" aria-pressed="${etat.jeu === k}"><i class="pastille"></i>${nom} <small>${compte(k)}</small></button>`
     ).join("");
     $("#pied-jeux").innerHTML = Object.entries(JEUX).map(([k, j]) =>
       `<li><a href="#${k}" data-jeu="${k}">${j.nom}</a></li>`).join("");
@@ -210,6 +201,15 @@
        <small>${base.filter((p) => p.type === t).length}</small></label>`).join("");
   }
 
+  const UNIVERS = {
+    pokemon: { slogan: "Les dernières extensions, scellées et en version française.", texte: "Displays, Élite Trainer Box, coffrets et Pokebox." },
+    onepiece: { slogan: "Les extensions du One Piece Card Game.", texte: "Displays scellés, directement des distributeurs officiels." },
+    yugioh: { slogan: "De quoi renforcer chaque deck.", texte: "Displays et blisters Yu-Gi-Oh! JCC." },
+    precommandes: { slogan: "Réserve les prochaines sorties.", texte: "Pokémon, One Piece et Yu-Gi-Oh réunis. Expédition dès l'arrivée du stock." }
+  };
+  // Le produit mis en avant dans une bannière : le plus cher de la sélection.
+  const vedette = (filtre) => PRODUITS.filter(filtre).sort((a, b) => b.prix - a.prix)[0];
+
   function rendreEntete() {
     const j = ONGLETS[etat.jeu];
     const u = UNIVERS[etat.jeu];
@@ -222,30 +222,35 @@
     if (!j) {
       $("#hero").innerHTML = `
         <div class="accueil-tete">
-          <h1>Choisis ton univers</h1>
-          <p>Produits scellés et 100 % authentiques, expédiés depuis la Suisse.</p>
+          <span class="surtitre">Boutique suisse · Produits scellés</span>
+          <h1>Trois univers, une seule adresse.</h1>
+          <p>Pokémon, One Piece et Yu-Gi-Oh, authentiques et expédiés depuis la Suisse.</p>
         </div>
-        <div class="portails">${Object.entries(JEUX).map(([k, jeu]) => `
-          <button class="portail portail-${k}" data-jeu="${k}">
-            <span class="portail-deco">${UNIVERS[k].deco}</span>
+        <div class="portails">${Object.entries(JEUX).map(([k, jeu]) => {
+          const v = vedette((p) => p.jeu === k);
+          return `<button class="portail portail-${k}" data-jeu="${k}">
+            <span class="portail-scene">${v ? packshot(v) : ""}</span>
             <span class="portail-txt">
               <strong>${jeu.nom}</strong>
               <em>${UNIVERS[k].slogan}</em>
-              <span class="portail-cta">Entrer · ${PRODUITS.filter((p) => p.jeu === k).length} produits →</span>
+              <span class="portail-cta">Découvrir ${PRODUITS.filter((p) => p.jeu === k).length} produits <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
             </span>
-          </button>`).join("")}
+          </button>`;
+        }).join("")}
         </div>`;
       return;
     }
+    const v = vedette((p) => dansOnglet(p, etat.jeu));
     $("#hero").innerHTML = `
       <div class="banniere banniere-${etat.jeu}">
-        <div class="banniere-deco" aria-hidden="true">${u.deco}</div>
         <div class="banniere-txt">
-          <span class="surtitre">${j.emoji} ${etat.jeu === "precommandes" ? "Bientôt disponible" : "Univers"}</span>
+          <span class="surtitre">${etat.jeu === "precommandes" ? "Bientôt disponible" : "Univers"}</span>
           <h1>${j.nom}</h1>
           <p class="slogan">${u.slogan}</p>
           <p>${u.texte}</p>
         </div>
+        ${v ? `<button class="banniere-scene" data-vue="${v.id}" aria-label="Voir ${echapper(v.nom)}">${packshot(v)}
+          <span class="banniere-legende">${echapper(v.nom)} · ${chf(v.prix)}</span></button>` : ""}
       </div>`;
   }
 
@@ -264,15 +269,14 @@
     return Object.entries(JEUX).map(([k, jeu]) => {
       const items = liste.filter((p) => p.jeu === k);
       return `<section class="groupe groupe-${k}">
-        <header class="groupe-tete banniere-${k}">
-          <span class="groupe-deco" aria-hidden="true">${UNIVERS[k].deco}</span>
+        <header class="groupe-tete">
           <h2>${jeu.nom}</h2>
-          <span class="groupe-compte">${items.length ? `${items.length} précommande${items.length > 1 ? "s" : ""}` : "Bientôt"}</span>
-          <button class="groupe-lien" data-jeu="${k}">Tout l'univers ${jeu.nom} →</button>
+          <span class="groupe-compte">${items.length ? `${items.length} précommande${items.length > 1 ? "s" : ""}` : "Aucune pour l'instant"}</span>
+          <button class="groupe-lien" data-jeu="${k}">Voir l'univers ${jeu.nom} <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         </header>
         ${items.length
           ? `<div class="grille">${items.map(carte).join("")}</div>`
-          : `<p class="groupe-vide">Aucune précommande ${jeu.nom} pour le moment. Les prochaines sorties apparaîtront ici dès leur annonce.</p>`}
+          : `<p class="groupe-vide">Les prochaines sorties ${jeu.nom} apparaîtront ici dès leur annonce.</p>`}
       </section>`;
     }).join("");
   }
@@ -319,10 +323,10 @@
     qteVue = 1;
     dialogue.dataset.univers = p.jeu;
     $("#vue-rapide-corps").innerHTML = `
-      <div class="visuel">${vignette(p)}${badges(p)}</div>
+      <div class="visuel">${packshot(p)}${badges(p)}</div>
       <div class="modale-infos">
-        <span class="produit-jeu">${JEUX[p.jeu].nom} · ${TYPES[p.type]}</span>
-        <h2>${echapper(p.nom)}${drapeau(p)}</h2>
+        <span class="produit-jeu">${JEUX[p.jeu].nom} · ${TYPES[p.type]}${langue(p)}</span>
+        <h2>${echapper(p.nom)}</h2>
         <span class="prix">${chf(p.prix)}</span>
         ${stock(p)}
         <p>${echapper(p.description || "")}</p>
@@ -330,7 +334,7 @@
         <div class="quantite">
           <div class="qte"><button data-qv="-1" aria-label="Moins">−</button><span id="qv">1</span><button data-qv="1" aria-label="Plus">+</button></div>
           <button class="btn btn-plein" style="flex:1" data-ajout="${p.id}" data-depuis-vue ${enRupture(p) ? "disabled" : ""}>
-            ${p.precommande ? "Précommander" : { pokemon: "Ajouter au sac", onepiece: "Embarquer", yugioh: "Ajouter au deck" }[p.jeu]}
+            ${p.precommande ? "Précommander" : "Ajouter au panier"}
           </button>
         </div>
       </div>`;
@@ -377,9 +381,9 @@
     $("#panier-liste").innerHTML = lignes.length ? lignes.map(([id, q]) => {
       const p = parId(id);
       return `<div class="ligne-panier">
-        <div class="mini">${vignette(p)}</div>
+        <div class="mini">${packshot(p)}</div>
         <div>
-          <h4>${echapper(p.nom)}${drapeau(p)}</h4>
+          <h4>${echapper(p.nom)}</h4>
           <div class="qte"><button data-q="${id}" data-d="-1" aria-label="Moins">−</button><span>${q}</span><button data-q="${id}" data-d="1" aria-label="Plus">+</button></div>
         </div>
         <div class="droite"><strong>${chf(p.prix * q)}</strong><button class="lien" data-retirer="${id}">Retirer</button></div>
@@ -387,7 +391,7 @@
     }).join("") : `<p class="panier-vide">Votre panier est vide.</p>`;
     const reste = LIVRAISON_OFFERTE - total;
     $("#livraison").innerHTML = nb === 0 ? "" :
-      (reste > 0 ? `Plus que <strong>${chf(reste)}</strong> pour la livraison offerte` : `🎉 Livraison offerte !`) +
+      (reste > 0 ? `Plus que <strong>${chf(reste)}</strong> pour la livraison offerte` : `Livraison offerte`) +
       `<div class="jauge"><i style="width:${Math.min(100, (total / LIVRAISON_OFFERTE) * 100)}%"></i></div>`;
   }
 
