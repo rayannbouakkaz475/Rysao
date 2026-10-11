@@ -12,6 +12,19 @@
   const parId = (id) => PRODUITS.find((p) => p.id === id);
   const enRupture = (p) => p.stock === 0;
 
+  // Onglets : un par jeu, plus un onglet transversal pour les précommandes.
+  const ONGLETS = {
+    ...Object.fromEntries(Object.entries(JEUX).map(([k, j]) => [k, {
+      nom: j.nom, emoji: j.emoji, filtre: (p) => p.jeu === k,
+      sousTitre: `Tous nos produits scellés ${j.nom} : displays, coffrets et plus.`
+    }])),
+    precommandes: {
+      nom: "Précommandes", emoji: "⏳", filtre: (p) => p.precommande,
+      sousTitre: "Réserve les prochaines sorties, expédiées dès leur arrivée."
+    }
+  };
+  const dansOnglet = (p, onglet) => !ONGLETS[onglet] || ONGLETS[onglet].filtre(p);
+
   const etat = {
     jeu: "tous",
     page: 1,
@@ -27,7 +40,7 @@
   // ---------- URL (#pokemon/page/2) ----------
   function lireUrl() {
     const [jeu, , page] = location.hash.replace(/^#\/?/, "").split("/");
-    etat.jeu = JEUX[jeu] ? jeu : "tous";
+    etat.jeu = ONGLETS[jeu] ? jeu : "tous";
     etat.page = Math.max(1, parseInt(page, 10) || 1);
   }
   function ecrireUrl() {
@@ -41,7 +54,7 @@
   function produitsFiltres() {
     const q = etat.recherche.trim().toLowerCase();
     let liste = PRODUITS.filter((p) =>
-      (etat.jeu === "tous" || p.jeu === etat.jeu) &&
+      dansOnglet(p, etat.jeu) &&
       (!etat.types.size || etat.types.has(p.type)) &&
       (etat.min == null || p.prix >= etat.min) &&
       (etat.max == null || p.prix <= etat.max) &&
@@ -107,17 +120,17 @@
   }
 
   function rendreNav() {
-    const compte = (jeu) => PRODUITS.filter((p) => jeu === "tous" || p.jeu === jeu).length;
-    const items = [["tous", "Tous", "🛍️"], ...Object.entries(JEUX).map(([k, j]) => [k, j.nom, j.emoji])];
+    const compte = (onglet) => PRODUITS.filter((p) => dansOnglet(p, onglet)).length;
+    const items = [["tous", "Tous", "🛍️"], ...Object.entries(ONGLETS).map(([k, o]) => [k, o.nom, o.emoji])];
     $("#nav-jeux").innerHTML = items.map(([k, nom, emoji]) =>
-      `<button data-jeu="${k}" aria-pressed="${etat.jeu === k}">${emoji} ${nom} <small>${compte(k)}</small></button>`
+      `<button data-jeu="${k}"${k === "precommandes" ? ' class="onglet-pre"' : ""} aria-pressed="${etat.jeu === k}">${emoji} ${nom} <small>${compte(k)}</small></button>`
     ).join("");
     $("#pied-jeux").innerHTML = Object.entries(JEUX).map(([k, j]) =>
       `<li><a href="#${k}" data-jeu="${k}">${j.nom}</a></li>`).join("");
   }
 
   function rendreFiltresTypes() {
-    const base = PRODUITS.filter((p) => etat.jeu === "tous" || p.jeu === etat.jeu);
+    const base = PRODUITS.filter((p) => dansOnglet(p, etat.jeu));
     const presents = Object.keys(TYPES).filter((t) => base.some((p) => p.type === t));
     for (const t of [...etat.types]) if (!presents.includes(t)) etat.types.delete(t);
     $("#f-types").innerHTML = presents.map((t) =>
@@ -126,10 +139,10 @@
   }
 
   function rendreEntete() {
-    const j = JEUX[etat.jeu];
+    const j = ONGLETS[etat.jeu];
     $("#titre").textContent = j ? `${j.nom} ${j.emoji}` : "Tous les produits";
     $("#sous-titre").textContent = j
-      ? `Tous nos produits scellés ${j.nom} : displays, coffrets et plus.`
+      ? j.sousTitre
       : "Displays, coffrets et accessoires scellés, expédiés depuis la Suisse.";
     document.title = (j ? j.nom + " — " : "") + "Rysao Cards";
     $("#fil").innerHTML = `<a href="#" data-jeu="tous">Accueil</a><span>/</span>` +
@@ -167,7 +180,7 @@
   }
 
   function changerJeu(jeu) {
-    etat.jeu = JEUX[jeu] ? jeu : "tous";
+    etat.jeu = ONGLETS[jeu] ? jeu : "tous";
     etat.page = 1;
     rendreFiltresTypes();
     rendre();

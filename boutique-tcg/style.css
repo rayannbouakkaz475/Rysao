@@ -95,6 +95,9 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .jeux button small { color: var(--doux); font-weight: 400; }
 .jeux button[aria-pressed="true"] { background: var(--texte); border-color: var(--texte); color: #fff; }
 .jeux button[aria-pressed="true"] small { color: #c9ccd8; }
+.jeux .onglet-pre { margin-left: auto; border-color: var(--jaune); background: #fff8d6; }
+.jeux .onglet-pre[aria-pressed="true"] { background: var(--jaune); border-color: var(--jaune); color: var(--texte); }
+.jeux .onglet-pre[aria-pressed="true"] small { color: var(--texte); }
 
 /* ---------- Page ---------- */
 .page { max-width: 1240px; margin: 0 auto; padding: 20px 16px 60px; }
