@@ -72,11 +72,56 @@
   }
 
   // ---------- Rendu ----------
+  // Décors dessinés en SVG (aucune image externe).
+  const ICONES = {
+    eclair: `<svg viewBox="0 0 24 24" class="ico"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor" stroke="none"/></svg>`,
+    crane: `<svg viewBox="0 0 100 100" class="ico" stroke="none">
+      <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M16 64 84 94M84 64 16 94"/></g>
+      <path d="M50 8C29 8 17 22 17 40c0 10 5 18 12 22v12h42V62c7-4 12-12 12-22 0-18-12-32-33-32z" fill="currentColor"/>
+      <circle cx="37" cy="42" r="8.5" fill="var(--trou, #13263a)"/><circle cx="63" cy="42" r="8.5" fill="var(--trou, #13263a)"/>
+      <path d="M50 51 44 61h12z" fill="var(--trou, #13263a)"/>
+      <path d="M38 74v-7M46 74v-7M54 74v-7M62 74v-7" stroke="var(--trou, #13263a)" stroke-width="3"/></svg>`,
+    pyramide: `<svg viewBox="0 0 100 100" class="ico" fill="none" stroke="currentColor">
+      <path d="M50 6 95 90H5z" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M27 62q23-24 46 0q-23 24-46 0z" stroke-width="4"/>
+      <circle cx="50" cy="62" r="7" fill="currentColor" stroke="none"/>
+      <path d="M50 75v12M38 72l-5 10M62 72l5 10" stroke-width="3"/></svg>`,
+    sablier: `<svg viewBox="0 0 24 24" class="ico"><path d="M6 3h12M6 21h12M7 3c0 6 10 6 10 12v6M17 3c0 6-10 6-10 12v6"/></svg>`
+  };
+
+  const UNIVERS = {
+    pokemon: {
+      slogan: "Pars à l'aventure, un booster après l'autre.",
+      texte: "Displays, Élite Trainer Box, coffrets et Pokebox en version française.",
+      deco: `<span class="pk-ball deco-1"></span><span class="pk-ball deco-2"></span><span class="deco-eclair">${ICONES.eclair}</span>`
+    },
+    onepiece: {
+      slogan: "Le trésor t'attend, moussaillon.",
+      texte: "Hisse le pavillon : displays du One Piece Card Game.",
+      deco: `<span class="deco-pavillon">${ICONES.crane}</span><span class="deco-vagues"></span>`
+    },
+    yugioh: {
+      slogan: "Prépare ton deck, le duel commence.",
+      texte: "Displays et blisters pour renforcer ton deck.",
+      deco: `<span class="deco-pyramide">${ICONES.pyramide}</span><span class="deco-etoiles"></span>`
+    },
+    precommandes: {
+      slogan: "Les prochaines sorties, réservées avant tout le monde.",
+      texte: "Réserve maintenant, on expédie dès l'arrivée du stock.",
+      deco: `<span class="deco-sablier">${ICONES.sablier}</span>`
+    }
+  };
+
   function vignette(p) {
     if (p.image) return `<img src="${echapper(p.image)}" alt="${echapper(p.nom)}" loading="lazy">`;
     const code = p.nom.replace(/^(Display|Élite Trainer Box|Coffret|Pokebox|Tapis|Blister)\s*/i, "") || p.nom;
+    const motif = {
+      pokemon: p.type === "accessoire" ? `<span class="art-eclair">${ICONES.eclair}</span>` : `<span class="pk-ball art-ball"></span>`,
+      onepiece: `<span class="art-crane">${ICONES.crane}</span>`,
+      yugioh: `<span class="art-pyramide">${ICONES.pyramide}</span>`
+    }[p.jeu];
     return `<div class="vignette v-${p.jeu}">
-      <span class="emoji">${p.type === "accessoire" ? "⚡️" : JEUX[p.jeu].emoji}</span>
+      ${motif}
       <span class="type">${TYPES[p.type]}</span>
       <span class="code">${echapper(code)}</span>
     </div>`;
@@ -98,32 +143,59 @@
 
   const drapeau = (p) => (p.langue === "fr" ? ` <span class="drapeau" title="Version française">🇫🇷</span>` : "");
 
-  function carte(p) {
-    return `<article class="produit">
-      <button class="visuel" data-vue="${p.id}" aria-label="Vue rapide : ${echapper(p.nom)}">
-        ${vignette(p)}${badges(p)}
-        <span class="vue-rapide-btn">Vue rapide</span>
-      </button>
-      <div class="produit-info">
-        <span class="produit-jeu">${JEUX[p.jeu].nom} · ${TYPES[p.type]}</span>
-        <h3 class="produit-nom"><button data-vue="${p.id}">${echapper(p.nom)}</button>${drapeau(p)}</h3>
-        ${stock(p)}
-        <div class="produit-bas">
-          <span class="prix"><small>CHF</small>${p.prix.toFixed(2)}</span>
-          <button class="btn btn-plein btn-ajout" data-ajout="${p.id}" ${enRupture(p) ? "disabled" : ""}
-            aria-label="Ajouter ${echapper(p.nom)} au panier">
-            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
-        </div>
+  const visuel = (p) => `<button class="visuel" data-vue="${p.id}" aria-label="Vue rapide : ${echapper(p.nom)}">
+      ${vignette(p)}${badges(p)}<span class="vue-rapide-btn">Vue rapide</span></button>`;
+  const nom = (p) => `<button data-vue="${p.id}">${echapper(p.nom)}</button>`;
+  const ajout = (p, texte = "") => `<button class="btn btn-plein btn-ajout${texte ? " avec-texte" : ""}" data-ajout="${p.id}"
+      ${enRupture(p) ? "disabled" : ""} aria-label="Ajouter ${echapper(p.nom)} au panier">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>${texte}</button>`;
+
+  // Niveau façon Yu-Gi-Oh : plus le produit est gros, plus il a d'étoiles.
+  const NIVEAUX = { display: 8, etb: 7, coffret: 5, pokebox: 4, accessoire: 3, blister: 2 };
+
+  // Chaque jeu a son propre modèle de fiche produit.
+  const MODELES = {
+    pokemon: (p) => `<article class="produit u-pokemon"><div class="pk-cadre">
+      <div class="pk-tete">
+        <span class="pk-stade">${TYPES[p.type]}</span>
+        <h3 class="produit-nom">${nom(p)}</h3>
+        <span class="pk-pv"><small>CHF</small>${p.prix.toFixed(2)}<span class="pk-energie">${ICONES.eclair}</span></span>
       </div>
-    </article>`;
-  }
+      ${visuel(p)}
+      <div class="pk-bande">Pokémon · ${TYPES[p.type]}${drapeau(p)}</div>
+      <p class="pk-desc">${echapper(p.description || "")}</p>
+      <div class="produit-bas">${stock(p)}${ajout(p)}</div>
+    </div></article>`,
+
+    onepiece: (p) => `<article class="produit u-onepiece"><div class="op-affiche">
+      <div class="op-wanted">WANTED</div>
+      ${visuel(p)}
+      <div class="op-dead">DEAD OR ALIVE</div>
+      <h3 class="produit-nom">${nom(p)}${drapeau(p)}</h3>
+      <div class="op-prime"><span class="op-berry">CHF</span>${p.prix.toFixed(2)}<span class="op-tiret">—</span></div>
+      <div class="produit-bas">${stock(p)}${ajout(p)}</div>
+      <span class="op-sceau">MARINE</span>
+    </div></article>`,
+
+    yugioh: (p) => `<article class="produit u-yugioh"><div class="yg-cadre yg-${p.type}">
+      <div class="yg-nom"><h3 class="produit-nom">${nom(p)}</h3><span class="yg-attr">${ICONES.pyramide}</span></div>
+      <div class="yg-niveau" aria-label="Niveau ${NIVEAUX[p.type]}">${"<i></i>".repeat(NIVEAUX[p.type])}</div>
+      ${visuel(p)}
+      <div class="yg-texte">
+        <b>[ ${TYPES[p.type]} / Effet ]</b>${drapeau(p)}
+        <p>${echapper(p.description || "")}</p>
+        <div class="yg-stats"><span>ATK/<b>${p.prix.toFixed(2)}</b></span><span>${stock(p)}</span></div>
+      </div>
+      <div class="produit-bas">${ajout(p, "Ajouter au deck")}</div>
+    </div></article>`
+  };
+  const carte = (p) => MODELES[p.jeu](p);
 
   function rendreNav() {
     const compte = (onglet) => PRODUITS.filter((p) => dansOnglet(p, onglet)).length;
     const items = [["tous", "Tous", "🛍️"], ...Object.entries(ONGLETS).map(([k, o]) => [k, o.nom, o.emoji])];
     $("#nav-jeux").innerHTML = items.map(([k, nom, emoji]) =>
-      `<button data-jeu="${k}"${k === "precommandes" ? ' class="onglet-pre"' : ""} aria-pressed="${etat.jeu === k}">${emoji} ${nom} <small>${compte(k)}</small></button>`
+      `<button data-jeu="${k}" class="onglet-${k}" aria-pressed="${etat.jeu === k}">${emoji} ${nom} <small>${compte(k)}</small></button>`
     ).join("");
     $("#pied-jeux").innerHTML = Object.entries(JEUX).map(([k, j]) =>
       `<li><a href="#${k}" data-jeu="${k}">${j.nom}</a></li>`).join("");
@@ -140,14 +212,41 @@
 
   function rendreEntete() {
     const j = ONGLETS[etat.jeu];
-    $("#titre").textContent = j ? `${j.nom} ${j.emoji}` : "Tous les produits";
-    $("#sous-titre").textContent = j
-      ? j.sousTitre
-      : "Displays, coffrets et accessoires scellés, expédiés depuis la Suisse.";
+    const u = UNIVERS[etat.jeu];
+    document.body.dataset.univers = etat.jeu;
     document.title = (j ? j.nom + " — " : "") + "Rysao Cards";
     $("#fil").innerHTML = `<a href="#" data-jeu="tous">Accueil</a><span>/</span>` +
       (j ? `<a href="#${etat.jeu}" data-jeu="${etat.jeu}">${j.nom}</a>` : `<span>Boutique</span>`) +
       (etat.page > 1 ? `<span>/</span><span>Page ${etat.page}</span>` : "");
+
+    if (!j) {
+      $("#hero").innerHTML = `
+        <div class="accueil-tete">
+          <h1>Choisis ton univers</h1>
+          <p>Produits scellés et 100 % authentiques, expédiés depuis la Suisse.</p>
+        </div>
+        <div class="portails">${Object.entries(JEUX).map(([k, jeu]) => `
+          <button class="portail portail-${k}" data-jeu="${k}">
+            <span class="portail-deco">${UNIVERS[k].deco}</span>
+            <span class="portail-txt">
+              <strong>${jeu.nom}</strong>
+              <em>${UNIVERS[k].slogan}</em>
+              <span class="portail-cta">Entrer · ${PRODUITS.filter((p) => p.jeu === k).length} produits →</span>
+            </span>
+          </button>`).join("")}
+        </div>`;
+      return;
+    }
+    $("#hero").innerHTML = `
+      <div class="banniere banniere-${etat.jeu}">
+        <div class="banniere-deco" aria-hidden="true">${u.deco}</div>
+        <div class="banniere-txt">
+          <span class="surtitre">${j.emoji} ${etat.jeu === "precommandes" ? "Bientôt disponible" : "Univers"}</span>
+          <h1>${j.nom}</h1>
+          <p class="slogan">${u.slogan}</p>
+          <p>${u.texte}</p>
+        </div>
+      </div>`;
   }
 
   function rendrePagination(nbPages) {
@@ -194,6 +293,7 @@
     const p = parId(id);
     if (!p) return;
     qteVue = 1;
+    dialogue.dataset.univers = p.jeu;
     $("#vue-rapide-corps").innerHTML = `
       <div class="visuel">${vignette(p)}${badges(p)}</div>
       <div class="modale-infos">
@@ -206,7 +306,7 @@
         <div class="quantite">
           <div class="qte"><button data-qv="-1" aria-label="Moins">−</button><span id="qv">1</span><button data-qv="1" aria-label="Plus">+</button></div>
           <button class="btn btn-plein" style="flex:1" data-ajout="${p.id}" data-depuis-vue ${enRupture(p) ? "disabled" : ""}>
-            ${p.precommande ? "Précommander" : "Ajouter au panier"}
+            ${p.precommande ? "Précommander" : { pokemon: "Ajouter au sac", onepiece: "Embarquer", yugioh: "Ajouter au deck" }[p.jeu]}
           </button>
         </div>
       </div>`;
@@ -314,7 +414,7 @@
     if (page && !page.disabled) {
       etat.page = Number(page.dataset.page);
       rendre();
-      $(".titre-cat").scrollIntoView({ behavior: "smooth" });
+      $("#hero").scrollIntoView({ behavior: "smooth" });
     }
   });
 
