@@ -58,7 +58,7 @@ h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,42px);l
 form{display:flex;flex-direction:column;gap:12px}
 label.f{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:14px}
 input[type=text],input[type=date]{border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:10px 12px;width:100%;font-weight:400;font-size:16px}
-.urg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.urg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .urg label{position:relative}
 .urg input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .urg span{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:10px 6px;font-weight:600;font-size:14px;text-align:center;height:100%}
@@ -92,17 +92,17 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;z-index:50;max-width:calc(100vw - 32px)}
 
-.u1{--c:var(--u1);--soft:var(--u1-soft)} .u2{--c:var(--u2);--soft:var(--u2-soft)} .u3{--c:var(--u3);--soft:var(--u3-soft)}
+.u1{--c:var(--u1);--soft:var(--u1-soft)} .u2{--c:var(--u3);--soft:var(--u3-soft)}
 
 @media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:480px){.item{grid-template-columns:minmax(0,1fr)}.side-actions{align-items:stretch}.validate{width:100%}}
 </style>
 <div id="app"></div>
-<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":2,"done":false,"example":true},{"id":"ex2","date":"2026-11-06","title":"Défaut variateur convoyeur ligne 2","level":3,"done":false,"example":true},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
+<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":false,"example":true},{"id":"ex2","date":"2026-11-06","title":"Défaut variateur convoyeur ligne 2","level":2,"done":false,"example":true},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
 <script id="agenda-main">
 (function(){
 "use strict";
-var URG={1:"Pas urgent",2:"Urgent",3:"Très urgent"};
+var URG={1:"Pas très urgent",2:"Urgent"};
 var MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
 var DAYS=["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 var LS_KEY="agenda-interventions-v2";
@@ -115,7 +115,7 @@ var standalone=!window.claude;
 var mode=standalone?"local":"pending";
 var artifactNs=null;
 if(standalone){try{var sv=localStorage.getItem(LS_KEY);if(sv){var p=JSON.parse(sv);if(p&&Array.isArray(p.tasks))state=p}}catch(e){}}
-state.tasks.forEach(function(t){if(!(t.level>=1&&t.level<=3))t.level=t.level>3?3:1});
+state.tasks.forEach(function(t){t.level=t.level>=2?2:1});
 
 var now=new Date();
 function pad(n){return(n<10?"0":"")+n}
@@ -178,7 +178,7 @@ function calendar(){
     var lv=(byDay[k]||[]).sort(function(a,b){return b-a}).slice(0,3);
     s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(lv.length?', '+lv.length+' à faire':'')+'"><span>'+d+'</span><span class="dots">'+lv.map(function(l){return'<i class="u'+l+'"></i>'}).join("")+'</span></button>';
   }
-  s+='</div><div class="cal-foot"><span><i class="u3"></i>Très urgent</span><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas urgent</span></div>';
+  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span></div>';
   return s;
 }
 
@@ -188,7 +188,7 @@ function formHtml(){
   s+='<label class="f" for="f-title">Ce qu\'il y a à faire<input type="text" id="f-title" maxlength="140" placeholder="Ex. : Raccorder le tour CN de l\'atelier 3" autocomplete="off"></label>';
   s+='<label class="f" for="f-date">Pour quand<input type="date" id="f-date" value="'+d+'"></label>';
   s+='<div class="f" style="font-weight:600;font-size:14px">Urgence</div><div class="urg" role="radiogroup" aria-label="Urgence">';
-  [1,2,3].forEach(function(l){s+='<label class="u'+l+'"><input type="radio" name="urg" id="f-u'+l+'" value="'+l+'"'+(l===1?' checked':'')+'><span>'+URG[l]+'</span></label>'});
+  [1,2].forEach(function(l){s+='<label class="u'+l+'"><input type="radio" name="urg" id="f-u'+l+'" value="'+l+'"'+(l===1?' checked':'')+'><span>'+URG[l]+'</span></label>'});
   s+='</div><div class="form-actions"><button type="button" class="btn" id="cancelAdd">Annuler</button><button type="submit" class="btn primary">Ajouter</button></div></form>';
   return s;
 }
