@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style id="agenda-style">
-/* Couleurs : bleu marine et dégradé vert. Layout : version simple. Calendrier d'un mois à gauche, onglets « À faire » / « Archive » à droite ; une colonne sur téléphone. */
+/* Couleurs : bleu marine et dégradé vert. Layout : version simple. Calendrier d'un mois à gauche, onglets « À faire » / « Archive » / « Livraisons » à droite ; une colonne sur téléphone. */
 :root{
   --bg:#EEF3F2; --panel:#FFFFFF; --sunk:#F3F7F6; --ink:#0D2438; --muted:#55697A; --line:#D0DBDA;
   --accent:#0D2B45; --accent-ink:#FFFFFF; --ok:#2F9E6E; --ok-soft:#E0F3EA;
@@ -32,7 +32,8 @@ h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,42px);l
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
 .btn.small{padding:6px 10px;font-size:14px}
 .btn.link{border:0;background:none;padding:4px 6px;color:var(--muted);font-size:14px;text-decoration:underline}
-.banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted);line-height:1.7}
+.banner .btn{margin-left:6px}
 .banner b{color:var(--ink)}
 
 .main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
@@ -92,7 +93,7 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 .confirm{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--u3);flex-wrap:wrap;justify-content:flex-end}
 .empty{padding:22px 10px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
 .section{display:flex;flex-direction:column;gap:6px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
 .tabs button{border:0;background:none;border-radius:9px;padding:10px 12px;font-family:var(--f-display);font-size:21px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:8px}
 .tabs button b{font-family:var(--f-body);font-size:13px;font-weight:600;background:var(--sunk);border-radius:999px;padding:1px 9px;letter-spacing:0;font-variant-numeric:tabular-nums}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -104,6 +105,16 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 .cal-foot i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
 .filter{display:inline-flex;align-items:center;gap:6px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px}
 .filter button{border:0;background:var(--sunk);border-radius:999px;width:24px;height:24px;line-height:1;color:var(--muted)}
+.add-btns{display:flex;flex-wrap:wrap;gap:8px}
+.form-title{font-family:var(--f-display);font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin:0;color:var(--muted)}
+label.f .h{font-weight:400;color:var(--muted)}
+.item.liv{border-left-color:var(--accent)}
+.item.liv.past{background:var(--sunk)}
+.item.liv.past .t{color:var(--muted)}
+.pill.liv{background:var(--accent);color:var(--accent-ink)}
+.dots i.liv,.cal-foot i.liv{border-radius:1px;background:var(--accent)}
+.day.sel .dots i.liv{background:var(--accent-ink)}
+@media (max-width:480px){.tabs button{font-size:17px;padding:8px 4px;gap:5px}.tabs button b{padding:1px 6px}}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;z-index:50;max-width:calc(100vw - 32px)}
 
@@ -113,7 +124,7 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 @media (max-width:480px){.item{grid-template-columns:minmax(0,1fr)}.side-actions{align-items:stretch}.validate{width:100%}}
 </style>
 <div id="app"></div>
-<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":true,"example":true,"doneAt":"2026-11-03T07:26:57"},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
+<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":true,"example":true,"doneAt":"2026-11-03T07:26:57"},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}],"deliveries":[{"id":"exl1","date":"2026-11-10","machine":"Tour CN – atelier 3","note":"Livraison le matin, prévoir l'alimentation 400 V","example":true}]}</script>
 <script id="agenda-main">
 (function(){
 "use strict";
@@ -131,40 +142,42 @@ var mode=standalone?"local":"pending";
 var artifactNs=null;
 if(standalone){try{var sv=localStorage.getItem(LS_KEY);if(sv){var p=JSON.parse(sv);if(p&&Array.isArray(p.tasks))state=p}}catch(e){}}
 state.tasks.forEach(function(t){t.level=t.level>=2?2:1});
+if(!Array.isArray(state.deliveries))state.deliveries=[];
 
 var now=new Date();
 function pad(n){return(n<10?"0":"")+n}
 function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function parse(k){var a=k.split("-");return new Date(+a[0],+a[1]-1,+a[2])}
 var TODAY=key(now);
-var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:"",validating:null};
-try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.tab==="arch")view.tab="arch";if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
+var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:"",validating:null,editLiv:null};
+try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.tab==="arch"||r.tab==="liv")view.tab=r.tab;if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function fmtDay(k){var d=parse(k);return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()}
 function fmtStamp(iso){var d=new Date(iso);if(isNaN(d))return"";return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" à "+pad(d.getHours())+"h"+pad(d.getMinutes())}
 function localIso(d){return key(d)+"T"+pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
 function norm(s){s=String(s||"").toLowerCase();try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}return s}
+function findLiv(id){for(var i=0;i<state.deliveries.length;i++)if(state.deliveries[i].id===id)return state.deliveries[i];return null}
 function canWrite(){return mode==="artifact"||mode==="local"}
 function find(id){for(var i=0;i<state.tasks.length;i++)if(state.tasks[i].id===id)return state.tasks[i];return null}
 
 function render(){
   var h='<header class="top"><h1>Agenda des interventions</h1>';
-  if(canWrite()&&!view.adding)h+='<button type="button" class="btn primary" id="addBtn">+ Ajouter une tâche</button>';
+  if(canWrite()&&!view.adding)h+='<div class="add-btns"><button type="button" class="btn primary" id="addBtn">+ Ajouter une tâche</button><button type="button" class="btn" id="addLiv">+ Livraison machine</button></div>';
   h+='</header>';
   if(mode==="readonly")h+='<div class="banner"><b>Lecture seule.</b> Seul le propriétaire de l\'agenda peut ajouter ou valider des tâches.</div>';
   if(mode==="local")h+='<div class="banner"><b>Hors ligne.</b> Les tâches sont gardées dans ce navigateur uniquement.</div>';
-  if(canWrite()&&state.tasks.some(function(t){return t.example}))h+='<div class="banner">Les tâches marquées <b>Exemple</b> servent à montrer le fonctionnement. <button type="button" class="btn small" id="clearEx">Effacer les exemples</button></div>';
+  if(canWrite()&&state.tasks.concat(state.deliveries).some(function(t){return t.example}))h+='<div class="banner">Les tâches marquées <b>Exemple</b> servent à montrer le fonctionnement. <button type="button" class="btn small" id="clearEx">Effacer les exemples</button></div>';
 
   h+='<div class="main"><div class="card">'+calendar()+'</div><div class="section">';
 
-  if(view.adding&&canWrite())h+='<div class="card">'+formHtml()+'</div>';
+  if(view.adding&&canWrite())h+='<div class="card">'+(view.adding==="liv"?livFormHtml():formHtml())+'</div>';
 
   var todoAll=state.tasks.filter(function(t){return !t.done});
   var archAll=state.tasks.filter(function(t){return t.done});
   function onDay(t){return !view.day||t.date===view.day}
 
-  h+='<div class="tabs" role="tablist" aria-label="Vue"><button type="button" role="tab" data-tab="todo" aria-selected="'+(view.tab==="todo")+'">À faire <b>'+todoAll.length+'</b></button><button type="button" role="tab" data-tab="arch" aria-selected="'+(view.tab==="arch")+'">Archive <b>'+archAll.length+'</b></button></div>';
+  h+='<div class="tabs" role="tablist" aria-label="Vue"><button type="button" role="tab" data-tab="todo" aria-selected="'+(view.tab==="todo")+'">À faire <b>'+todoAll.length+'</b></button><button type="button" role="tab" data-tab="arch" aria-selected="'+(view.tab==="arch")+'">Archive <b>'+archAll.length+'</b></button><button type="button" role="tab" data-tab="liv" aria-selected="'+(view.tab==="liv")+'">Livraisons <b>'+state.deliveries.filter(function(l){return l.date>=TODAY}).length+'</b></button></div>';
 
   if(view.day)h+='<div><span class="filter">Prévu le '+fmtDay(view.day)+'<button type="button" id="clrDay" aria-label="Voir toutes les dates">×</button></span></div>';
 
@@ -173,6 +186,14 @@ function render(){
     var todo=todoAll.filter(onDay).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:b.level-a.level});
     if(!todo.length)h+='<div class="empty">'+(view.day?'Rien à faire ce jour-là.':'Rien à faire pour le moment.')+(canWrite()?' Appuyez sur « Ajouter une tâche ».':'')+'</div>';
     todo.forEach(function(t){h+=itemHtml(t)});
+    if(view.day)state.deliveries.filter(onDay).forEach(function(l){h+=livHtml(l)});
+  }else if(view.tab==="liv"){
+    var ls=state.deliveries.filter(onDay);
+    var up=ls.filter(function(l){return l.date>=TODAY}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0});
+    var past=ls.filter(function(l){return l.date<TODAY}).sort(function(a,b){return a.date>b.date?-1:a.date<b.date?1:0});
+    if(!ls.length)h+='<div class="empty">'+(view.day?'Aucune livraison ce jour-là.':'Aucune livraison notée.')+(canWrite()?' Appuyez sur « Livraison machine » pour en ajouter une.':'')+'</div>';
+    if(up.length){h+='<div class="group">À venir</div>';up.forEach(function(l){h+=livHtml(l)})}
+    if(past.length){h+='<div class="group">Dates passées</div>';past.forEach(function(l){h+=livHtml(l)})}
   }else{
     h+='<label class="search" for="q"><span class="vh">Rechercher dans l\'archive</span><input type="search" id="q" placeholder="Rechercher : machine, travail, nom…" value="'+esc(view.q)+'" autocomplete="off"></label>';
     var q=norm(view.q.trim());
@@ -197,6 +218,7 @@ function render(){
 function calendar(){
   var first=new Date(view.y,view.m,1),days=new Date(view.y,view.m+1,0).getDate(),off=(first.getDay()+6)%7;
   var byDay={};state.tasks.forEach(function(t){(byDay[t.date]=byDay[t.date]||[]).push(t.done?0:t.level)});
+  var livDay={};state.deliveries.forEach(function(l){livDay[l.date]=(livDay[l.date]||0)+1});
   var s='<div class="cal-head"><button type="button" class="nav" id="prevM" aria-label="Mois précédent">‹</button><strong>'+MONTHS[view.m]+' '+view.y+'</strong><button type="button" class="nav" id="nextM" aria-label="Mois suivant">›</button></div><div class="grid7">';
   ["Lu","Ma","Me","Je","Ve","Sa","Di"].forEach(function(x){s+='<span class="dow">'+x+'</span>'});
   for(var i=0;i<off;i++)s+='<span></span>';
@@ -207,9 +229,9 @@ function calendar(){
     if(k===view.day)cls+=" sel";
     var all=(byDay[k]||[]),nOpen=all.filter(function(l){return l>0}).length,nDone=all.length-nOpen;
     var lv=all.slice().sort(function(a,b){return b-a}).slice(0,3);
-    s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(nOpen?', '+nOpen+' à faire':'')+(nDone?', '+nDone+' validée'+(nDone>1?'s':''):'')+'"><span>'+d+'</span><span class="dots">'+lv.map(function(l){return l?'<i class="u'+l+'"></i>':'<i class="d"></i>'}).join("")+'</span></button>';
+    s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(nOpen?', '+nOpen+' à faire':'')+(nDone?', '+nDone+' validée'+(nDone>1?'s':''):'')+(livDay[k]?', '+livDay[k]+' livraison'+(livDay[k]>1?'s':''):'')+'"><span>'+d+'</span><span class="dots">'+(livDay[k]?'<i class="liv"></i>':'')+lv.map(function(l){return l?'<i class="u'+l+'"></i>':'<i class="d"></i>'}).join("")+'</span></button>';
   }
-  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span><span><i class="d"></i>Validé</span></div>';
+  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span><span><i class="d"></i>Validé</span><span><i class="liv"></i>Livraison machine</span></div>';
   return s;
 }
 
@@ -222,6 +244,28 @@ function formHtml(){
   [1,2].forEach(function(l){s+='<label class="u'+l+'"><input type="radio" name="urg" id="f-u'+l+'" value="'+l+'"'+(l===1?' checked':'')+'><span>'+URG[l]+'</span></label>'});
   s+='</div><div class="form-actions"><button type="button" class="btn" id="cancelAdd">Annuler</button><button type="submit" class="btn primary">Ajouter</button></div></form>';
   return s;
+}
+
+function livFormHtml(){
+  var l=view.editLiv?findLiv(view.editLiv):null;
+  var d=l?l.date:(view.day||TODAY);
+  var s='<form id="livForm" novalidate><p class="form-title">'+(l?'Modifier la livraison':'Livraison de machine')+'</p>';
+  s+='<label class="f" for="l-machine">Machine livrée<input type="text" id="l-machine" maxlength="140" placeholder="Ex. : Tour CN, presse P4, compresseur" autocomplete="off" value="'+esc(l?l.machine:'')+'"></label>';
+  s+='<label class="f" for="l-date">Date de livraison<input type="date" id="l-date" value="'+d+'"></label>';
+  s+='<label class="f" for="l-note">Remarque <span class="h">facultatif : fournisseur, emplacement…</span><input type="text" id="l-note" maxlength="200" autocomplete="off" value="'+esc(l?l.note:'')+'"></label>';
+  s+='<div class="form-actions"><button type="button" class="btn" id="cancelAdd">Annuler</button><button type="submit" class="btn primary">'+(l?'Enregistrer':'Ajouter la livraison')+'</button></div></form>';
+  return s;
+}
+
+function livHtml(l){
+  var s='<div class="item liv'+(l.date<TODAY?' past':'')+'"><div><div class="t">'+esc(l.machine)+'</div><div class="m"><span class="pill liv">Livraison</span><span>'+fmtDay(l.date)+'</span>'+(l.example?'<span class="pill ex">Exemple</span>':'')+'</div>'+(l.note?'<div class="by"><span>'+esc(l.note)+'</span></div>':'')+'</div>';
+  if(canWrite()){
+    s+='<div class="side-actions">';
+    if(view.del===l.id)s+='<span class="confirm">Supprimer ? <button type="button" class="btn small" data-ldelyes="'+esc(l.id)+'">Oui</button><button type="button" class="btn small" data-delno="1">Non</button></span>';
+    else s+='<button type="button" class="btn small" data-ledit="'+esc(l.id)+'">Modifier</button><button type="button" class="btn link" data-del="'+esc(l.id)+'">Supprimer</button>';
+    s+='</div>';
+  }
+  return s+'</div>';
 }
 
 function itemHtml(t){
@@ -257,8 +301,23 @@ function bind(){
   function on(sel,fn){var el=app.querySelector(sel);if(el)el.onclick=fn}
   function all(attr,fn){app.querySelectorAll("["+attr+"]").forEach(function(el){el.onclick=function(){fn(el.getAttribute(attr))}})}
   on("#addBtn",function(){view.adding=true;render();var f=app.querySelector("#f-title");if(f)f.focus()});
-  on("#cancelAdd",function(){view.adding=false;render()});
-  on("#clearEx",function(){state.tasks=state.tasks.filter(function(t){return !t.example});save("Exemples effacés")});
+  on("#cancelAdd",function(){view.adding=false;view.editLiv=null;render()});
+  on("#addLiv",function(){view.adding="liv";view.editLiv=null;render();var f=app.querySelector("#l-machine");if(f)f.focus()});
+  all("data-ledit",function(id){view.adding="liv";view.editLiv=id;view.del=null;render();var f=app.querySelector("#l-machine");if(f){f.focus();try{f.scrollIntoView({block:"center"})}catch(e){}}});
+  all("data-ldelyes",function(id){state.deliveries=state.deliveries.filter(function(l){return l.id!==id});view.del=null;save("Livraison supprimée")});
+  var lf=app.querySelector("#livForm");
+  if(lf)lf.onsubmit=function(e){
+    e.preventDefault();
+    var machine=app.querySelector("#l-machine").value.trim(),date=app.querySelector("#l-date").value,note=app.querySelector("#l-note").value.trim();
+    if(!machine){app.querySelector("#l-machine").focus();toast("Indiquez la machine livrée.");return}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast("Choisissez une date.");return}
+    var l=view.editLiv?findLiv(view.editLiv):null;
+    if(l){l.machine=machine;l.date=date;l.note=note;delete l.example}
+    else state.deliveries.push({id:"l"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:date,machine:machine,note:note});
+    view.adding=false;view.editLiv=null;view.tab="liv";
+    save(l?"Livraison modifiée":"Livraison ajoutée");
+  };
+  on("#clearEx",function(){state.tasks=state.tasks.filter(function(t){return !t.example});state.deliveries=state.deliveries.filter(function(t){return !t.example});save("Exemples effacés")});
   on("#clrDay",function(){view.day=null;render()});
   on("#prevM",function(){view.m--;if(view.m<0){view.m=11;view.y--}render()});
   on("#nextM",function(){view.m++;if(view.m>11){view.m=0;view.y++}render()});
@@ -301,7 +360,7 @@ function toast(msg){if(!tEl){tEl=document.createElement("div");tEl.className="to
 
 var RESET=(function(){var s=document.head&&document.head.querySelector("style");return s?s.textContent:""})();
 function buildDoc(){
-  var data=JSON.stringify({tasks:state.tasks}).replace(/</g,"\\u003c");
+  var data=JSON.stringify({tasks:state.tasks,deliveries:state.deliveries}).replace(/</g,"\\u003c");
   return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+RESET+'</style></head><body>'
     +'<title>Agenda des interventions</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
     +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n'
