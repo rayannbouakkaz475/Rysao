@@ -85,6 +85,10 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 .item.done .t{color:var(--muted);text-decoration:line-through;font-weight:500}
 .stamp{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ok);background:var(--ok-soft);padding:3px 10px;border-radius:999px}
 .side-actions{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.who-form{grid-column:1 / -1;border-top:1px dashed var(--line);padding-top:12px;margin-top:2px}
+.who-form .h{font-weight:400;color:var(--muted)}
+.by{font-size:14px;margin-top:5px;color:var(--ink);overflow-wrap:anywhere}
+.by span{color:var(--muted)}
 .confirm{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--u3);flex-wrap:wrap;justify-content:flex-end}
 .empty{padding:22px 10px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
 .section{display:flex;flex-direction:column;gap:6px}
@@ -133,7 +137,7 @@ function pad(n){return(n<10?"0":"")+n}
 function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function parse(k){var a=k.split("-");return new Date(+a[0],+a[1]-1,+a[2])}
 var TODAY=key(now);
-var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:""};
+var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:"",validating:null};
 try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.tab==="arch")view.tab="arch";if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
@@ -170,9 +174,9 @@ function render(){
     if(!todo.length)h+='<div class="empty">'+(view.day?'Rien à faire ce jour-là.':'Rien à faire pour le moment.')+(canWrite()?' Appuyez sur « Ajouter une tâche ».':'')+'</div>';
     todo.forEach(function(t){h+=itemHtml(t)});
   }else{
-    h+='<label class="search" for="q"><span class="vh">Rechercher dans l\'archive</span><input type="search" id="q" placeholder="Rechercher : machine, travail, ligne…" value="'+esc(view.q)+'" autocomplete="off"></label>';
+    h+='<label class="search" for="q"><span class="vh">Rechercher dans l\'archive</span><input type="search" id="q" placeholder="Rechercher : machine, travail, nom…" value="'+esc(view.q)+'" autocomplete="off"></label>';
     var q=norm(view.q.trim());
-    var arch=archAll.filter(function(t){return onDay(t)&&(!q||norm(t.title).indexOf(q)>=0)}).sort(function(a,b){return (b.doneAt||"")<(a.doneAt||"")?-1:1});
+    var arch=archAll.filter(function(t){return onDay(t)&&(!q||norm(t.title+" "+(t.doneBy||"")).indexOf(q)>=0)}).sort(function(a,b){return (b.doneAt||"")<(a.doneAt||"")?-1:1});
     if(!archAll.length)h+='<div class="empty">L\'archive est vide. Les tâches validées sont rangées ici automatiquement.</div>';
     else if(!arch.length)h+='<div class="empty">Aucune tâche validée ne correspond'+(q?' à « '+esc(view.q.trim())+' »':'')+(view.day?' pour ce jour':'')+'.</div>';
     var lastG=null;
@@ -183,6 +187,8 @@ function render(){
     });
   }
   h+='</div></div></div>';
+  var known={};state.tasks.forEach(function(t){String(t.doneBy||"").split(",").forEach(function(n){n=n.trim();if(n)known[n]=1})});
+  h+='<datalist id="known-names">'+Object.keys(known).sort().map(function(n){return'<option value="'+esc(n)+'"></option>'}).join("")+'</datalist>';
 
   app.innerHTML=h;
   bind();
@@ -223,16 +229,23 @@ function itemHtml(t){
   if(t.done){
     s+='<span class="stamp">✓ Validé le '+fmtStamp(t.doneAt)+'</span><span>Prévu le '+fmtDay(t.date)+'</span>';
   }else{
+    s+='';
     s+='<span class="pill">'+URG[t.level]+'</span><span'+(t.date<TODAY?' class="late"':'')+'>'+(t.date<TODAY?'En retard · ':'')+fmtDay(t.date)+'</span>';
   }
   if(t.example)s+='<span class="pill ex">Exemple</span>';
-  s+='</div></div>';
+  s+='</div>';
+  if(t.done)s+='<div class="by"><span>Fait par :</span> '+(t.doneBy?'<b>'+esc(t.doneBy)+'</b>':'<span>non renseigné</span>')+'</div>';
+  s+='</div>';
+  if(canWrite()&&view.validating===t.id){
+    s+='<div></div><form class="who-form" data-whoform="'+esc(t.id)+'" novalidate><label class="f" for="who-'+esc(t.id)+'">Fait par <span class="h">nom et prénom ; plusieurs personnes : séparez par une virgule</span><input type="text" id="who-'+esc(t.id)+'" list="known-names" maxlength="200" value="'+esc(t.doneBy||'')+'" placeholder="Ex. : Jean Dupont, Marc Rossi" autocomplete="off"></label><div class="form-actions"><button type="button" class="btn" data-whocancel="1">Annuler</button><button type="submit" class="validate">'+(t.done?'Enregistrer':'✓ Valider')+'</button></div></form>';
+    return s+'</div>';
+  }
   if(canWrite()){
     s+='<div class="side-actions">';
     if(view.del===t.id){
       s+='<span class="confirm">Supprimer ? <button type="button" class="btn small" data-delyes="'+esc(t.id)+'">Oui</button><button type="button" class="btn small" data-delno="1">Non</button></span>';
     }else{
-      s+=t.done?'<button type="button" class="btn small" data-undo="'+esc(t.id)+'">Remettre à faire</button>':'<button type="button" class="validate" data-ok="'+esc(t.id)+'">✓ Valider</button>';
+      s+=t.done?'<button type="button" class="btn small" data-undo="'+esc(t.id)+'">Remettre à faire</button><button type="button" class="btn link" data-ok="'+esc(t.id)+'">Modifier les noms</button>':'<button type="button" class="validate" data-ok="'+esc(t.id)+'">✓ Valider</button>';
       s+='<button type="button" class="btn link" data-del="'+esc(t.id)+'">Supprimer</button>';
     }
     s+='</div>';
@@ -253,8 +266,20 @@ function bind(){
   all("data-tab",function(tab){view.tab=tab;view.del=null;render()});
   var qi=app.querySelector("#q");
   if(qi)qi.oninput=function(){view.q=qi.value;render();var n=app.querySelector("#q");if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}};
-  all("data-ok",function(id){var t=find(id);if(!t)return;t.done=true;t.doneAt=localIso(new Date());save("Tâche validée et rangée dans l'archive")});
-  all("data-undo",function(id){var t=find(id);if(!t)return;t.done=false;delete t.doneAt;view.tab="todo";save("Tâche remise dans À faire")});
+  all("data-ok",function(id){view.validating=id;view.del=null;render();var i=app.querySelector('[data-whoform="'+id+'"] input');if(i)i.focus()});
+  all("data-whocancel",function(){view.validating=null;render()});
+  app.querySelectorAll("[data-whoform]").forEach(function(f){f.onsubmit=function(e){
+    e.preventDefault();
+    var t=find(f.getAttribute("data-whoform"));if(!t)return;
+    var names=f.querySelector("input").value.split(",").map(function(x){return x.trim().replace(/\s+/g," ")}).filter(Boolean).join(", ");
+    if(!names){f.querySelector("input").focus();toast("Indiquez le nom et prénom de la personne qui a fait le travail.");return}
+    var was=t.done;
+    t.doneBy=names;
+    if(!was){t.done=true;t.doneAt=localIso(new Date())}
+    view.validating=null;
+    save(was?"Noms enregistrés":"Tâche validée et rangée dans l'archive");
+  }});
+  all("data-undo",function(id){var t=find(id);if(!t)return;t.done=false;delete t.doneAt;delete t.doneBy;view.tab="todo";save("Tâche remise dans À faire")});
   all("data-del",function(id){view.del=id;render()});
   all("data-delno",function(){view.del=null;render()});
   all("data-delyes",function(id){state.tasks=state.tasks.filter(function(t){return t.id!==id});view.del=null;save("Tâche supprimée")});
