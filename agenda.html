@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style id="agenda-style">
-/* Layout : version simple. Calendrier d'un mois à gauche, liste « À faire » puis « Fait » à droite ; une colonne sur téléphone. */
+/* Layout : version simple. Calendrier d'un mois à gauche, onglets « À faire » / « Archive » à droite ; une colonne sur téléphone. */
 :root{
   --bg:#ECEFF1; --panel:#FFFFFF; --sunk:#F4F6F7; --ink:#16202A; --muted:#5A6773; --line:#D2D8DD;
   --accent:#1D5C73; --accent-ink:#FFFFFF; --ok:#2E8B57; --ok-soft:#E2F2E8;
@@ -87,6 +87,16 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 .confirm{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--u3);flex-wrap:wrap;justify-content:flex-end}
 .empty{padding:22px 10px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
 .section{display:flex;flex-direction:column;gap:6px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs button{border:0;background:none;border-radius:9px;padding:10px 12px;font-family:var(--f-display);font-size:21px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:8px}
+.tabs button b{font-family:var(--f-body);font-size:13px;font-weight:600;background:var(--sunk);border-radius:999px;padding:1px 9px;letter-spacing:0;font-variant-numeric:tabular-nums}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-selected="true"] b{background:var(--accent-ink);color:var(--accent)}
+.search input{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:11px 14px;width:100%;font-size:16px}
+.group{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:12px 2px 2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dots i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.cal-foot i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
 .filter{display:inline-flex;align-items:center;gap:6px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px}
 .filter button{border:0;background:var(--sunk);border-radius:999px;width:24px;height:24px;line-height:1;color:var(--muted)}
 
@@ -98,7 +108,7 @@ input[type=text],input[type=date]{border:1px solid var(--line);background:var(--
 @media (max-width:480px){.item{grid-template-columns:minmax(0,1fr)}.side-actions{align-items:stretch}.validate{width:100%}}
 </style>
 <div id="app"></div>
-<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":false,"example":true},{"id":"ex2","date":"2026-11-06","title":"Défaut variateur convoyeur ligne 2","level":2,"done":false,"example":true},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
+<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":true,"example":true,"doneAt":"2026-11-03T07:26:57"},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
 <script id="agenda-main">
 (function(){
 "use strict";
@@ -122,13 +132,14 @@ function pad(n){return(n<10?"0":"")+n}
 function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
 function parse(k){var a=k.split("-");return new Date(+a[0],+a[1]-1,+a[2])}
 var TODAY=key(now);
-var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null};
-try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
+var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:""};
+try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.tab==="arch")view.tab="arch";if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function fmtDay(k){var d=parse(k);return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()}
 function fmtStamp(iso){var d=new Date(iso);if(isNaN(d))return"";return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" à "+pad(d.getHours())+"h"+pad(d.getMinutes())}
 function localIso(d){return key(d)+"T"+pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
+function norm(s){s=String(s||"").toLowerCase();try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}return s}
 function canWrite(){return mode==="artifact"||mode==="local"}
 function find(id){for(var i=0;i<state.tasks.length;i++)if(state.tasks[i].id===id)return state.tasks[i];return null}
 
@@ -144,20 +155,32 @@ function render(){
 
   if(view.adding&&canWrite())h+='<div class="card">'+formHtml()+'</div>';
 
-  var inView=state.tasks.filter(function(t){return !view.day||t.date===view.day});
-  var todo=inView.filter(function(t){return !t.done}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:b.level-a.level});
-  var done=inView.filter(function(t){return t.done}).sort(function(a,b){return (b.doneAt||"")<(a.doneAt||"")?-1:1});
+  var todoAll=state.tasks.filter(function(t){return !t.done});
+  var archAll=state.tasks.filter(function(t){return t.done});
+  function onDay(t){return !view.day||t.date===view.day}
 
-  if(view.day)h+='<div><span class="filter">'+fmtDay(view.day)+'<button type="button" id="clrDay" aria-label="Voir toutes les dates">×</button></span></div>';
+  h+='<div class="tabs" role="tablist" aria-label="Vue"><button type="button" role="tab" data-tab="todo" aria-selected="'+(view.tab==="todo")+'">À faire <b>'+todoAll.length+'</b></button><button type="button" role="tab" data-tab="arch" aria-selected="'+(view.tab==="arch")+'">Archive <b>'+archAll.length+'</b></button></div>';
 
-  h+='<div class="list-head"><h2>À faire</h2><span class="count">'+todo.length+' tâche'+(todo.length>1?'s':'')+'</span></div><div class="items">';
-  if(!todo.length)h+='<div class="empty">'+(view.day?'Rien à faire ce jour-là.':'Rien à faire pour le moment.')+(canWrite()?' Appuyez sur « Ajouter une tâche ».':'')+'</div>';
-  todo.forEach(function(t){h+=itemHtml(t)});
-  h+='</div>';
+  if(view.day)h+='<div><span class="filter">Prévu le '+fmtDay(view.day)+'<button type="button" id="clrDay" aria-label="Voir toutes les dates">×</button></span></div>';
 
-  h+='<div class="list-head" style="margin-top:18px"><h2>Fait</h2><span class="count">'+done.length+' validée'+(done.length>1?'s':'')+'</span></div><div class="items">';
-  if(!done.length)h+='<div class="empty">Aucune tâche validée'+(view.day?' ce jour-là':'')+'.</div>';
-  done.forEach(function(t){h+=itemHtml(t)});
+  h+='<div class="items">';
+  if(view.tab==="todo"){
+    var todo=todoAll.filter(onDay).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:b.level-a.level});
+    if(!todo.length)h+='<div class="empty">'+(view.day?'Rien à faire ce jour-là.':'Rien à faire pour le moment.')+(canWrite()?' Appuyez sur « Ajouter une tâche ».':'')+'</div>';
+    todo.forEach(function(t){h+=itemHtml(t)});
+  }else{
+    h+='<label class="search" for="q"><span class="vh">Rechercher dans l\'archive</span><input type="search" id="q" placeholder="Rechercher : machine, travail, ligne…" value="'+esc(view.q)+'" autocomplete="off"></label>';
+    var q=norm(view.q.trim());
+    var arch=archAll.filter(function(t){return onDay(t)&&(!q||norm(t.title).indexOf(q)>=0)}).sort(function(a,b){return (b.doneAt||"")<(a.doneAt||"")?-1:1});
+    if(!archAll.length)h+='<div class="empty">L\'archive est vide. Les tâches validées sont rangées ici automatiquement.</div>';
+    else if(!arch.length)h+='<div class="empty">Aucune tâche validée ne correspond'+(q?' à « '+esc(view.q.trim())+' »':'')+(view.day?' pour ce jour':'')+'.</div>';
+    var lastG=null;
+    arch.forEach(function(t){
+      var d=new Date(t.doneAt),g=isNaN(d)?'Date inconnue':'Validées en '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+      if(g!==lastG){h+='<div class="group">'+g+'</div>';lastG=g}
+      h+=itemHtml(t);
+    });
+  }
   h+='</div></div></div>';
 
   app.innerHTML=h;
@@ -166,7 +189,7 @@ function render(){
 
 function calendar(){
   var first=new Date(view.y,view.m,1),days=new Date(view.y,view.m+1,0).getDate(),off=(first.getDay()+6)%7;
-  var byDay={};state.tasks.forEach(function(t){if(!t.done)(byDay[t.date]=byDay[t.date]||[]).push(t.level)});
+  var byDay={};state.tasks.forEach(function(t){(byDay[t.date]=byDay[t.date]||[]).push(t.done?0:t.level)});
   var s='<div class="cal-head"><button type="button" class="nav" id="prevM" aria-label="Mois précédent">‹</button><strong>'+MONTHS[view.m]+' '+view.y+'</strong><button type="button" class="nav" id="nextM" aria-label="Mois suivant">›</button></div><div class="grid7">';
   ["Lu","Ma","Me","Je","Ve","Sa","Di"].forEach(function(x){s+='<span class="dow">'+x+'</span>'});
   for(var i=0;i<off;i++)s+='<span></span>';
@@ -175,10 +198,11 @@ function calendar(){
     if(dt.getDay()===0||dt.getDay()===6)cls+=" we";
     if(k===TODAY)cls+=" today";
     if(k===view.day)cls+=" sel";
-    var lv=(byDay[k]||[]).sort(function(a,b){return b-a}).slice(0,3);
-    s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(lv.length?', '+lv.length+' à faire':'')+'"><span>'+d+'</span><span class="dots">'+lv.map(function(l){return'<i class="u'+l+'"></i>'}).join("")+'</span></button>';
+    var all=(byDay[k]||[]),nOpen=all.filter(function(l){return l>0}).length,nDone=all.length-nOpen;
+    var lv=all.slice().sort(function(a,b){return b-a}).slice(0,3);
+    s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(nOpen?', '+nOpen+' à faire':'')+(nDone?', '+nDone+' validée'+(nDone>1?'s':''):'')+'"><span>'+d+'</span><span class="dots">'+lv.map(function(l){return l?'<i class="u'+l+'"></i>':'<i class="d"></i>'}).join("")+'</span></button>';
   }
-  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span></div>';
+  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span><span><i class="d"></i>Validé</span></div>';
   return s;
 }
 
@@ -207,7 +231,7 @@ function itemHtml(t){
     if(view.del===t.id){
       s+='<span class="confirm">Supprimer ? <button type="button" class="btn small" data-delyes="'+esc(t.id)+'">Oui</button><button type="button" class="btn small" data-delno="1">Non</button></span>';
     }else{
-      s+=t.done?'<button type="button" class="btn small" data-undo="'+esc(t.id)+'">Annuler la validation</button>':'<button type="button" class="validate" data-ok="'+esc(t.id)+'">✓ Valider</button>';
+      s+=t.done?'<button type="button" class="btn small" data-undo="'+esc(t.id)+'">Remettre à faire</button>':'<button type="button" class="validate" data-ok="'+esc(t.id)+'">✓ Valider</button>';
       s+='<button type="button" class="btn link" data-del="'+esc(t.id)+'">Supprimer</button>';
     }
     s+='</div>';
@@ -225,8 +249,11 @@ function bind(){
   on("#prevM",function(){view.m--;if(view.m<0){view.m=11;view.y--}render()});
   on("#nextM",function(){view.m++;if(view.m>11){view.m=0;view.y++}render()});
   all("data-day",function(k){view.day=view.day===k?null:k;render()});
-  all("data-ok",function(id){var t=find(id);if(!t)return;t.done=true;t.doneAt=localIso(new Date());save("Tâche validée")});
-  all("data-undo",function(id){var t=find(id);if(!t)return;t.done=false;delete t.doneAt;save("Validation annulée")});
+  all("data-tab",function(tab){view.tab=tab;view.del=null;render()});
+  var qi=app.querySelector("#q");
+  if(qi)qi.oninput=function(){view.q=qi.value;render();var n=app.querySelector("#q");if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}};
+  all("data-ok",function(id){var t=find(id);if(!t)return;t.done=true;t.doneAt=localIso(new Date());save("Tâche validée et rangée dans l'archive")});
+  all("data-undo",function(id){var t=find(id);if(!t)return;t.done=false;delete t.doneAt;view.tab="todo";save("Tâche remise dans À faire")});
   all("data-del",function(id){view.del=id;render()});
   all("data-delno",function(){view.del=null;render()});
   all("data-delyes",function(id){state.tasks=state.tasks.filter(function(t){return t.id!==id});view.del=null;save("Tâche supprimée")});
@@ -238,7 +265,7 @@ function bind(){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast("Choisissez une date.");return}
     var u=app.querySelector('input[name="urg"]:checked');
     state.tasks.push({id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:date,title:title,level:u?+u.value:1,done:false});
-    view.adding=false;
+    view.adding=false;view.tab="todo";
     save("Tâche ajoutée");
   };
 }
@@ -264,7 +291,7 @@ function save(msg){
   }
   if(mode!=="artifact"||!artifactNs||saving)return;
   saving=true;render();toast("Enregistrement…");
-  try{sessionStorage.setItem("agenda-view",JSON.stringify({day:view.day}))}catch(e){}
+  try{sessionStorage.setItem("agenda-view",JSON.stringify({day:view.day,tab:view.tab}))}catch(e){}
   artifactNs.publish(buildDoc()).then(function(){toast(msg)},function(err){
     saving=false;var code=err&&err.code;
     if(code==="conflict"){toast("L'agenda a été modifié ailleurs. Rechargement…");return}
