@@ -1,0 +1,317 @@
+<title>Equans Switzerland · Agenda des interventions</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style id="agenda-style">
+/* Couleurs : bleu marine et dégradé vert. Layout : version simple. Calendrier d'un mois à gauche, onglets « À faire » / « Archive » à droite ; une colonne sur téléphone. */
+:root{
+  --bg:#EEF3F2; --panel:#FFFFFF; --sunk:#F3F7F6; --ink:#0D2438; --muted:#55697A; --line:#D0DBDA;
+  --accent:#0D2B45; --accent-ink:#FFFFFF; --ok:#2F9E6E; --ok-soft:#E0F3EA;
+  --u1:#2F9E6E; --u2:#C98400; --u3:#CF2E2A; --u1-soft:#E0F3EA; --u2-soft:#F8EDD5; --u3-soft:#F9E0DF;
+  --g1:#8ED3AE; --g2:#2F9E6E;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1622; --panel:#10202F; --sunk:#0D1B28; --ink:#E3ECEF; --muted:#8FA3B2; --line:#22364A;
+  --accent:#6CC79A; --accent-ink:#08202F; --ok:#6CC79A; --ok-soft:#143327;
+  --u1:#6CC79A; --u2:#F0B23A; --u3:#F2615C; --u1-soft:#143327; --u2-soft:#33270F; --u3-soft:#3A1716; --g1:#8ED3AE; --g2:#3FB07E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A1622; --panel:#10202F; --sunk:#0D1B28; --ink:#E3ECEF; --muted:#8FA3B2; --line:#22364A;
+  --accent:#6CC79A; --accent-ink:#08202F; --ok:#6CC79A; --ok-soft:#143327;
+  --u1:#6CC79A; --u2:#F0B23A; --u3:#F2615C; --u1-soft:#143327; --u2-soft:#33270F; --u3-soft:#3A1716; --g1:#8ED3AE; --g2:#3FB07E; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+#app{max-width:1080px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,42px);line-height:1;margin:0;text-transform:uppercase;letter-spacing:.01em}
+.brandline{display:flex;flex-direction:column;gap:6px}
+.brandname{font-family:var(--f-body);font-weight:600;font-size:15px;letter-spacing:.32em;color:var(--accent)}
+.brandname b{font-weight:700;font-size:22px;letter-spacing:.14em;margin-right:.5em}
+.top{border-bottom:3px solid;border-image:linear-gradient(90deg,var(--g1),var(--g2)) 1;padding-bottom:14px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 16px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.small{padding:6px 10px;font-size:14px}
+.btn.link{border:0;background:none;padding:4px 6px;color:var(--muted);font-size:14px;text-decoration:underline}
+.banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.banner b{color:var(--ink)}
+
+.main{display:grid;grid-template-columns:330px minmax(0,1fr);gap:18px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+
+/* Calendrier */
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.cal-head strong{font-family:var(--f-display);font-size:24px;text-transform:uppercase;letter-spacing:.03em}
+.nav{border:1px solid var(--line);background:var(--sunk);border-radius:8px;width:38px;height:38px;font-size:20px;line-height:1;color:var(--muted)}
+.grid7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.dow{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center;padding-bottom:4px}
+.day{aspect-ratio:1/1;max-width:100%;border:0;border-radius:8px;background:transparent;font-size:14px;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0}
+.day:hover{background:var(--sunk)}
+.day.we{color:var(--muted)}
+.day.today{box-shadow:inset 0 0 0 2px var(--accent);font-weight:700}
+.day.sel{background:var(--accent);color:var(--accent-ink)}
+.dots{display:flex;gap:2px;height:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+.cal-foot{margin-top:12px;display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted)}
+.cal-foot span{display:inline-flex;align-items:center;gap:6px}
+.cal-foot i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+
+/* Formulaire */
+form{display:flex;flex-direction:column;gap:12px}
+label.f{display:flex;flex-direction:column;gap:5px;font-weight:600;font-size:14px}
+input[type=text],input[type=date]{border:1px solid var(--line);background:var(--sunk);border-radius:10px;padding:10px 12px;width:100%;font-weight:400;font-size:16px}
+.urg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.urg label{position:relative}
+.urg input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.urg span{display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:10px 6px;font-weight:600;font-size:14px;text-align:center;height:100%}
+.urg span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.urg input:checked + span{border-color:var(--c);background:var(--soft);box-shadow:inset 0 0 0 1px var(--c)}
+.urg input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.form-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* Listes */
+.list-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.list-head h2{font-family:var(--f-display);font-size:24px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.list-head .count{color:var(--muted);font-size:14px}
+.items{display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-radius:10px;border:1px solid var(--line);border-left:5px solid var(--c);background:var(--panel)}
+.item .t{font-weight:600;overflow-wrap:anywhere}
+.item .m{font-size:14px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:3px;align-items:center}
+.pill{display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;padding:1px 9px;border-radius:999px;background:var(--soft);color:var(--c)}
+.pill.ex{background:var(--sunk);color:var(--muted);border:1px dashed var(--line);font-weight:500}
+.late{color:var(--u3);font-weight:600}
+.validate{border:0;border-radius:10px;background:var(--ok);color:#fff;font-weight:600;padding:10px 16px;white-space:nowrap}
+.validate:hover{filter:brightness(1.08)}
+.item.done{border-left-color:var(--ok);background:var(--sunk)}
+.item.done .t{color:var(--muted);text-decoration:line-through;font-weight:500}
+.stamp{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ok);background:var(--ok-soft);padding:3px 10px;border-radius:999px}
+.side-actions{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.confirm{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--u3);flex-wrap:wrap;justify-content:flex-end}
+.empty{padding:22px 10px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px}
+.section{display:flex;flex-direction:column;gap:6px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.tabs button{border:0;background:none;border-radius:9px;padding:10px 12px;font-family:var(--f-display);font-size:21px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:8px}
+.tabs button b{font-family:var(--f-body);font-size:13px;font-weight:600;background:var(--sunk);border-radius:999px;padding:1px 9px;letter-spacing:0;font-variant-numeric:tabular-nums}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tabs button[aria-selected="true"] b{background:var(--accent-ink);color:var(--accent)}
+.search input{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:11px 14px;width:100%;font-size:16px}
+.group{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:12px 2px 2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dots i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.cal-foot i.d{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.filter{display:inline-flex;align-items:center;gap:6px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px 4px 3px 12px}
+.filter button{border:0;background:var(--sunk);border-radius:999px;width:24px;height:24px;line-height:1;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;z-index:50;max-width:calc(100vw - 32px)}
+
+.u1{--c:var(--u1);--soft:var(--u1-soft)} .u2{--c:var(--u3);--soft:var(--u3-soft)}
+
+@media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:480px){.item{grid-template-columns:minmax(0,1fr)}.side-actions{align-items:stretch}.validate{width:100%}}
+</style>
+<div id="app"></div>
+<script type="application/json" id="agenda-data">{"tasks":[{"id":"ex1","date":"2026-11-04","title":"Raccordement presse hydraulique P3","level":1,"done":true,"example":true,"doneAt":"2026-11-03T07:26:57"},{"id":"ex3","date":"2026-11-02","title":"Remplacement éclairage LED quai 4","level":1,"done":true,"doneAt":"2026-11-02T15:40:00","example":true}]}</script>
+<script id="agenda-main">
+(function(){
+"use strict";
+var URG={1:"Pas très urgent",2:"Urgent"};
+var MONTHS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+var DAYS=["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
+var LS_KEY="agenda-interventions-v2";
+
+var app=document.getElementById("app");
+var state={tasks:[]};
+try{state=JSON.parse(document.getElementById("agenda-data").textContent)||{tasks:[]}}catch(e){}
+if(!Array.isArray(state.tasks))state.tasks=[];
+var standalone=!window.claude;
+var mode=standalone?"local":"pending";
+var artifactNs=null;
+if(standalone){try{var sv=localStorage.getItem(LS_KEY);if(sv){var p=JSON.parse(sv);if(p&&Array.isArray(p.tasks))state=p}}catch(e){}}
+state.tasks.forEach(function(t){t.level=t.level>=2?2:1});
+
+var now=new Date();
+function pad(n){return(n<10?"0":"")+n}
+function key(d){return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function parse(k){var a=k.split("-");return new Date(+a[0],+a[1]-1,+a[2])}
+var TODAY=key(now);
+var view={y:now.getFullYear(),m:now.getMonth(),day:null,adding:false,del:null,tab:"todo",q:""};
+try{var r=sessionStorage.getItem("agenda-view");if(r){sessionStorage.removeItem("agenda-view");r=JSON.parse(r);if(r.tab==="arch")view.tab="arch";if(r.day){view.day=r.day;var d0=parse(r.day);view.y=d0.getFullYear();view.m=d0.getMonth()}}}catch(e){}
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function fmtDay(k){var d=parse(k);return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()}
+function fmtStamp(iso){var d=new Date(iso);if(isNaN(d))return"";return DAYS[d.getDay()]+" "+d.getDate()+" "+MONTHS[d.getMonth()]+" "+d.getFullYear()+" à "+pad(d.getHours())+"h"+pad(d.getMinutes())}
+function localIso(d){return key(d)+"T"+pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
+function norm(s){s=String(s||"").toLowerCase();try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}return s}
+function canWrite(){return mode==="artifact"||mode==="local"}
+function find(id){for(var i=0;i<state.tasks.length;i++)if(state.tasks[i].id===id)return state.tasks[i];return null}
+
+function render(){
+  var h='<header class="top"><div class="brandline"><span class="brandname"><b>EQUANS</b>SWITZERLAND</span><h1>Agenda des interventions</h1></div>';
+  if(canWrite()&&!view.adding)h+='<button type="button" class="btn primary" id="addBtn">+ Ajouter une tâche</button>';
+  h+='</header>';
+  if(mode==="readonly")h+='<div class="banner"><b>Lecture seule.</b> Seul le propriétaire de l\'agenda peut ajouter ou valider des tâches.</div>';
+  if(mode==="local")h+='<div class="banner"><b>Hors ligne.</b> Les tâches sont gardées dans ce navigateur uniquement.</div>';
+  if(canWrite()&&state.tasks.some(function(t){return t.example}))h+='<div class="banner">Les tâches marquées <b>Exemple</b> servent à montrer le fonctionnement. <button type="button" class="btn small" id="clearEx">Effacer les exemples</button></div>';
+
+  h+='<div class="main"><div class="card">'+calendar()+'</div><div class="section">';
+
+  if(view.adding&&canWrite())h+='<div class="card">'+formHtml()+'</div>';
+
+  var todoAll=state.tasks.filter(function(t){return !t.done});
+  var archAll=state.tasks.filter(function(t){return t.done});
+  function onDay(t){return !view.day||t.date===view.day}
+
+  h+='<div class="tabs" role="tablist" aria-label="Vue"><button type="button" role="tab" data-tab="todo" aria-selected="'+(view.tab==="todo")+'">À faire <b>'+todoAll.length+'</b></button><button type="button" role="tab" data-tab="arch" aria-selected="'+(view.tab==="arch")+'">Archive <b>'+archAll.length+'</b></button></div>';
+
+  if(view.day)h+='<div><span class="filter">Prévu le '+fmtDay(view.day)+'<button type="button" id="clrDay" aria-label="Voir toutes les dates">×</button></span></div>';
+
+  h+='<div class="items">';
+  if(view.tab==="todo"){
+    var todo=todoAll.filter(onDay).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:b.level-a.level});
+    if(!todo.length)h+='<div class="empty">'+(view.day?'Rien à faire ce jour-là.':'Rien à faire pour le moment.')+(canWrite()?' Appuyez sur « Ajouter une tâche ».':'')+'</div>';
+    todo.forEach(function(t){h+=itemHtml(t)});
+  }else{
+    h+='<label class="search" for="q"><span class="vh">Rechercher dans l\'archive</span><input type="search" id="q" placeholder="Rechercher : machine, travail, ligne…" value="'+esc(view.q)+'" autocomplete="off"></label>';
+    var q=norm(view.q.trim());
+    var arch=archAll.filter(function(t){return onDay(t)&&(!q||norm(t.title).indexOf(q)>=0)}).sort(function(a,b){return (b.doneAt||"")<(a.doneAt||"")?-1:1});
+    if(!archAll.length)h+='<div class="empty">L\'archive est vide. Les tâches validées sont rangées ici automatiquement.</div>';
+    else if(!arch.length)h+='<div class="empty">Aucune tâche validée ne correspond'+(q?' à « '+esc(view.q.trim())+' »':'')+(view.day?' pour ce jour':'')+'.</div>';
+    var lastG=null;
+    arch.forEach(function(t){
+      var d=new Date(t.doneAt),g=isNaN(d)?'Date inconnue':'Validées en '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+      if(g!==lastG){h+='<div class="group">'+g+'</div>';lastG=g}
+      h+=itemHtml(t);
+    });
+  }
+  h+='</div></div></div>';
+
+  app.innerHTML=h;
+  bind();
+}
+
+function calendar(){
+  var first=new Date(view.y,view.m,1),days=new Date(view.y,view.m+1,0).getDate(),off=(first.getDay()+6)%7;
+  var byDay={};state.tasks.forEach(function(t){(byDay[t.date]=byDay[t.date]||[]).push(t.done?0:t.level)});
+  var s='<div class="cal-head"><button type="button" class="nav" id="prevM" aria-label="Mois précédent">‹</button><strong>'+MONTHS[view.m]+' '+view.y+'</strong><button type="button" class="nav" id="nextM" aria-label="Mois suivant">›</button></div><div class="grid7">';
+  ["Lu","Ma","Me","Je","Ve","Sa","Di"].forEach(function(x){s+='<span class="dow">'+x+'</span>'});
+  for(var i=0;i<off;i++)s+='<span></span>';
+  for(var d=1;d<=days;d++){
+    var dt=new Date(view.y,view.m,d),k=key(dt),cls="day";
+    if(dt.getDay()===0||dt.getDay()===6)cls+=" we";
+    if(k===TODAY)cls+=" today";
+    if(k===view.day)cls+=" sel";
+    var all=(byDay[k]||[]),nOpen=all.filter(function(l){return l>0}).length,nDone=all.length-nOpen;
+    var lv=all.slice().sort(function(a,b){return b-a}).slice(0,3);
+    s+='<button type="button" class="'+cls+'" data-day="'+k+'" aria-label="'+fmtDay(k)+(nOpen?', '+nOpen+' à faire':'')+(nDone?', '+nDone+' validée'+(nDone>1?'s':''):'')+'"><span>'+d+'</span><span class="dots">'+lv.map(function(l){return l?'<i class="u'+l+'"></i>':'<i class="d"></i>'}).join("")+'</span></button>';
+  }
+  s+='</div><div class="cal-foot"><span><i class="u2"></i>Urgent</span><span><i class="u1"></i>Pas très urgent</span><span><i class="d"></i>Validé</span></div>';
+  return s;
+}
+
+function formHtml(){
+  var d=view.day||TODAY;
+  var s='<form id="addForm" novalidate>';
+  s+='<label class="f" for="f-title">Ce qu\'il y a à faire<input type="text" id="f-title" maxlength="140" placeholder="Ex. : Raccorder le tour CN de l\'atelier 3" autocomplete="off"></label>';
+  s+='<label class="f" for="f-date">Pour quand<input type="date" id="f-date" value="'+d+'"></label>';
+  s+='<div class="f" style="font-weight:600;font-size:14px">Urgence</div><div class="urg" role="radiogroup" aria-label="Urgence">';
+  [1,2].forEach(function(l){s+='<label class="u'+l+'"><input type="radio" name="urg" id="f-u'+l+'" value="'+l+'"'+(l===1?' checked':'')+'><span>'+URG[l]+'</span></label>'});
+  s+='</div><div class="form-actions"><button type="button" class="btn" id="cancelAdd">Annuler</button><button type="submit" class="btn primary">Ajouter</button></div></form>';
+  return s;
+}
+
+function itemHtml(t){
+  var s='<div class="item '+(t.done?'done ':'')+'u'+t.level+'"><div><div class="t">'+esc(t.title)+'</div><div class="m">';
+  if(t.done){
+    s+='<span class="stamp">✓ Validé le '+fmtStamp(t.doneAt)+'</span><span>Prévu le '+fmtDay(t.date)+'</span>';
+  }else{
+    s+='<span class="pill">'+URG[t.level]+'</span><span'+(t.date<TODAY?' class="late"':'')+'>'+(t.date<TODAY?'En retard · ':'')+fmtDay(t.date)+'</span>';
+  }
+  if(t.example)s+='<span class="pill ex">Exemple</span>';
+  s+='</div></div>';
+  if(canWrite()){
+    s+='<div class="side-actions">';
+    if(view.del===t.id){
+      s+='<span class="confirm">Supprimer ? <button type="button" class="btn small" data-delyes="'+esc(t.id)+'">Oui</button><button type="button" class="btn small" data-delno="1">Non</button></span>';
+    }else{
+      s+=t.done?'<button type="button" class="btn small" data-undo="'+esc(t.id)+'">Remettre à faire</button>':'<button type="button" class="validate" data-ok="'+esc(t.id)+'">✓ Valider</button>';
+      s+='<button type="button" class="btn link" data-del="'+esc(t.id)+'">Supprimer</button>';
+    }
+    s+='</div>';
+  }
+  return s+'</div>';
+}
+
+function bind(){
+  function on(sel,fn){var el=app.querySelector(sel);if(el)el.onclick=fn}
+  function all(attr,fn){app.querySelectorAll("["+attr+"]").forEach(function(el){el.onclick=function(){fn(el.getAttribute(attr))}})}
+  on("#addBtn",function(){view.adding=true;render();var f=app.querySelector("#f-title");if(f)f.focus()});
+  on("#cancelAdd",function(){view.adding=false;render()});
+  on("#clearEx",function(){state.tasks=state.tasks.filter(function(t){return !t.example});save("Exemples effacés")});
+  on("#clrDay",function(){view.day=null;render()});
+  on("#prevM",function(){view.m--;if(view.m<0){view.m=11;view.y--}render()});
+  on("#nextM",function(){view.m++;if(view.m>11){view.m=0;view.y++}render()});
+  all("data-day",function(k){view.day=view.day===k?null:k;render()});
+  all("data-tab",function(tab){view.tab=tab;view.del=null;render()});
+  var qi=app.querySelector("#q");
+  if(qi)qi.oninput=function(){view.q=qi.value;render();var n=app.querySelector("#q");if(n){n.focus();try{n.setSelectionRange(n.value.length,n.value.length)}catch(e){}}};
+  all("data-ok",function(id){var t=find(id);if(!t)return;t.done=true;t.doneAt=localIso(new Date());save("Tâche validée et rangée dans l'archive")});
+  all("data-undo",function(id){var t=find(id);if(!t)return;t.done=false;delete t.doneAt;view.tab="todo";save("Tâche remise dans À faire")});
+  all("data-del",function(id){view.del=id;render()});
+  all("data-delno",function(){view.del=null;render()});
+  all("data-delyes",function(id){state.tasks=state.tasks.filter(function(t){return t.id!==id});view.del=null;save("Tâche supprimée")});
+  var form=app.querySelector("#addForm");
+  if(form)form.onsubmit=function(e){
+    e.preventDefault();
+    var title=app.querySelector("#f-title").value.trim(),date=app.querySelector("#f-date").value;
+    if(!title){app.querySelector("#f-title").focus();toast("Écrivez ce qu'il y a à faire.");return}
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast("Choisissez une date.");return}
+    var u=app.querySelector('input[name="urg"]:checked');
+    state.tasks.push({id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:date,title:title,level:u?+u.value:1,done:false});
+    view.adding=false;view.tab="todo";
+    save("Tâche ajoutée");
+  };
+}
+
+var tEl=null,tTimer=0;
+function toast(msg){if(!tEl){tEl=document.createElement("div");tEl.className="toast";tEl.setAttribute("role","status");document.body.appendChild(tEl)}tEl.textContent=msg;tEl.hidden=false;clearTimeout(tTimer);tTimer=setTimeout(function(){tEl.hidden=true},2600)}
+
+var RESET=(function(){var s=document.head&&document.head.querySelector("style");return s?s.textContent:""})();
+function buildDoc(){
+  var data=JSON.stringify({tasks:state.tasks}).replace(/</g,"\\u003c");
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+RESET+'</style></head><body>'
+    +'<title>Agenda des interventions</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
+    +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">\n'
+    +document.getElementById("agenda-style").outerHTML+'\n<div id="app"></div>\n'
+    +'<script type="application/json" id="agenda-data">'+data+'<\/script>\n'
+    +document.getElementById("agenda-main").outerHTML+'\n</body></html>';
+}
+var saving=false;
+function save(msg){
+  if(mode==="local"){
+    try{localStorage.setItem(LS_KEY,JSON.stringify(state))}catch(e){toast("Impossible d'enregistrer dans ce navigateur.");return}
+    render();toast(msg);return;
+  }
+  if(mode!=="artifact"||!artifactNs||saving)return;
+  saving=true;render();toast("Enregistrement…");
+  try{sessionStorage.setItem("agenda-view",JSON.stringify({day:view.day,tab:view.tab}))}catch(e){}
+  artifactNs.publish(buildDoc()).then(function(){toast(msg)},function(err){
+    saving=false;var code=err&&err.code;
+    if(code==="conflict"){toast("L'agenda a été modifié ailleurs. Rechargement…");return}
+    if(code==="not_writer"||code==="not_granted"){mode="readonly";render();toast("Cet agenda est en lecture seule pour vous.");return}
+    toast("Enregistrement impossible pour le moment. Réessayez.");
+  });
+}
+
+render();
+if(!standalone&&typeof window.claude.use==="function"){
+  Promise.all([window.claude.use("artifact"),window.claude.use("user").catch(function(){return null})]).then(function(r){
+    artifactNs=r[0];var user=r[1];
+    if(!artifactNs){mode="readonly";render();return}
+    if(user&&typeof user.canEdit==="function")return user.canEdit().then(function(ok){mode=ok?"artifact":"readonly";render()});
+    mode="artifact";render();
+  }).catch(function(){mode="readonly";render()});
+}else if(!standalone){mode="readonly";render()}
+})();
+</script>
