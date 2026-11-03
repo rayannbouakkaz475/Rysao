@@ -127,6 +127,8 @@ label.f .h{font-weight:400;color:var(--muted)}
 .ai textarea{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px 12px;width:100%;min-height:88px;font-size:16px;resize:vertical}
 .ai-status{color:var(--muted);font-size:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .ai-err{color:var(--u3);font-size:14px}
+.ai-hint{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+.ai-hint svg{flex:none;width:18px;height:18px;margin-top:1px;stroke:var(--accent)}
 .ai-note{font-size:14px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
 .prev{display:flex;flex-direction:column;gap:6px}
 .prev-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:10px;background:var(--panel)}
@@ -283,7 +285,8 @@ var sampleNs=null;
 var ai={text:"",busy:false,ctl:null,items:null,note:"",err:""};
 function aiHtml(){
   var s='<div class="card ai"><div class="ai-head"><b>Assistant</b><span>Écrivez comme vous parlez : l\'IA range les tâches et les livraisons dans l\'agenda.</span></div>';
-  s+='<label for="ai-text" class="vh">Message pour l\'assistant</label><textarea id="ai-text" maxlength="2000" placeholder="Ex. : Presse P4 livrée semaine 48. Raccordement urgent du tour CN mardi. J\'ai fini l\'éclairage du quai 4 avec Marc Rossi."'+(ai.busy?' disabled':'')+'>'+esc(ai.text)+'</textarea>';
+  s+='<label for="ai-text" class="vh">Message pour l\'assistant</label><textarea id="ai-text" maxlength="2000" enterkeyhint="done" placeholder="Ex. : Presse P4 livrée semaine 48. Raccordement urgent du tour CN mardi. J\'ai fini l\'éclairage du quai 4 avec Marc Rossi."'+(ai.busy?' disabled':'')+'>'+esc(ai.text)+'</textarea>';
+  if(!ai.busy&&!ai.items)s+='<div class="ai-hint"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg><span>Pour parler au lieu d\'écrire : touchez la case, puis le <b>micro du clavier</b> de votre téléphone. Parlez, puis appuyez sur « Ranger avec l\'IA ».</span></div>';
   if(ai.busy)s+='<div class="ai-status">L\'IA lit votre message… <button type="button" class="btn small" id="ai-stop">Arrêter</button></div>';
   else if(!ai.items)s+='<div class="form-actions"><button type="button" class="btn primary" id="ai-go">Ranger avec l\'IA</button></div>';
   if(ai.err)s+='<div class="ai-err" role="alert">'+esc(ai.err)+'</div>';
